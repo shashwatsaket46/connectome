@@ -12,12 +12,31 @@ export const Route = createFileRoute("/api/public/experiment/$id")({
         if (!experiment) return new Response("Unknown experiment", { status: 404 });
 
         const origin = new URL(request.url).origin;
-        const target = experiment.url.startsWith("http")
-          ? experiment.url
-          : `${origin}${experiment.url}`;
+        // Bundles live on Lovable's asset CDN (/__l5e/...). That path only
+        // exists on Lovable-hosted origins, so when the app runs elsewhere
+        // (Vercel, Netlify, localhost build, custom host) fall back to an
+        // absolute asset base. Override with ASSET_BASE_URL if needed.
+        const assetBase =
+          process.env["ASSET_BASE_URL"] ??
+          "https://project--3b47e950-dbff-4681-a4b3-0e3c66cfc349.lovable.app";
 
-        const upstream = await fetch(target);
-        if (!upstream.ok || !upstream.body) {
+        const candidates = experiment.url.startsWith("http")
+          ? [experiment.url]
+          : [`${origin}${experiment.url}`, `${assetBase}${experiment.url}`];
+
+        let upstream: Response | undefined;
+        for (const target of candidates) {
+          try {
+            const res = await fetch(target);
+            if (res.ok && res.body && (res.headers.get("content-type") ?? "").includes("html")) {
+              upstream = res;
+              break;
+            }
+          } catch {
+            /* try next candidate */
+          }
+        }
+        if (!upstream?.body) {
           return new Response("Failed to load experiment bundle", { status: 502 });
         }
 
