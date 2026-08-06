@@ -1,0 +1,56 @@
+import { createFileRoute } from "@tanstack/react-router";
+
+import { EXPERIMENT_BRIDGE_SCRIPT } from "@/lib/experiment-bridge";
+import { EXPERIMENT_ENHANCE_SCRIPT, EXPERIMENT_PALETTE_CSS } from "@/lib/experiment-enhance";
+import { SEED_EXPERIMENTS } from "@/lib/experiments";
+
+export const Route = createFileRoute("/api/public/experiment/$id")({
+  server: {
+    handlers: {
+      GET: async ({ request, params }) => {
+        const experiment = SEED_EXPERIMENTS.find((e) => e.id === params.id);
+        if (!experiment) return new Response("Unknown experiment", { status: 404 });
+
+        const origin = new URL(request.url).origin;
+        const target = experiment.url.startsWith("http")
+          ? experiment.url
+          : `${origin}${experiment.url}`;
+
+        const upstream = await fetch(target);
+        if (!upstream.ok || !upstream.body) {
+          return new Response("Failed to load experiment bundle", { status: 502 });
+        }
+
+        // The CDN serves these bundles as downloadable attachments with a
+        // script-blocking CSP. Re-serve them as a normal, interactive HTML
+        // document so the dashboard runs inside the hub iframe.
+        const body = upstream.body;
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream<Uint8Array>({
+          async start(controller) {
+            // Palette first so the bundle paints in hub colors immediately,
+            // even before the (large) document finishes streaming.
+            controller.enqueue(encoder.encode(EXPERIMENT_PALETTE_CSS));
+            const reader = body.getReader();
+            for (;;) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              if (value) controller.enqueue(value);
+            }
+            controller.enqueue(encoder.encode(EXPERIMENT_ENHANCE_SCRIPT));
+            controller.enqueue(encoder.encode(EXPERIMENT_BRIDGE_SCRIPT));
+            controller.close();
+          },
+        });
+
+        return new Response(stream, {
+          status: 200,
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "cache-control": "public, max-age=3600",
+          },
+        });
+      },
+    },
+  },
+});
