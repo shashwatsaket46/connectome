@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
+import { ConnectomeBackground } from "@/components/ConnectomeBackground";
 import { useExperiments } from "@/lib/experiments";
 import { useSections } from "@/lib/sections";
 import { useTheme } from "@/lib/theme";
@@ -19,8 +20,9 @@ export function HubShell({ children }: { children: ReactNode }) {
   const sections = activeId === "umap-vs-confusion" ? detected : [];
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
+    <div className="flex min-h-screen text-foreground">
+      {!activeId && <ConnectomeBackground />}
+      <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-border bg-sidebar/85 backdrop-blur md:flex">
         <div className="border-b border-border px-5 py-5">
           <Link to="/" className="block">
             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-primary">
@@ -31,7 +33,8 @@ export function HubShell({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <SideLink to="/" label="Overview" active={pathname === "/"} />
+          <SideLink to="/" label="Start — Connectome map" active={pathname === "/"} />
+          <SideLink to="/registry" label="All experiments" active={pathname === "/registry"} />
 
           {categories.map((cat) => (
             <div key={cat} className="mt-5">

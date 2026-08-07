@@ -4,6 +4,9 @@ import confusionAsset from "@/assets/confusion-matrix-by-family.html.asset.json"
 import umapAsset from "@/assets/umap-vs-confusion.html.asset.json";
 import recoveryExplainerAsset from "@/assets/recovery-battery-explainer.html.asset.json";
 import solverAsset from "@/assets/solver-overview.html.asset.json";
+import familyBatteryAsset from "@/assets/family_battery_all_in_one.html.asset.json";
+import motorVisualAsset from "@/assets/motor_visual_linked_dashboard.html.asset.json";
+import cSplitHeatmapAsset from "@/assets/C_full_visual_split_heatmap.html.asset.json";
 
 export type Experiment = {
   id: string;
@@ -57,7 +60,35 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     enabled: true,
     builtBy: "scripts/build_experiment_solver_overview.py",
   },
+  {
+    id: "family-battery-all-in-one",
+    title: "Family Battery — All Complete-Picture Views",
+    description:
+      "Every family's full 5-condition recovery battery in one self-contained document: Lamina, Lawf, Lamina+Lawf, Dm, Mi, Tm, TmY, T4, T5, C, LC and LPLC. Each view carries its own condition switcher, so the page runs standalone with no dependency on the hub.",
+    url: familyBatteryAsset.url,
+    category: "Recovery Battery",
+    enabled: true,
+  },
+  {
+    id: "motor-visual-linked",
+    title: "Motor ↔ Visual — Linked Dashboard",
+    description:
+      "Cross-subsystem linked view tying motor-side types to visual-system types: selecting on one panel highlights the corresponding rows/columns on the other, so shared connectivity motifs between the two subsystems are directly comparable.",
+    url: motorVisualAsset.url,
+    category: "Full Solver Run",
+    enabled: true,
+  },
+  {
+    id: "c-full-visual-split-heatmap",
+    title: "C Matrix — Full vs. Visual Split Heatmap",
+    description:
+      "The complete connectivity matrix C rendered as a split heatmap: full network on one side, visual-system-only submatrix on the other, at matched color scaling so density differences between the whole brain and the visual subsystem are readable at a glance.",
+    url: cSplitHeatmapAsset.url,
+    category: "Matrices",
+    enabled: true,
+  },
 ];
+
 
 const STORAGE_KEY = "connectionminer.experiment-registry.v1";
 

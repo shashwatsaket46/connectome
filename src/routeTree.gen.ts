@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ManageRouteImport } from './routes/manage'
+import { Route as RegistryRouteImport } from './routes/registry'
 import { Route as ExperimentsIdRouteImport } from './routes/experiments.$id'
 import { Route as ApiPublicExperimentIdRouteImport } from './routes/api/public/experiment.$id'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const ManageRoute = ManageRouteImport.update({
   id: '/manage',
   path: '/manage',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegistryRoute = RegistryRouteImport.update({
+  id: '/registry',
+  path: '/registry',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExperimentsIdRoute = ExperimentsIdRouteImport.update({
@@ -38,12 +44,14 @@ const ApiPublicExperimentIdRoute = ApiPublicExperimentIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/manage': typeof ManageRoute
+  '/registry': typeof RegistryRoute
   '/experiments/$id': typeof ExperimentsIdRoute
   '/api/public/experiment/$id': typeof ApiPublicExperimentIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/manage': typeof ManageRoute
+  '/registry': typeof RegistryRoute
   '/experiments/$id': typeof ExperimentsIdRoute
   '/api/public/experiment/$id': typeof ApiPublicExperimentIdRoute
 }
@@ -51,18 +59,30 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/manage': typeof ManageRoute
+  '/registry': typeof RegistryRoute
   '/experiments/$id': typeof ExperimentsIdRoute
   '/api/public/experiment/$id': typeof ApiPublicExperimentIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/manage' | '/experiments/$id' | '/api/public/experiment/$id'
+  fullPaths:
+    | '/'
+    | '/manage'
+    | '/registry'
+    | '/experiments/$id'
+    | '/api/public/experiment/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/manage' | '/experiments/$id' | '/api/public/experiment/$id'
+  to:
+    | '/'
+    | '/manage'
+    | '/registry'
+    | '/experiments/$id'
+    | '/api/public/experiment/$id'
   id:
     | '__root__'
     | '/'
     | '/manage'
+    | '/registry'
     | '/experiments/$id'
     | '/api/public/experiment/$id'
   fileRoutesById: FileRoutesById
@@ -70,6 +90,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ManageRoute: typeof ManageRoute
+  RegistryRoute: typeof RegistryRoute
   ExperimentsIdRoute: typeof ExperimentsIdRoute
   ApiPublicExperimentIdRoute: typeof ApiPublicExperimentIdRoute
 }
@@ -88,6 +109,13 @@ declare module '@tanstack/react-router' {
       path: '/manage'
       fullPath: '/manage'
       preLoaderRoute: typeof ManageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/registry': {
+      id: '/registry'
+      path: '/registry'
+      fullPath: '/registry'
+      preLoaderRoute: typeof RegistryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/experiments/$id': {
@@ -110,19 +138,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ManageRoute: ManageRoute,
+  RegistryRoute: RegistryRoute,
   ExperimentsIdRoute: ExperimentsIdRoute,
   ApiPublicExperimentIdRoute: ApiPublicExperimentIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

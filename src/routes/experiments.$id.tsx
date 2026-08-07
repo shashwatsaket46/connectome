@@ -7,9 +7,8 @@ import { useExperiments } from "@/lib/experiments";
 import { setSections, useSections, type ExperimentSection } from "@/lib/sections";
 
 export const Route = createFileRoute("/experiments/$id")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    view: typeof search["view"] === "string" ? (search["view"] as string) : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { view?: string } =>
+    typeof search["view"] === "string" ? { view: search["view"] as string } : {},
   head: () => ({
     meta: [
       { title: "Experiment viewer — ConnectionMiner Experiment Hub" },
