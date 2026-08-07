@@ -47,8 +47,11 @@ export const Route = createFileRoute("/api/public/experiment/$id")({
         const encoder = new TextEncoder();
         const stream = new ReadableStream<Uint8Array>({
           async start(controller) {
-            // Palette first so the bundle paints in hub colors immediately,
+            // Doctype must be the very first thing on the wire, otherwise the
+            // browser falls back to quirks mode and the bundle's layout breaks.
+            // Palette next so the bundle paints in hub colors immediately,
             // even before the (large) document finishes streaming.
+            controller.enqueue(encoder.encode("<!doctype html>\n"));
             controller.enqueue(encoder.encode(EXPERIMENT_PALETTE_CSS));
             const reader = body.getReader();
             for (;;) {

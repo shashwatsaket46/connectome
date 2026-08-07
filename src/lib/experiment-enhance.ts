@@ -154,7 +154,54 @@ export const EXPERIMENT_ENHANCE_SCRIPT = `
 </style>
 <script>
 (function () {
+  // Emoji in the bundles' headings render as tofu/notdef boxes in most
+  // browsers here, so strip them from headings and nav-ish labels.
+  var EMOJI = /(?:[\\u2600-\\u27BF\\u2B00-\\u2BFF\\uFE0F\\u200D]|\\uD83C[\\uDC00-\\uDFFF]|\\uD83D[\\uDC00-\\uDFFF]|\\uD83E[\\uDD00-\\uDFFF])+/g;
+  function deEmoji() {
+    var sel = "h1, h2, h3, h4, .title, .subtitle, .lane-title, .node-title, .tab, button";
+    document.querySelectorAll(sel).forEach(function (el) {
+      var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+      var texts = [];
+      while (walker.nextNode()) texts.push(walker.currentNode);
+      texts.forEach(function (n) {
+        EMOJI.lastIndex = 0;
+        if (!EMOJI.test(n.nodeValue || "")) return;
+        EMOJI.lastIndex = 0;
+        n.nodeValue = (n.nodeValue || "").replace(EMOJI, "");
+      });
+      el.innerHTML = el.innerHTML;
+      Array.prototype.forEach.call(el.querySelectorAll("*"), function (c) {
+        if (!c.children.length && !(c.textContent || "").trim() && !c.querySelector("img,svg")) {
+          c.parentNode.removeChild(c);
+        }
+      });
+      if (el.firstChild && el.firstChild.nodeType === 3) {
+        el.firstChild.nodeValue = (el.firstChild.nodeValue || "").replace(/^[\\s\\u00a0]+/, "");
+      }
+      if (el.lastChild && el.lastChild.nodeType === 3) {
+        el.lastChild.nodeValue = (el.lastChild.nodeValue || "").replace(/[\\s\\u00a0]+$/, "");
+      }
+    });
+    EMOJI.lastIndex = 0;
+    if (EMOJI.test(document.title || "")) {
+      EMOJI.lastIndex = 0;
+      document.title = document.title.replace(EMOJI, "").trim();
+    }
+  }
+  deEmoji();
+  if (window.MutationObserver) {
+    var t;
+    new MutationObserver(function () {
+      clearTimeout(t);
+      t = setTimeout(deEmoji, 80);
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+})();
+</script>
+<script>
+(function () {
   if (!document.querySelector(".flow-grid")) return;
+
 
   var cards = function () {
     return Array.prototype.slice.call(document.querySelectorAll(".node-card"));

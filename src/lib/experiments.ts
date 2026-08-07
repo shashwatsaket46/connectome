@@ -22,7 +22,7 @@ export type Experiment = {
 export const SEED_EXPERIMENTS: Experiment[] = [
   {
     id: "confusion-matrix-by-family",
-    title: "🚀 Start Here — Interactive Pipeline Walkthrough",
+    title: "Start Here — Interactive Pipeline Walkthrough",
     description:
       "Open this one first. An interactive, click-through (or auto-play) flowchart of the entire ConnectionMiner pipeline — every input, every matrix it builds, what the solver does, every output. C, Ĉ, and β are live Plotly charts (hover any cell/dot for real type or gene names); every node explains what's on the x-axis, the y-axis, and what the pattern is actually telling you.",
     url: confusionAsset.url,
@@ -42,7 +42,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
   },
   {
     id: "recovery-battery-explainer",
-    title: "🔬 Recovery Battery — How It Works",
+    title: "Recovery Battery — How It Works",
     description:
       "The flowchart for the *other* experiment in this hub — not the regular solver run, but the hide-30%-and-recover stress test. Walks through the 70/30 split, the two solver passes (connectivity-only vs. NC-gated expression), the shuffle-null scoring, and the YES/no/ANTI verdict — with real numbers (e.g. TmY: 10.7% → 94.6% recovery) at every step.",
     url: recoveryExplainerAsset.url,
