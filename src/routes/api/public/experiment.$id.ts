@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { EXPERIMENT_BRIDGE_SCRIPT } from "@/lib/experiment-bridge";
 import { EXPERIMENT_ENHANCE_SCRIPT, EXPERIMENT_PALETTE_CSS } from "@/lib/experiment-enhance";
+import { EXPERIMENT_INPUTS_SCRIPT } from "@/lib/experiment-inputs";
 import { SEED_EXPERIMENTS } from "@/lib/experiments";
 
 export const Route = createFileRoute("/api/public/experiment/$id")({
@@ -60,6 +61,7 @@ export const Route = createFileRoute("/api/public/experiment/$id")({
               if (value) controller.enqueue(value);
             }
             controller.enqueue(encoder.encode(EXPERIMENT_ENHANCE_SCRIPT));
+            controller.enqueue(encoder.encode(EXPERIMENT_INPUTS_SCRIPT));
             controller.enqueue(encoder.encode(EXPERIMENT_BRIDGE_SCRIPT));
             controller.close();
           },

@@ -160,6 +160,10 @@ export const EXPERIMENT_ENHANCE_SCRIPT = `
   function deEmoji() {
     var sel = "h1, h2, h3, h4, .title, .subtitle, .lane-title, .node-title, .tab, button";
     document.querySelectorAll(sel).forEach(function (el) {
+      EMOJI.lastIndex = 0;
+      // Touch nothing unless this element actually contains an emoji —
+      // otherwise every pass mutates the DOM and re-triggers observers.
+      if (!EMOJI.test(el.textContent || "")) return;
       var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
       var texts = [];
       while (walker.nextNode()) texts.push(walker.currentNode);
@@ -169,7 +173,6 @@ export const EXPERIMENT_ENHANCE_SCRIPT = `
         EMOJI.lastIndex = 0;
         n.nodeValue = (n.nodeValue || "").replace(EMOJI, "");
       });
-      el.innerHTML = el.innerHTML;
       Array.prototype.forEach.call(el.querySelectorAll("*"), function (c) {
         if (!c.children.length && !(c.textContent || "").trim() && !c.querySelector("img,svg")) {
           c.parentNode.removeChild(c);
@@ -225,7 +228,7 @@ export const EXPERIMENT_ENHANCE_SCRIPT = `
       void panel.offsetWidth;
       panel.classList.add("hub-swap");
       setTimeout(function () { swapping = false; }, 60);
-    }).observe(panel, { childList: true, subtree: true });
+    }).observe(panel, { childList: true });
   }
 
   function step(delta) {
