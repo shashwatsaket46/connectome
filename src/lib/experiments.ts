@@ -7,6 +7,7 @@ import solverAsset from "@/assets/solver-overview.html.asset.json";
 import familyBatteryAsset from "@/assets/family_battery_all_in_one.html.asset.json";
 import motorVisualAsset from "@/assets/motor_visual_linked_dashboard.html.asset.json";
 import cSplitHeatmapAsset from "@/assets/C_full_visual_split_heatmap.html.asset.json";
+import ablationAsset from "@/assets/ablation_explorer.html.asset.json";
 
 export type Experiment = {
   id: string;
@@ -85,6 +86,15 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "The complete connectivity matrix C rendered as a split heatmap: full network on one side, visual-system-only submatrix on the other, at matched color scaling so density differences between the whole brain and the visual subsystem are readable at a glance.",
     url: cSplitHeatmapAsset.url,
     category: "Matrices",
+    enabled: true,
+  },
+  {
+    id: "ablation-explorer",
+    title: "Ablation Explorer — Gene-Set Ablations",
+    description:
+      "All 10 gene-set ablations of the solver in one explorer: hvg_3000, hvg_5000, tfs_only, adhesion_only, interactome_only, tfs_adhesion, tfs_interactome, adhesion_interactome, all_three_union and all_three_hvg3000. Each run shows its gene count, matched cells, recovery r and final loss, with a three-panel linked view — hover any cell for its full record.",
+    url: ablationAsset.url,
+    category: "Ablations",
     enabled: true,
   },
 ];

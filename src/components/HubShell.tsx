@@ -16,8 +16,9 @@ export function HubShell({ children }: { children: ReactNode }) {
     ? decodeURIComponent(pathname.slice("/experiments/".length))
     : undefined;
   const detected = useSections(activeId);
-  // Only the UMAP experiment exposes per-family sub-views in the menu.
-  const sections = activeId === "umap-vs-confusion" ? detected : [];
+  // These experiments expose their internal views as sidebar sub-items.
+  const SUBMENU_EXPERIMENTS = ["umap-vs-confusion", "ablation-explorer"];
+  const sections = activeId && SUBMENU_EXPERIMENTS.includes(activeId) ? detected : [];
 
   return (
     <div className="flex min-h-screen text-foreground">

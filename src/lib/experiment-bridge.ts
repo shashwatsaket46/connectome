@@ -24,6 +24,17 @@ export const EXPERIMENT_BRIDGE_SCRIPT = `
         });
       });
     });
+    // Bundles that drive their views from a plain <select> (e.g. the ablation
+    // explorer) expose each option as a hub section too.
+    Array.prototype.slice.call(document.querySelectorAll("select")).forEach(function (sel, si) {
+      Array.prototype.slice.call(sel.options || []).forEach(function (opt, oi) {
+        sections.push({
+          key: "sel:" + si + ":" + oi,
+          label: String(opt.textContent || opt.value || "Option " + (oi + 1)).replace(/\\s+/g, " ").trim(),
+          group: "",
+        });
+      });
+    });
     return sections;
   }
 
@@ -32,7 +43,7 @@ export const EXPERIMENT_BRIDGE_SCRIPT = `
     if (!document.getElementById("hub-hide-updatemenus")) {
       var style = document.createElement("style");
       style.id = "hub-hide-updatemenus";
-      style.textContent = ".updatemenu-container { display: none !important; }";
+      style.textContent = ".updatemenu-container { display: none !important; } label:has(#exp-select) { display: none !important; }";
       document.head.appendChild(style);
     }
   }
@@ -49,6 +60,17 @@ export const EXPERIMENT_BRIDGE_SCRIPT = `
   function select(key) {
     if (!key || applied === key) return;
     var parts = String(key).split(":");
+    if (parts[0] === "sel") {
+      var sel = document.querySelectorAll("select")[Number(parts[1])];
+      if (!sel) return;
+      applied = key;
+      sel.selectedIndex = Number(parts[2]);
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+      parent.postMessage({ type: "hub:selected", key: key }, "*");
+      setTimeout(paint, 300);
+      setTimeout(paint, 1200);
+      return;
+    }
     var gd = graphs()[Number(parts[0])];
     if (!gd || !window.Plotly) return;
     var menu = ((gd.layout && gd.layout.updatemenus) || [])[Number(parts[1])];
@@ -139,7 +161,7 @@ export const EXPERIMENT_BRIDGE_SCRIPT = `
   var tries = 0;
   var timer = setInterval(function () {
     tries += 1;
-    if (report() || tries > 40) clearInterval(timer);
+    if (report() || tries > 240) clearInterval(timer);
   }, 250);
 })();
 </script>
