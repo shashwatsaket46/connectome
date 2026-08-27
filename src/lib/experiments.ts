@@ -8,6 +8,11 @@ import familyBatteryAsset from "@/assets/family_battery_all_in_one.html.asset.js
 import motorVisualAsset from "@/assets/motor_visual_linked_dashboard.html.asset.json";
 import cSplitHeatmapAsset from "@/assets/C_full_visual_split_heatmap.html.asset.json";
 import ablationAsset from "@/assets/ablation_explorer.html.asset.json";
+import threePanelAsset from "@/assets/viz_combined_three_panel.html.asset.json";
+import rawClustersAsset from "@/assets/viz_01_raw_clusters.html.asset.json";
+import cellConstraintsAsset from "@/assets/viz_02_cell_constraints.html.asset.json";
+import mixExperimentsAsset from "@/assets/mix_experiments_umap_viewer.html.asset.json";
+import metacellSelectorAsset from "@/assets/metacell_selector_viewer.html.asset.json";
 
 export type Experiment = {
   id: string;
@@ -95,6 +100,51 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "All 10 gene-set ablations of the solver in one explorer: hvg_3000, hvg_5000, tfs_only, adhesion_only, interactome_only, tfs_adhesion, tfs_interactome, adhesion_interactome, all_three_union and all_three_hvg3000. Each run shows its gene count, matched cells, recovery r and final loss, with a three-panel linked view — hover any cell for its full record.",
     url: ablationAsset.url,
     category: "Ablations",
+    enabled: true,
+  },
+  {
+    id: "three-panel-pipeline-overview",
+    title: "3-Stage Pipeline Overview — Linked UMAP Panels",
+    description:
+      "FlyWire visual system × ConnectionMiner in one linked three-panel UMAP view. Pan or zoom any panel and the other two follow on matched axes, so the same cells can be compared across all three pipeline stages side by side. Hover any point for its type.",
+    url: threePanelAsset.url,
+    category: "Full Solver Run",
+    enabled: true,
+  },
+  {
+    id: "raw-multiome-clusters",
+    title: "Raw MultiomeNN Clusters on UMAP",
+    description:
+      "Stage 1 of the pipeline on its own: every cell placed on the UMAP and colored by its raw MultiomeNN cluster, before any connectome constraint is applied. This is the starting point the solver has to work from — hover any point for its cluster.",
+    url: rawClustersAsset.url,
+    category: "UMAP Views",
+    enabled: true,
+  },
+  {
+    id: "cell-type-constraints",
+    title: "Cell Type Constraints (P support) on UMAP",
+    description:
+      "Stage 2: the same UMAP colored by the cell-type constraints the solver's P matrix supports — which connectome types each cell is still allowed to be after the constraint pass. Compare against the raw clusters view to see what the constraints buy you.",
+    url: cellConstraintsAsset.url,
+    category: "UMAP Views",
+    enabled: true,
+  },
+  {
+    id: "mix-experiments-umap",
+    title: "Mix Experiments — Actual vs. Predicted UMAP",
+    description:
+      "Dropdown-driven viewer over the mix experiments: for each run, the UMAP shows actual versus predicted assignment side by side with per-run stats, so agreement and failure regions are readable directly on the embedding.",
+    url: mixExperimentsAsset.url,
+    category: "UMAP Views",
+    enabled: true,
+  },
+  {
+    id: "metacell-selector",
+    title: "Metacell Selector",
+    description:
+      "Pick a metacell from the dropdown and every cell it denotes keeps its true color with a gold ring on top across all three panels at once, while everything else greys out. Split out from the three-panel tool so each does one thing.",
+    url: metacellSelectorAsset.url,
+    category: "UMAP Views",
     enabled: true,
   },
 ];
