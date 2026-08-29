@@ -42,7 +42,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "Same 4 recovery-battery conditions as the confusion-matrix experiment, but each confusion matrix is paired with a t-SNE/UMAP scatter of the underlying cells (green = predicted matches true type, red = mismatch). Hover any point for its predicted vs. true type.",
     url: umapAsset.url,
     category: "Recovery Battery",
-    enabled: true,
+    enabled: false,
     builtBy: "scripts/build_umap_confusion_dashboard.py",
   },
   {
