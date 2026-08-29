@@ -165,6 +165,15 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     category: "Matrices",
     enabled: true,
   },
+  {
+    id: "linked-connectome-explorer",
+    title: "Linked Connectome Explorer — UMAP ↔ C ↔ Ĉ ↔ P ↔ G",
+    description:
+      "One shared selection across every matrix the solver touches: click a cell in any panel and its type lights up everywhere else — row/column in C and Ĉ (true vs. reconstructed connectome), the row in G (per-type gene detection), and the row in P (soft per-metacell type assignment). Click a P column, a UMAP point, or pick a metacell from the dropdown, and its exact cells spotlight on the UMAP.",
+    url: "/expt-add/linked_connectome_explorer.html",
+    category: "Full Solver Run",
+    enabled: true,
+  },
 ];
 
 
