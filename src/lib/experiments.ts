@@ -126,7 +126,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "Stage 2: the same UMAP colored by the cell-type constraints the solver's P matrix supports — which connectome types each cell is still allowed to be after the constraint pass. Compare against the raw clusters view to see what the constraints buy you.",
     url: cellConstraintsAsset.url,
     category: "UMAP Views",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "mix-experiments-umap",
