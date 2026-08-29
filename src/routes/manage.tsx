@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { SEED_EXPERIMENTS, slugify, useExperiments, type Experiment } from "@/lib/experiments";
 
 export const Route = createFileRoute("/manage")({
@@ -111,20 +113,17 @@ function ManagePage() {
         {adminAuthed === false && (
           <>
             <span className="text-muted-foreground">Not logged in as admin.</span>
-            <Link to="/login" className="ml-auto font-semibold text-primary hover:underline">
-              Log in
-            </Link>
+            <Button asChild size="sm" variant="outline" className="ml-auto">
+              <Link to="/login">Log in</Link>
+            </Button>
           </>
         )}
         {adminAuthed === true && (
           <>
             <span className="font-medium text-foreground">Logged in as admin.</span>
-            <button
-              onClick={logout}
-              className="ml-auto rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:border-primary hover:text-foreground"
-            >
+            <Button size="sm" variant="outline" className="ml-auto" onClick={logout}>
               Log out
-            </button>
+            </Button>
           </>
         )}
       </div>
@@ -221,13 +220,11 @@ function ManagePage() {
               </p>
               {!e.custom && e.id in globalEnabled && (
                 <div className="mt-2 flex items-center gap-2">
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={globalEnabled[e.id]}
-                    aria-label={`${e.title} visible for everyone`}
+                  <Switch
+                    checked={globalEnabled[e.id]}
+                    onCheckedChange={(checked) => toggleGlobal(e.id, checked)}
                     disabled={!adminAuthed || globalBusy[e.id]}
-                    onClick={() => toggleGlobal(e.id, !globalEnabled[e.id])}
+                    aria-label={`${e.title} visible for everyone`}
                     title={
                       adminAuthed
                         ? globalEnabled[e.id]
@@ -235,16 +232,7 @@ function ManagePage() {
                           : "Hidden for everyone — click to show"
                         : "Log in as admin to change this for everyone"
                     }
-                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                      globalEnabled[e.id] ? "bg-primary" : "bg-border"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                        globalEnabled[e.id] ? "translate-x-[18px]" : "translate-x-0.5"
-                      }`}
-                    />
-                  </button>
+                  />
                   <span className="text-xs text-muted-foreground">
                     {globalBusy[e.id] ? "Saving…" : "Everyone"}
                   </span>
