@@ -144,7 +144,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "Pick a metacell from the dropdown and every cell it denotes keeps its true color with a gold ring on top across all three panels at once, while everything else greys out. Split out from the three-panel tool so each does one thing.",
     url: metacellSelectorAsset.url,
     category: "UMAP Views",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "metacell-cluster-umap",
