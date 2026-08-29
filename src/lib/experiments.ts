@@ -90,7 +90,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "The complete connectivity matrix C rendered as a split heatmap: full network on one side, visual-system-only submatrix on the other, at matched color scaling so density differences between the whole brain and the visual subsystem are readable at a glance.",
     url: cSplitHeatmapAsset.url,
     category: "Matrices",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "ablation-explorer",
