@@ -52,7 +52,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "The flowchart for the *other* experiment in this hub — not the regular solver run, but the hide-30%-and-recover stress test. Walks through the 70/30 split, the two solver passes (connectivity-only vs. NC-gated expression), the shuffle-null scoring, and the YES/no/ANTI verdict — with real numbers (e.g. TmY: 10.7% → 94.6% recovery) at every step.",
     url: recoveryExplainerAsset.url,
     category: "Recovery Battery",
-    enabled: true,
+    enabled: false,
     builtBy: "scripts/build_experiment_recovery_battery_explainer.py",
   },
   {
