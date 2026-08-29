@@ -108,7 +108,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "FlyWire visual system × ConnectionMiner in one linked three-panel UMAP view. Pan or zoom any panel and the other two follow on matched axes, so the same cells can be compared across all three pipeline stages side by side. Hover any point for its type.",
     url: threePanelAsset.url,
     category: "Full Solver Run",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "raw-multiome-clusters",
