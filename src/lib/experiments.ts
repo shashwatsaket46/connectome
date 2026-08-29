@@ -81,7 +81,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "Cross-subsystem linked view tying motor-side types to visual-system types: selecting on one panel highlights the corresponding rows/columns on the other, so shared connectivity motifs between the two subsystems are directly comparable.",
     url: motorVisualAsset.url,
     category: "Full Solver Run",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "c-full-visual-split-heatmap",
