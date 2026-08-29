@@ -99,7 +99,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "All 10 gene-set ablations of the solver in one explorer: hvg_3000, hvg_5000, tfs_only, adhesion_only, interactome_only, tfs_adhesion, tfs_interactome, adhesion_interactome, all_three_union and all_three_hvg3000. Each run shows its gene count, matched cells, recovery r and final loss, with a three-panel linked view — hover any cell for its full record.",
     url: ablationAsset.url,
     category: "Ablations",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "three-panel-pipeline-overview",
