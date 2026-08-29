@@ -68,10 +68,7 @@ function ManagePage() {
         return;
       }
       setGlobalEnabled((g) => ({ ...g, [id]: nextEnabled }));
-      setGlobalMsg((m) => ({
-        ...m,
-        [id]: nextEnabled ? "Visible for everyone — redeploying…" : "Hidden for everyone — redeploying…",
-      }));
+      setGlobalMsg((m) => ({ ...m, [id]: "" }));
     } catch {
       setGlobalMsg((m) => ({ ...m, [id]: "Network error." }));
     } finally {
@@ -225,23 +222,34 @@ function ManagePage() {
               {!e.custom && e.id in globalEnabled && (
                 <div className="mt-2 flex items-center gap-2">
                   <button
+                    type="button"
+                    role="switch"
+                    aria-checked={globalEnabled[e.id]}
+                    aria-label={`${e.title} visible for everyone`}
                     disabled={!adminAuthed || globalBusy[e.id]}
                     onClick={() => toggleGlobal(e.id, !globalEnabled[e.id])}
-                    title={adminAuthed ? undefined : "Log in as admin to change this for everyone"}
-                    className={`rounded-md border px-2.5 py-1 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50 ${
-                      globalEnabled[e.id]
-                        ? "border-border text-muted-foreground hover:border-primary hover:text-foreground"
-                        : "border-destructive/40 text-destructive hover:border-destructive"
+                    title={
+                      adminAuthed
+                        ? globalEnabled[e.id]
+                          ? "Visible for everyone — click to hide"
+                          : "Hidden for everyone — click to show"
+                        : "Log in as admin to change this for everyone"
+                    }
+                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                      globalEnabled[e.id] ? "bg-primary" : "bg-border"
                     }`}
                   >
-                    {globalBusy[e.id]
-                      ? "Committing…"
-                      : globalEnabled[e.id]
-                        ? "Visible for everyone"
-                        : "Hidden for everyone"}
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                        globalEnabled[e.id] ? "translate-x-[18px]" : "translate-x-0.5"
+                      }`}
+                    />
                   </button>
+                  <span className="text-xs text-muted-foreground">
+                    {globalBusy[e.id] ? "Saving…" : "Everyone"}
+                  </span>
                   {globalMsg[e.id] && (
-                    <span className="text-xs text-muted-foreground">{globalMsg[e.id]}</span>
+                    <span className="text-xs text-destructive">{globalMsg[e.id]}</span>
                   )}
                 </div>
               )}
