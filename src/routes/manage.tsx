@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { SEED_EXPERIMENTS, slugify, useExperiments, type Experiment } from "@/lib/experiments";
 
@@ -113,9 +113,9 @@ function ManagePage() {
         {adminAuthed === false && (
           <>
             <span className="text-muted-foreground">Not logged in as admin.</span>
-            <Button asChild size="sm" variant="outline" className="ml-auto">
-              <Link to="/login">Log in</Link>
-            </Button>
+            <Link to="/login" className={buttonVariants({ size: "sm", variant: "outline" }) + " ml-auto"}>
+              Log in
+            </Link>
           </>
         )}
         {adminAuthed === true && (
