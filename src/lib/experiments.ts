@@ -147,6 +147,24 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     category: "UMAP Views",
     enabled: true,
   },
+  {
+    id: "metacell-cluster-umap",
+    title: "Metacell → Cluster Map",
+    description:
+      "Every dot is a metacell, positioned at the UMAP centroid of its member cells and colored by its dominant subtype. Hover any metacell to see its raw cluster; pick a raw cluster to spotlight its individual cells alongside the metacells they collapsed into.",
+    url: "/expt-add/metacell_cluster_umap.html",
+    category: "UMAP Views",
+    enabled: true,
+  },
+  {
+    id: "cluster-metacell-matrix",
+    title: "Cluster → Metacell Count Matrix",
+    description:
+      "241 raw clusters × 5,310 metacells, block-diagonal by construction — confirms zero metacells span more than one cluster. Two representative columns per cluster shown, with cell counts labeled.",
+    url: "/expt-add/cluster_metacell_matrix.png",
+    category: "Matrices",
+    enabled: true,
+  },
 ];
 
 
