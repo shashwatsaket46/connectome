@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from "react";
 import confusionAsset from "@/assets/confusion-matrix-by-family.html.asset.json";
 import umapAsset from "@/assets/umap-vs-confusion.html.asset.json";
 import recoveryExplainerAsset from "@/assets/recovery-battery-explainer.html.asset.json";
-import solverAsset from "@/assets/solver-overview.html.asset.json";
 import familyBatteryAsset from "@/assets/family_battery_all_in_one.html.asset.json";
 import motorVisualAsset from "@/assets/motor_visual_linked_dashboard.html.asset.json";
 import cSplitHeatmapAsset from "@/assets/C_full_visual_split_heatmap.html.asset.json";
@@ -60,8 +59,8 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     id: "solver-overview",
     title: "UMAP + Matrix Heatmaps — Full Solver Run",
     description:
-      "The regular (non-recovery-battery) end-to-end solver run: a UMAP/t-SNE of all 109,743 cells colored by inferred functional subsystem, paired with a tab-switcher for every matrix the solver produces or consumes — C, Ĉ, P (solved), P Constraints, β, G, Gene Correlation (ref), and the loss trajectory — all live, hoverable Plotly charts, each with an axis + interpretation readout. Hovering a UMAP point cross-highlights its type's row/column live on the C and Ĉ tabs.",
-    url: solverAsset.url,
+      "The regular (non-recovery-battery) end-to-end solver run, at full resolution — P and P Constraints across all 5,333 metacells, G across all 3000 genes, no subsampling. A UMAP paired with a tab-switcher for every matrix the solver produces or consumes; hover a UMAP point to highlight its type's row on the active tab, or hover a matrix cell to spotlight that type's cells on the UMAP.",
+    url: "/expt-add/solver_run_dashboard.html",
     category: "Full Solver Run",
     enabled: true,
     builtBy: "scripts/build_experiment_solver_overview.py",
