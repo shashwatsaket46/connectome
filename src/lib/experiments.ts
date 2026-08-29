@@ -117,7 +117,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "Stage 1 of the pipeline on its own: every cell placed on the UMAP and colored by its raw MultiomeNN cluster, before any connectome constraint is applied. This is the starting point the solver has to work from — hover any point for its cluster.",
     url: rawClustersAsset.url,
     category: "UMAP Views",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "cell-type-constraints",
