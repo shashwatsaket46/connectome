@@ -370,6 +370,15 @@ window.addEventListener('mouseup', (e) => {
     statusBar.innerHTML +=
       ' <button id="zoomOutBtn" style="font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-secondary);cursor:pointer;margin-left:6px">Reset zoom</button>';
     document.getElementById('zoomOutBtn').addEventListener('click', () => { resetZoom(); draw(); selectCluster(selectEl.value || ''); });
+  } else {
+    // Plain click (no drag): select whichever metacell is under the
+    // pointer, same hit-test as hover, and drive it through the same
+    // selectCluster() path the dropdown uses -- keeps both controls in sync.
+    const m = metacellAt(endPx[0], endPx[1]);
+    if (m) {
+      selectEl.value = String(m.raw_cluster);
+      selectCluster(m.raw_cluster);
+    }
   }
   dragStart = null; dragCurrent = null;
   draw();
