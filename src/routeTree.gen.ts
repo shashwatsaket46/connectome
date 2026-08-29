@@ -10,14 +10,24 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ManageRouteImport } from './routes/manage'
 import { Route as RegistryRouteImport } from './routes/registry'
 import { Route as ExperimentsIdRouteImport } from './routes/experiments.$id'
 import { Route as ApiPublicExperimentIdRouteImport } from './routes/api/public/experiment.$id'
+import { Route as ApiAdminLoginRouteImport } from './routes/api/admin/login'
+import { Route as ApiAdminLogoutRouteImport } from './routes/api/admin/logout'
+import { Route as ApiAdminSessionRouteImport } from './routes/api/admin/session'
+import { Route as ApiAdminToggleRouteImport } from './routes/api/admin/toggle'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManageRoute = ManageRouteImport.update({
@@ -40,59 +50,114 @@ const ApiPublicExperimentIdRoute = ApiPublicExperimentIdRouteImport.update({
   path: '/api/public/experiment/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminLoginRoute = ApiAdminLoginRouteImport.update({
+  id: '/api/admin/login',
+  path: '/api/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminLogoutRoute = ApiAdminLogoutRouteImport.update({
+  id: '/api/admin/logout',
+  path: '/api/admin/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminSessionRoute = ApiAdminSessionRouteImport.update({
+  id: '/api/admin/session',
+  path: '/api/admin/session',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminToggleRoute = ApiAdminToggleRouteImport.update({
+  id: '/api/admin/toggle',
+  path: '/api/admin/toggle',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/manage': typeof ManageRoute
   '/registry': typeof RegistryRoute
   '/experiments/$id': typeof ExperimentsIdRoute
   '/api/public/experiment/$id': typeof ApiPublicExperimentIdRoute
+  '/api/admin/login': typeof ApiAdminLoginRoute
+  '/api/admin/logout': typeof ApiAdminLogoutRoute
+  '/api/admin/session': typeof ApiAdminSessionRoute
+  '/api/admin/toggle': typeof ApiAdminToggleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/manage': typeof ManageRoute
   '/registry': typeof RegistryRoute
   '/experiments/$id': typeof ExperimentsIdRoute
   '/api/public/experiment/$id': typeof ApiPublicExperimentIdRoute
+  '/api/admin/login': typeof ApiAdminLoginRoute
+  '/api/admin/logout': typeof ApiAdminLogoutRoute
+  '/api/admin/session': typeof ApiAdminSessionRoute
+  '/api/admin/toggle': typeof ApiAdminToggleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/manage': typeof ManageRoute
   '/registry': typeof RegistryRoute
   '/experiments/$id': typeof ExperimentsIdRoute
   '/api/public/experiment/$id': typeof ApiPublicExperimentIdRoute
+  '/api/admin/login': typeof ApiAdminLoginRoute
+  '/api/admin/logout': typeof ApiAdminLogoutRoute
+  '/api/admin/session': typeof ApiAdminSessionRoute
+  '/api/admin/toggle': typeof ApiAdminToggleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login'
     | '/manage'
     | '/registry'
     | '/experiments/$id'
     | '/api/public/experiment/$id'
+    | '/api/admin/login'
+    | '/api/admin/logout'
+    | '/api/admin/session'
+    | '/api/admin/toggle'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
     | '/manage'
     | '/registry'
     | '/experiments/$id'
     | '/api/public/experiment/$id'
+    | '/api/admin/login'
+    | '/api/admin/logout'
+    | '/api/admin/session'
+    | '/api/admin/toggle'
   id:
     | '__root__'
     | '/'
+    | '/login'
     | '/manage'
     | '/registry'
     | '/experiments/$id'
     | '/api/public/experiment/$id'
+    | '/api/admin/login'
+    | '/api/admin/logout'
+    | '/api/admin/session'
+    | '/api/admin/toggle'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
   ManageRoute: typeof ManageRoute
   RegistryRoute: typeof RegistryRoute
   ExperimentsIdRoute: typeof ExperimentsIdRoute
   ApiPublicExperimentIdRoute: typeof ApiPublicExperimentIdRoute
+  ApiAdminLoginRoute: typeof ApiAdminLoginRoute
+  ApiAdminLogoutRoute: typeof ApiAdminLogoutRoute
+  ApiAdminSessionRoute: typeof ApiAdminSessionRoute
+  ApiAdminToggleRoute: typeof ApiAdminToggleRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -102,6 +167,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/manage': {
@@ -132,15 +204,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicExperimentIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/login': {
+      id: '/api/admin/login'
+      path: '/api/admin/login'
+      fullPath: '/api/admin/login'
+      preLoaderRoute: typeof ApiAdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/logout': {
+      id: '/api/admin/logout'
+      path: '/api/admin/logout'
+      fullPath: '/api/admin/logout'
+      preLoaderRoute: typeof ApiAdminLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/session': {
+      id: '/api/admin/session'
+      path: '/api/admin/session'
+      fullPath: '/api/admin/session'
+      preLoaderRoute: typeof ApiAdminSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/toggle': {
+      id: '/api/admin/toggle'
+      path: '/api/admin/toggle'
+      fullPath: '/api/admin/toggle'
+      preLoaderRoute: typeof ApiAdminToggleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
   ManageRoute: ManageRoute,
   RegistryRoute: RegistryRoute,
   ExperimentsIdRoute: ExperimentsIdRoute,
   ApiPublicExperimentIdRoute: ApiPublicExperimentIdRoute,
+  ApiAdminLoginRoute: ApiAdminLoginRoute,
+  ApiAdminLogoutRoute: ApiAdminLogoutRoute,
+  ApiAdminSessionRoute: ApiAdminSessionRoute,
+  ApiAdminToggleRoute: ApiAdminToggleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
