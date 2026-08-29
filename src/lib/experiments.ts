@@ -153,7 +153,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "Every dot is a metacell, positioned at the UMAP centroid of its member cells and colored by its dominant subtype. Hover any metacell to see its raw cluster; pick a raw cluster to spotlight its individual cells alongside the metacells they collapsed into.",
     url: "/expt-add/metacell_cluster_umap.html",
     category: "UMAP Views",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "cluster-metacell-matrix",
