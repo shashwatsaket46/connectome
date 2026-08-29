@@ -1,9 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
@@ -55,17 +52,22 @@ function LoginPage() {
         Logging in lets you hide or show an experiment for every visitor, not just this browser.
       </p>
       <form onSubmit={submit} className="mt-6 grid gap-3">
-        <Input
+        <input
           type="password"
           autoFocus
           value={password}
           onChange={(ev) => setPassword(ev.target.value)}
           placeholder="Password"
+          className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
         />
         {error && <p className="text-xs text-destructive">{error}</p>}
-        <Button type="submit" disabled={busy || !password}>
+        <button
+          type="submit"
+          disabled={busy || !password}
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+        >
           {busy ? "Checking…" : "Log in"}
-        </Button>
+        </button>
       </form>
       <Link to="/manage" className="mt-4 text-xs text-muted-foreground hover:text-foreground">
         ← Back to manage
