@@ -135,7 +135,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "Dropdown-driven viewer over the mix experiments: for each run, the UMAP shows actual versus predicted assignment side by side with per-run stats, so agreement and failure regions are readable directly on the embedding.",
     url: mixExperimentsAsset.url,
     category: "UMAP Views",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "metacell-selector",
