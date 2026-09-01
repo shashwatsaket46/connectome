@@ -173,6 +173,53 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     category: "Full Solver Run",
     enabled: true,
   },
+  {
+    id: "type-gene-expression-postsolve",
+    title: "P × G — Type-Level Gene Expression (Post-Solve)",
+    description:
+      "For each of the 741 known cell types, its gene expression profile after the solve: P_refined @ G_metacell_p (741 types × 3,000 genes), types sorted alphabetically, genes sorted by descending variance. Drag to box-zoom into any region, double-click to reset, hover any cell for the exact type/gene/probability.",
+    url: "/expt-add/type_gene_expression_heatmap.html",
+    category: "Matrices",
+    enabled: true,
+    builtBy: "scripts/build_type_gene_expression_html.py",
+  },
+  {
+    id: "type-gene-expression-static5310",
+    title: "P × G — Type-Level Gene Expression (Static 5,310-Metacell Build)",
+    description:
+      "Same 741 types × 3,000 genes matrix, but built from the static, un-optimized P_meta prior (row-stochastic per metacell, not solver-refined) instead of P_refined — the 667 orphan-pool types collapse into near-identical rows here since nothing disambiguates them pre-solve. Useful as a baseline comparison against the post-solve version.",
+    url: "/expt-add/type_gene_expression_heatmap_static5310.html",
+    category: "Matrices",
+    enabled: true,
+    builtBy: "scripts/build_type_gene_expression_matrix_static5310.py",
+  },
+  {
+    id: "p-x-cluster-matrix",
+    title: "P × Mᵀ — Inferred Type Mass on Raw Clusters",
+    description:
+      "P_refined mapped onto the 241 raw MultiomeNN clusters via the cluster→metacell matrix: for each type, how much of its inferred mass lands in each raw cluster (741 types × 241 clusters). Hover any cell for the type, raw cluster, ground-truth label, and weighted mass.",
+    url: "/expt-add/p_x_cluster_matrix_heatmap.html",
+    category: "Matrices",
+    enabled: true,
+  },
+  {
+    id: "p-x-m-prime",
+    title: "P × M′ — Type Mass per Cell",
+    description:
+      "P_refined expanded down to individual cells rather than metacells (741 types × 99,656 cells) — each cell inherits its metacell's soft type distribution.",
+    url: "/expt-add/p_x_m_prime_heatmap.html",
+    category: "Matrices",
+    enabled: true,
+  },
+  {
+    id: "p-x-m-prime-proportional",
+    title: "P × M′ — Proportional-Width Cell View",
+    description:
+      "Same per-cell P × M′ matrix, column-normalized and drawn with cell columns width-proportional to their metacell (55,749 cells in named metacells | 43,907 non-named), so metacell size is visible directly in the layout.",
+    url: "/expt-add/p_x_m_prime_heatmap_proportional.html",
+    category: "Matrices",
+    enabled: true,
+  },
 ];
 
 
