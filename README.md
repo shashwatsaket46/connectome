@@ -317,9 +317,6 @@ Individual cells
 ```
 This provides a computationally manageable representation while preserving
 the biological structure needed for inference.
-<p align="center">
-  <img src="public/readme/diagram-metacells.png" alt="How metacells are built from the constraint matrix" width="700">
-</p>
 ---
 The Full Pipeline
 ```text
