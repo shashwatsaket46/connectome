@@ -159,8 +159,8 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     id: "cluster-metacell-matrix",
     title: "Cluster → Metacell Count Matrix",
     description:
-      "241 raw clusters × 5,310 metacells, block-diagonal by construction — confirms zero metacells span more than one cluster. Every one of the 5,310 metacells gets its own real column (no representative sampling), labeled m1..m5310, with cell counts labeled inside each block.",
-    url: "/expt-add/cluster_metacell_matrix_full.png",
+      "241 raw clusters × 5,310 metacells, block-diagonal by construction — confirms zero metacells span more than one cluster. Every one of the 5,310 metacells gets its own real column (no representative sampling), labeled m1..m5310, with cell counts labeled inside each block. Scroll to zoom, drag to pan, double-click to reset.",
+    url: "/expt-add/cluster_metacell_matrix_full_viewer.html",
     category: "Matrices",
     enabled: true,
   },

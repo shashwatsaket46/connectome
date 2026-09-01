@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cluster to Metacell Matrix (full resolution)</title>
+<style>
+  :root { color-scheme: light dark; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #f2f2f2; overflow: hidden;
+  }
+  #stage {
+    position: fixed; inset: 0; overflow: hidden; cursor: grab;
+    touch-action: none;
+  }
+  #stage.grabbing { cursor: grabbing; }
+  #canvas {
+    position: absolute; top: 0; left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+    user-select: none; -webkit-user-drag: none;
+  }
+  #img { display: block; max-width: none; }
+  #hint {
+    position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+    background: rgba(0,0,0,0.72); color: #fff; font: 12px/1.4 system-ui, sans-serif;
+    padding: 7px 14px; border-radius: 8px; pointer-events: none;
+    opacity: 1; transition: opacity 0.6s ease 2.5s;
+  }
+  #hint.hidden { opacity: 0; }
+  #controls {
+    position: fixed; right: 14px; bottom: 14px; display: flex; flex-direction: column;
+    gap: 6px; z-index: 10;
+  }
+  #controls button {
+    width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.15);
+    background: #fff; color: #111; font: 16px/1 system-ui, sans-serif; cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+  #controls button:hover { background: #f0f0f0; }
+  #zoomlabel {
+    position: fixed; left: 14px; bottom: 14px; z-index: 10;
+    background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 8px; padding: 5px 10px; font: 11px/1.2 system-ui, sans-serif; color: #333;
+  }
+  @media (prefers-color-scheme: dark) {
+    html, body { background: #1a1a1a; }
+    #zoomlabel { background: rgba(30,30,30,0.9); color: #ddd; border-color: rgba(255,255,255,0.15); }
+    #controls button { background: #2a2a2a; color: #eee; border-color: rgba(255,255,255,0.15); }
+    #controls button:hover { background: #383838; }
+  }
+</style>
+</head>
+<body>
+  <div id="stage">
+    <div id="canvas">
+      <img id="img" src="/expt-add/cluster_metacell_matrix_full.png" alt="Cluster to metacell matrix, full resolution" draggable="false" />
+    </div>
+  </div>
+  <div id="zoomlabel">100%</div>
+  <div id="controls">
+    <button id="zoomIn" title="Zoom in">+</button>
+    <button id="zoomOut" title="Zoom out">&minus;</button>
+    <button id="zoomReset" title="Reset view">&#8634;</button>
+  </div>
+  <div id="hint">Scroll to zoom &middot; drag to pan &middot; double-click to reset</div>
+
+<script>
+(function () {
+  var stage = document.getElementById("stage");
+  var canvas = document.getElementById("canvas");
+  var img = document.getElementById("img");
+  var zoomLabel = document.getElementById("zoomlabel");
+  var hint = document.getElementById("hint");
+
+  var scale = 1, minScale = 0.02, maxScale = 8;
+  var tx = 0, ty = 0;
+  var dragging = false, lastX = 0, lastY = 0, moved = false;
+  var fitScale = 1;
+
+  function apply() {
+    canvas.style.transform = "translate(" + tx + "px," + ty + "px) scale(" + scale + ")";
+    zoomLabel.textContent = Math.round((scale / fitScale) * 100) + "%";
+  }
+
+  function clampScale(s) {
+    return Math.min(maxScale, Math.max(minScale, s));
+  }
+
+  function fitToScreen() {
+    var iw = img.naturalWidth || 1, ih = img.naturalHeight || 1;
+    var sw = stage.clientWidth, sh = stage.clientHeight;
+    fitScale = Math.min(sw / iw, sh / ih);
+    scale = fitScale;
+    tx = (sw - iw * scale) / 2;
+    ty = (sh - ih * scale) / 2;
+    apply();
+  }
+
+  function zoomAt(clientX, clientY, factor) {
+    var rect = stage.getBoundingClientRect();
+    var px = clientX - rect.left, py = clientY - rect.top;
+    var newScale = clampScale(scale * factor);
+    var ratio = newScale / scale;
+    tx = px - (px - tx) * ratio;
+    ty = py - (py - ty) * ratio;
+    scale = newScale;
+    apply();
+  }
+
+  img.addEventListener("load", fitToScreen);
+  if (img.complete && img.naturalWidth) fitToScreen();
+  window.addEventListener("resize", function () {
+    // keep current zoom level relative to fit, just re-center on resize
+    fitToScreen();
+  });
+
+  stage.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    hint.classList.add("hidden");
+    var factor = Math.pow(1.0015, -e.deltaY);
+    zoomAt(e.clientX, e.clientY, factor);
+  }, { passive: false });
+
+  stage.addEventListener("mousedown", function (e) {
+    dragging = true; moved = false;
+    lastX = e.clientX; lastY = e.clientY;
+    stage.classList.add("grabbing");
+    hint.classList.add("hidden");
+  });
+  window.addEventListener("mousemove", function (e) {
+    if (!dragging) return;
+    var dx = e.clientX - lastX, dy = e.clientY - lastY;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+    tx += dx; ty += dy;
+    lastX = e.clientX; lastY = e.clientY;
+    apply();
+  });
+  window.addEventListener("mouseup", function () {
+    dragging = false;
+    stage.classList.remove("grabbing");
+  });
+
+  stage.addEventListener("dblclick", function (e) {
+    e.preventDefault();
+    fitToScreen();
+  });
+
+  // touch support: single-finger pan, two-finger pinch zoom
+  var touches = {};
+  var pinchStartDist = 0, pinchStartScale = 1;
+  stage.addEventListener("touchstart", function (e) {
+    hint.classList.add("hidden");
+    for (var i = 0; i < e.changedTouches.length; i++) {
+      var t = e.changedTouches[i];
+      touches[t.identifier] = { x: t.clientX, y: t.clientY };
+    }
+    var ids = Object.keys(touches);
+    if (ids.length === 2) {
+      var a = touches[ids[0]], b = touches[ids[1]];
+      pinchStartDist = Math.hypot(a.x - b.x, a.y - b.y);
+      pinchStartScale = scale;
+    }
+  }, { passive: true });
+  stage.addEventListener("touchmove", function (e) {
+    e.preventDefault();
+    var ids = Object.keys(touches);
+    if (ids.length === 1 && e.touches.length === 1) {
+      var prev = touches[ids[0]];
+      var t = e.touches[0];
+      tx += t.clientX - prev.x;
+      ty += t.clientY - prev.y;
+      touches[ids[0]] = { x: t.clientX, y: t.clientY };
+      apply();
+    } else if (e.touches.length === 2) {
+      var t0 = e.touches[0], t1 = e.touches[1];
+      var dist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+      var cx = (t0.clientX + t1.clientX) / 2, cy = (t0.clientY + t1.clientY) / 2;
+      var factor = (dist / pinchStartDist) * pinchStartScale / scale;
+      zoomAt(cx, cy, factor);
+    }
+  }, { passive: false });
+  stage.addEventListener("touchend", function (e) {
+    for (var i = 0; i < e.changedTouches.length; i++) {
+      delete touches[e.changedTouches[i].identifier];
+    }
+  }, { passive: true });
+
+  document.getElementById("zoomIn").addEventListener("click", function () {
+    var r = stage.getBoundingClientRect();
+    zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1.4);
+  });
+  document.getElementById("zoomOut").addEventListener("click", function () {
+    var r = stage.getBoundingClientRect();
+    zoomAt(r.left + r.width / 2, r.top + r.height / 2, 1 / 1.4);
+  });
+  document.getElementById("zoomReset").addEventListener("click", fitToScreen);
+
+  // notify the hub shell (if embedded) so the title bar shows something sensible
+  try {
+    window.parent.postMessage({ type: "hub:title", title: "Cluster → Metacell Matrix (full resolution)" }, "*");
+    window.parent.postMessage({ type: "hub:ready" }, "*");
+  } catch (e) {}
+})();
+</script>
+</body>
+</html>
