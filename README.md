@@ -1,24 +1,51 @@
-# Welcome to your Lovable project
+# ConnectionMiner — Fly Connectome Explorer
 
-This project was built with [Lovable](https://lovable.dev).
+An interactive hub for the ConnectionMiner project: click into a *Drosophila*
+brain map and open live dashboards — UMAP embeddings, confusion matrices,
+recovery batteries, and full solver runs — for a pipeline that infers neuron
+cell type from gene expression and synaptic wiring across 139,255 neurons
+and 50M+ synapses.
 
-## Build with Lovable
+![ConnectionMiner experiment dashboard — UMAP of inferred cell types alongside the live 741x741 connectome heatmap](public/readme/hub-screenshot.png)
+*One of the registered experiments: inferred type assignment (UMAP, left) next to the observed connectome and every matrix the solver consumes or produces (right, live Plotly).*
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+## What's here
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Home** (`/`) — an animated, clickable brain map; each glowing node opens
+  an independent experiment.
+- **Registry** (`/registry`) — searchable, filterable list of every
+  registered experiment dashboard.
+- **Manage** (`/manage`) — register new experiment pages, edit metadata, and
+  toggle visibility, without touching code.
+- Each **experiment** (`/experiments/$id`) is a self-contained dashboard
+  (large pre-built Plotly/HTML bundle) — e.g. UMAP-vs-confusion-matrix views,
+  the recovery-battery explainer, or a full solver run with every
+  input/output matrix live and hoverable.
+
+### How it works, in brief
+
+Every experiment here visualizes a different stage of the same underlying
+pipeline: cells get a soft "which types are even possible" constraint from
+expression clustering, get pooled into metacells, and a solver jointly fits
+a type assignment and a gene-interaction model so that predicted
+connectivity matches the real connectome.
+
+<table>
+<tr>
+<td><img src="public/readme/diagram-p-constraints.png" alt="How the per-cell type-constraint matrix is built" width="420"></td>
+<td><img src="public/readme/diagram-metacells.png" alt="How metacells are built from the constraint matrix" width="420"></td>
+</tr>
+</table>
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+This repo uses [Bun](https://bun.sh):
 
 ```sh
 git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+cd connectome
+bun install
+bun run dev
 ```
 
 ## Built with
@@ -49,3 +76,7 @@ npm run dev
 If you'd rather host the bundles yourself, upload the HTML files to any static host
 and paste the full `https://…` URLs into the **Manage** page — custom URLs bypass the
 proxy entirely.
+
+---
+
+Built with [Lovable](https://lovable.dev).
