@@ -238,6 +238,15 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     category: "Matrices",
     enabled: true,
   },
+  {
+    id: "wiring-vs-distance",
+    title: "Wiring vs. Distance — C and d Matrices",
+    description:
+      "Two independent 741×741 matrices, same alphabetical type order on both axes so a row/column lines up across panels: C is the binary synaptic connectome (does type i synapse onto type j, both hemispheres pooled); d is the mean soma-to-soma Euclidean distance between every cell of type i and every cell of type j, from each cell's traced SWC skeleton (95,079 skeletons). Scroll or drag to zoom on either heatmap — full cell-type labels fill in as you get closer — or use the jump-to-type search box to zoom both panels to the same neighborhood at once.",
+    url: "/expt-add/wiring_vs_distance_heatmap.html",
+    category: "Matrices",
+    enabled: true,
+  },
 ];
 
 
