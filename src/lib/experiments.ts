@@ -90,7 +90,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "Every family's full 5-condition recovery battery in one self-contained document: Lamina, Lawf, Lamina+Lawf, Dm, Mi, Tm, TmY, T4, T5, C, LC and LPLC. Each view carries its own condition switcher, so the page runs standalone with no dependency on the hub.",
     url: familyBatteryAsset.url,
     category: "Recovery Battery",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "motor-visual-linked",
