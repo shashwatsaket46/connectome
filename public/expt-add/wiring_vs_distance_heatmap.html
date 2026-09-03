@@ -57,14 +57,26 @@
   }
 
   * { box-sizing: border-box; }
+  html, body { height: 100%; }
   body {
     margin: 0;
     background: var(--page);
     color: var(--ink);
     font-family: var(--font-ui);
     line-height: 1.5;
+    display: flex;
+    flex-direction: column;
   }
-  .wrap { max-width: 1400px; margin: 0 auto; padding: 28px 24px 48px; }
+  .wrap {
+    max-width: 1600px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px 24px 20px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
 
   header { padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 22px; }
   .eyebrow {
@@ -151,6 +163,8 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
+    flex: 1;
+    min-height: 0;
   }
   @media (max-width: 980px) {
     .panels { grid-template-columns: 1fr; }
@@ -161,6 +175,9 @@
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 18px 18px 10px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
   .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
   .panel h2 {
@@ -168,6 +185,7 @@
     font-weight: 700;
     margin: 0;
   }
+  .panel-head .tags { display: flex; align-items: center; gap: 8px; }
   .panel .tag {
     font-family: var(--font-mono);
     font-size: 10.5px;
@@ -182,7 +200,33 @@
     color: var(--ink-2);
     margin: 4px 0 12px;
   }
-  .plot { width: 100%; height: 620px; }
+  .expand-btn {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1;
+    padding: 5px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+  .expand-btn:hover { border-color: var(--accent-d); color: var(--ink); }
+  .plot { width: 100%; flex: 1; min-height: 420px; }
+
+  .panel.is-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    border-radius: 0;
+    padding: 16px 20px 10px;
+    margin: 0;
+    max-width: none;
+  }
+  body.has-fullscreen-panel > .wrap > .panels > .panel:not(.is-fullscreen) { display: none; }
+  body.has-fullscreen-panel > .wrap > header,
+  body.has-fullscreen-panel > .wrap > .controls,
+  body.has-fullscreen-panel > .wrap > footer { display: none; }
 
   footer {
     margin-top: 26px;
@@ -228,18 +272,24 @@
   </div>
 
   <div class="panels">
-    <div class="panel">
+    <div class="panel" id="panel-c">
       <div class="panel-head">
         <h2>C &mdash; synaptic connectivity</h2>
-        <span class="tag c">binary, both hemispheres</span>
+        <div class="tags">
+          <span class="tag c">binary, both hemispheres</span>
+          <button class="expand-btn" data-target="panel-c" aria-label="Expand to full page">&#x2922; Expand</button>
+        </div>
       </div>
       <p class="def">1 if the EM-reconstructed connectome contains &ge;1 synapse from type <i>i</i> onto type <i>j</i>, else 0.</p>
       <div class="plot" id="plot-c"></div>
     </div>
-    <div class="panel">
+    <div class="panel" id="panel-d">
       <div class="panel-head">
         <h2>d &mdash; soma distance</h2>
-        <span class="tag d">mean pairwise, nm</span>
+        <div class="tags">
+          <span class="tag d">mean pairwise, nm</span>
+          <button class="expand-btn" data-target="panel-d" aria-label="Expand to full page">&#x2922; Expand</button>
+        </div>
       </div>
       <p class="def">Mean Euclidean distance between soma positions of all cells of type <i>i</i> vs. all cells of type <i>j</i> (self-pairs excluded on the diagonal).</p>
       <div class="plot" id="plot-d"></div>
@@ -420,6 +470,38 @@
     Plotly.relayout('plot-c', { 'xaxis.autorange': true, 'yaxis.autorange': true });
     Plotly.relayout('plot-d', { 'xaxis.autorange': true, 'yaxis.autorange': true });
   });
+
+  function resizeAll() {
+    Plotly.Plots.resize('plot-c');
+    Plotly.Plots.resize('plot-d');
+  }
+
+  function setExpanded(panelId) {
+    document.querySelectorAll('.panel').forEach(function (p) {
+      p.classList.toggle('is-fullscreen', panelId !== null && p.id === panelId);
+    });
+    document.body.classList.toggle('has-fullscreen-panel', panelId !== null);
+    document.querySelectorAll('.expand-btn').forEach(function (btn) {
+      var isThis = btn.dataset.target === panelId;
+      btn.innerHTML = isThis ? '&#x2921; Collapse' : '&#x2922; Expand';
+      btn.setAttribute('aria-label', isThis ? 'Collapse to normal view' : 'Expand to full page');
+    });
+    window.requestAnimationFrame(resizeAll);
+  }
+
+  document.querySelectorAll('.expand-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var target = btn.dataset.target;
+      var alreadyExpanded = document.getElementById(target).classList.contains('is-fullscreen');
+      setExpanded(alreadyExpanded ? null : target);
+    });
+  });
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && document.body.classList.contains('has-fullscreen-panel')) {
+      setExpanded(null);
+    }
+  });
+  window.addEventListener('resize', resizeAll);
 })();
 </script>
 </body>
