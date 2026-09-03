@@ -236,7 +236,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "Same per-cell P × M′ matrix, column-normalized and drawn with cell columns width-proportional to their metacell (55,749 cells in named metacells | 43,907 non-named), so metacell size is visible directly in the layout.",
     url: "/expt-add/p_x_m_prime_heatmap_proportional.html",
     category: "Matrices",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "wiring-vs-distance",
