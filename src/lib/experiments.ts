@@ -71,7 +71,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "C, Ĉ, error (Ĉ−C), P, and β for all 25 gene-selection × metacell-generation combinations, after adding production's merge/re-split metacell rebalancing to the experiment harness (metacell counts now range 3,780–6,695 instead of a fixed ~6,650). Pick any combo from the sidebar — grouped and color-coded by gene method — to inspect its matrices and loss trajectory (hover for exact values). Reproduces the headline finding as a live scatter: raw_variance/binomial_deviance_approx keep genes type-specific but fit worse; seurat_vst_approx/trend_residual_approx/dispersion_binned fit better but flatten to near-uniform gene probabilities across types.",
     url: "/expt-add/solver_diagnostics_rebalanced_25combos.html",
     category: "Full Solver Run",
-    enabled: false,
+    enabled: true,
   },
   {
     id: "solver-overview",
