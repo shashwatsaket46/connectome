@@ -227,7 +227,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "P_refined expanded down to individual cells rather than metacells (741 types × 99,656 cells) — each cell inherits its metacell's soft type distribution.",
     url: "/expt-add/p_x_m_prime_heatmap.html",
     category: "Matrices",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "p-x-m-prime-proportional",
