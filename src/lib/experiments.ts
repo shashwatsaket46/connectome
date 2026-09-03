@@ -247,6 +247,15 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     category: "Matrices",
     enabled: true,
   },
+  {
+    id: "metacell-size-histograms-25combos",
+    title: "Metacell Size Distributions — All 25 Combos",
+    description:
+      "Cells-per-metacell histogram for every gene-selection × metacell-generation combination in the rebalanced grid (real production merge/re-split logic, not a fixed target size). Metacell counts range 3,780–6,695 across combos — this shows the actual shape of that variation: most metacells are small (long right tail), and the tail's heaviness differs a lot by method — graph_ward_supercell and agglomerative_ward_full both show a sharp spike of very small metacells the other three methods don't. Dashed line marks the mean size per combo.",
+    url: "/expt-add/metacell_size_histograms.html",
+    category: "Matrices",
+    enabled: true,
+  },
 ];
 
 
