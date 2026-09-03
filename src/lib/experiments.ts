@@ -56,6 +56,15 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     builtBy: "scripts/build_experiment_recovery_battery_explainer.py",
   },
   {
+    id: "linked-explorer-rebalanced-prototype",
+    title: "[Prototype] Linked Explorer — Rebalanced Metacells",
+    description:
+      "Same linked UMAP ↔ C ↔ Ĉ ↔ P ↔ G ↔ β interaction as the Linked Connectome Explorer below, rebuilt for one combo from the rebalanced 25-combo grid (raw_variance × constrained_kmeans_local_pca, 5,364 metacells instead of the old fixed ~6,650). UMAP was refit from scratch on this combo's own selected genes rather than reusing the shared embedding. Prototype for one combo before scaling to all 25 — flag anything that looks off.",
+    url: "/expt-add/linked_explorer_rebalanced_prototype.html",
+    category: "Full Solver Run",
+    enabled: true,
+  },
+  {
     id: "solver-diagnostics-rebalanced-25combos",
     title: "Solver Diagnostics — Rebalanced 25-Combo Grid",
     description:
