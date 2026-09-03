@@ -218,7 +218,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "P_refined mapped onto the 241 raw MultiomeNN clusters via the cluster→metacell matrix: for each type, how much of its inferred mass lands in each raw cluster (741 types × 241 clusters). Hover any cell for the type, raw cluster, ground-truth label, and weighted mass.",
     url: "/expt-add/p_x_cluster_matrix_heatmap.html",
     category: "Matrices",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "p-x-m-prime",
