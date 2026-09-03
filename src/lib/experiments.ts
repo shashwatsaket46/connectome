@@ -80,7 +80,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "The regular (non-recovery-battery) end-to-end solver run, at full resolution — P and P Constraints across all 5,333 metacells, G across all 3000 genes, no subsampling. A UMAP paired with a tab-switcher for every matrix the solver produces or consumes; hover a UMAP point to highlight its type's row on the active tab, or hover a matrix cell to spotlight that type's cells on the UMAP.",
     url: "/expt-add/solver_run_dashboard_v2.html",
     category: "Full Solver Run",
-    enabled: true,
+    enabled: false,
     builtBy: "scripts/build_experiment_solver_overview.py",
   },
   {
