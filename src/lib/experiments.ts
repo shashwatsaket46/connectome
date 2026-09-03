@@ -256,6 +256,15 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     category: "Matrices",
     enabled: true,
   },
+  {
+    id: "physical-terms-vs-gene-model",
+    title: "Physical Terms vs. Gene Model",
+    description:
+      "Tests whether extending the reconstruction formula (Chat = b0·gene_term + b2/d_soma + b3/d_neurite + b4·overlap_volume) with physical/spatial terms improves the fit to the true connectome C beyond the existing gene-expression model, across all 25 combos, with weights fit via non-negative-constrained least squares. Finding: b2 and b3 are zero in 25/25 combos, b4 is negligible in the 4/25 where it's nonzero — the gene-based reconstruction already correlates with neurite distance and overlap volume at r≈0.31–0.37 in every combo (gene-compatible types tend to be anatomically co-located), so it implicitly re-derives most of the physical proximity signal on its own.",
+    url: "/expt-add/physical_terms_analysis.html",
+    category: "Matrices",
+    enabled: true,
+  },
 ];
 
 

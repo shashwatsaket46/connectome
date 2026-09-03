@@ -1,0 +1,396 @@
+<title>Physical Terms vs. Gene Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f6f7fa; --surface:#ffffff; --surface-2:#eef1f5; --border:#dbe1e8;
+  --text-primary:#14171c; --text-secondary:#565d68; --text-muted:#8a919b; --accent:#2a78d6;
+  --gm1:#2a78d6; --gm2:#eb6834; --gm3:#1baf7a; --gm4:#eda100; --gm5:#e87ba4;
+  --good:#1baf7a; --shadow: 0 1px 2px rgba(20,23,28,0.04), 0 6px 20px -8px rgba(20,23,28,0.12);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101317; --surface:#171b20; --surface-2:#1d2228; --border:#2b3138;
+    --text-primary:#f2f4f7; --text-secondary:#b6bdc7; --text-muted:#7c8492; --accent:#3987e5;
+    --gm1:#3987e5; --gm2:#d95926; --gm3:#199e70; --gm4:#c98500; --gm5:#d55181;
+    --good:#199e70; --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -10px rgba(0,0,0,0.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101317; --surface:#171b20; --surface-2:#1d2228; --border:#2b3138;
+  --text-primary:#f2f4f7; --text-secondary:#b6bdc7; --text-muted:#7c8492; --accent:#3987e5;
+  --gm1:#3987e5; --gm2:#d95926; --gm3:#199e70; --gm4:#c98500; --gm5:#d55181;
+  --good:#199e70; --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -10px rgba(0,0,0,0.5);
+  color-scheme: dark;
+}
+*{box-sizing:border-box;}
+body{ margin:0; background:var(--bg); color:var(--text-primary); font-family:"IBM Plex Sans",sans-serif; font-size:14px; }
+.wrap{ max-width:1180px; margin:0 auto; padding:40px 24px 80px; }
+h1{ font-family:"Fraunces",serif; font-size:28px; font-weight:600; margin:0 0 10px; letter-spacing:-0.01em; }
+p.lede{ color:var(--text-secondary); font-size:14.5px; line-height:1.65; max-width:82ch; margin:0 0 20px; }
+p.lede b{ color:var(--text-primary); }
+code{ font-family:"IBM Plex Mono",monospace; font-size:12.5px; background:var(--surface-2); padding:1px 5px; border-radius:4px; }
+
+.stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:26px; }
+@media (max-width:820px){ .stats{ grid-template-columns:1fr 1fr; } }
+.stat{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; box-shadow:var(--shadow); }
+.stat .n{ font-family:"IBM Plex Mono",monospace; font-size:20px; font-weight:600; }
+.stat .d{ font-size:11.5px; color:var(--text-muted); margin-top:4px; line-height:1.4; }
+
+.section-title{ font-family:"Fraunces",serif; font-size:17px; font-weight:600; margin:32px 0 8px; }
+
+.tablewrap{ background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); overflow-x:auto; margin-bottom:8px; }
+table{ border-collapse:collapse; width:100%; font-size:12.5px; }
+th{ text-align:left; font-family:"IBM Plex Mono",monospace; font-size:10px; text-transform:uppercase; letter-spacing:.05em;
+  color:var(--text-muted); padding:9px 12px; border-bottom:1px solid var(--border); white-space:nowrap; position:sticky; top:0; background:var(--surface); }
+td{ padding:7px 12px; border-bottom:1px solid var(--border); white-space:nowrap; }
+td.num{ font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; text-align:right; }
+tr.has-signal td{ color:var(--good); font-weight:600; }
+.chip{ display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+
+.explain{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:18px 20px; box-shadow:var(--shadow); margin-top:10px; }
+.explain p{ font-size:13.5px; color:var(--text-secondary); line-height:1.65; margin:0 0 10px; max-width:84ch; }
+.explain p:last-child{ margin-bottom:0; }
+.explain b{ color:var(--text-primary); }
+footer{ margin-top:26px; color:var(--text-muted); font-size:11.5px; font-family:"IBM Plex Mono",monospace; }
+</style>
+<div class="wrap">
+  <h1>Physical terms vs. the gene-expression model</h1>
+  <p class="lede">
+    Tests whether extending the reconstruction formula with physical/spatial terms &mdash;
+    <code>C&#770; = b0&middot;(P&middot;G&middot;&beta;&middot;G<sup>T</sup>&middot;P<sup>T</sup>) + b2&middot;1/d_soma + b3&middot;1/d_neurite + b4&middot;overlap_volume</code>
+    &mdash; improves the fit to the true connectome <b>C</b> beyond what the existing gene-based
+    model already achieves, across all 25 gene-selection &times; metacell-generation combos.
+    b0&ndash;b4 are fit per combo via non-negative-constrained weighted least squares
+    (b2, b3, b4 &ge; 0 &mdash; the biologically sensible direction: closer / more overlap
+    should predict <i>more</i> connectivity, never less).
+  </p>
+
+  <div class="section-title">Raw correlation: C vs. each physical quantity (combo-independent)</div>
+  <div class="stats">
+    <div class="stat"><div class="n">-0.0360</div><div class="d">corr(C, 1/d_soma) &middot; R&sup2;=0.13%</div></div>
+    <div class="stat"><div class="n">+0.2278</div><div class="d">corr(C, 1/d_neurite) &middot; R&sup2;=5.19%</div></div>
+    <div class="stat"><div class="n">+0.2329</div><div class="d">corr(C, overlap_volume) &middot; R&sup2;=5.42%</div></div>
+    <div class="stat"><div class="n">4 / 25</div><div class="d">combos where any physical term (b2, b3, b4) is nonzero after fitting</div></div>
+  </div>
+
+  <div class="section-title">Per-combo fitted weights (sorted by baseline solver loss)</div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr>
+        <th>gene method</th><th>metacell method</th><th>baseline loss</th>
+        <th>b0 (gene)</th><th>b2 (1/d_soma)</th><th>b3 (1/d_neurite)</th><th>b4 (overlap)</th>
+        <th>total improvement</th><th>physical terms' own gain</th>
+      </tr></thead>
+      <tbody>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm2)"></span>seurat_vst_approx</td>
+        <td>1_constrained_kmeans_local_pca</td>
+        <td class="num">16,923</td>
+        <td class="num">1.032</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.098%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm2)"></span>seurat_vst_approx</td>
+        <td>3_graph_ward_supercell</td>
+        <td class="num">17,025</td>
+        <td class="num">1.023</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.050%</td>
+        <td class="num">-0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm2)"></span>seurat_vst_approx</td>
+        <td>5_archetypal_farthest_point</td>
+        <td class="num">17,128</td>
+        <td class="num">1.031</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.089%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm2)"></span>seurat_vst_approx</td>
+        <td>4_agglomerative_ward_full</td>
+        <td class="num">17,376</td>
+        <td class="num">1.030</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.082%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm3)"></span>dispersion_binned</td>
+        <td>1_constrained_kmeans_local_pca</td>
+        <td class="num">17,465</td>
+        <td class="num">1.021</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.042%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm3)"></span>dispersion_binned</td>
+        <td>5_archetypal_farthest_point</td>
+        <td class="num">17,526</td>
+        <td class="num">1.024</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.052%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm3)"></span>dispersion_binned</td>
+        <td>3_graph_ward_supercell</td>
+        <td class="num">17,717</td>
+        <td class="num">1.024</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.049%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm3)"></span>dispersion_binned</td>
+        <td>2_kmeans_global_pca</td>
+        <td class="num">17,750</td>
+        <td class="num">1.019</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.031%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm4)"></span>trend_residual_approx</td>
+        <td>3_graph_ward_supercell</td>
+        <td class="num">17,914</td>
+        <td class="num">1.027</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.064%</td>
+        <td class="num">-0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm2)"></span>seurat_vst_approx</td>
+        <td>2_kmeans_global_pca</td>
+        <td class="num">18,017</td>
+        <td class="num">1.019</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.030%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm4)"></span>trend_residual_approx</td>
+        <td>4_agglomerative_ward_full</td>
+        <td class="num">18,103</td>
+        <td class="num">1.028</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.066%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm4)"></span>trend_residual_approx</td>
+        <td>1_constrained_kmeans_local_pca</td>
+        <td class="num">18,226</td>
+        <td class="num">1.027</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.061%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm4)"></span>trend_residual_approx</td>
+        <td>5_archetypal_farthest_point</td>
+        <td class="num">18,282</td>
+        <td class="num">1.033</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.090%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm3)"></span>dispersion_binned</td>
+        <td>4_agglomerative_ward_full</td>
+        <td class="num">18,426</td>
+        <td class="num">1.020</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.032%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm4)"></span>trend_residual_approx</td>
+        <td>2_kmeans_global_pca</td>
+        <td class="num">18,915</td>
+        <td class="num">1.013</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.014%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm5)"></span>binomial_deviance_approx</td>
+        <td>2_kmeans_global_pca</td>
+        <td class="num">24,786</td>
+        <td class="num">1.000</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.000%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="has-signal">
+        <td><span class="chip" style="background:var(--gm5)"></span>binomial_deviance_approx</td>
+        <td>4_agglomerative_ward_full</td>
+        <td class="num">24,873</td>
+        <td class="num">0.992</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">6.46e-03</td>
+        <td class="num">+0.002%</td>
+        <td class="num">+0.0023pp</td>
+      </tr>
+      <tr class="has-signal">
+        <td><span class="chip" style="background:var(--gm5)"></span>binomial_deviance_approx</td>
+        <td>5_archetypal_farthest_point</td>
+        <td class="num">24,966</td>
+        <td class="num">0.988</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">9.78e-03</td>
+        <td class="num">+0.005%</td>
+        <td class="num">+0.0053pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm5)"></span>binomial_deviance_approx</td>
+        <td>1_constrained_kmeans_local_pca</td>
+        <td class="num">24,974</td>
+        <td class="num">0.998</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.000%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="has-signal">
+        <td><span class="chip" style="background:var(--gm5)"></span>binomial_deviance_approx</td>
+        <td>3_graph_ward_supercell</td>
+        <td class="num">25,032</td>
+        <td class="num">0.995</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">2.39e-03</td>
+        <td class="num">+0.000%</td>
+        <td class="num">+0.0003pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm1)"></span>raw_variance</td>
+        <td>3_graph_ward_supercell</td>
+        <td class="num">25,037</td>
+        <td class="num">0.998</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.000%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm1)"></span>raw_variance</td>
+        <td>2_kmeans_global_pca</td>
+        <td class="num">25,476</td>
+        <td class="num">0.998</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.000%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm1)"></span>raw_variance</td>
+        <td>1_constrained_kmeans_local_pca</td>
+        <td class="num">25,519</td>
+        <td class="num">0.997</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.000%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="">
+        <td><span class="chip" style="background:var(--gm1)"></span>raw_variance</td>
+        <td>4_agglomerative_ward_full</td>
+        <td class="num">25,807</td>
+        <td class="num">0.997</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">+0.000%</td>
+        <td class="num">+0.0000pp</td>
+      </tr>
+      <tr class="has-signal">
+        <td><span class="chip" style="background:var(--gm1)"></span>raw_variance</td>
+        <td>5_archetypal_farthest_point</td>
+        <td class="num">26,258</td>
+        <td class="num">0.976</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">0.00e+00</td>
+        <td class="num">1.81e-02</td>
+        <td class="num">+0.016%</td>
+        <td class="num">+0.0157pp</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="explain">
+    <p>
+      <b>Finding:</b> b2 (soma distance) is zero in <b>25/25</b> combos. b3 (neurite closest-approach
+      distance) is zero in <b>25/25</b> combos. b4 (overlap volume) is nonzero in only 4/25 combos,
+      and even there the effect is negligible (max +0.0157 percentage points of loss improvement).
+      Mean unique physical-terms contribution across all 25 combos: <b>+0.00095pp</b>.
+    </p>
+    <p>
+      <b>Why, given C itself does correlate with these physical quantities</b> (R&sup2; up to 5.4%
+      for neurite distance and overlap): the gene-based reconstruction <code>Chat_baseline</code>
+      already correlates with 1/d_neurite and overlap at <b>r &asymp; 0.31&ndash;0.37</b> in every combo
+      tested, regardless of which gene-selection method built it. Gene-compatible cell types tend to
+      also be anatomically co-located, so the gene model implicitly re-derives most of the physical
+      proximity signal on its own. An earlier, unconstrained version of this same fit found large
+      apparent "improvements" (up to +2.6%) &mdash; but with <i>negative</i> b2/b3/b4 weights, meaning
+      the physical terms were being used to <i>subtract away</i> the gene model's own
+      proximity-correlated over-predictions, not to add genuinely new, biologically-interpretable
+      signal. Constraining the weights to the sensible non-negative direction removes that
+      artifact and reveals the physical terms add essentially nothing on top of the gene model.
+    </p>
+    <p>
+      <b>Caveat:</b> d_neurite is currently ~90% exact brute-force minimum, ~10% an exact
+      bounding-box lower bound pending a still-running GPU computation (see the
+      Wiring vs. Distance page) &mdash; this affects only the exact <i>value</i> for the remaining
+      pairs, not the sign or overall magnitude of the correlations reported here.
+    </p>
+  </div>
+
+  <footer>ConnectionMiner &middot; experiments/analyze_physical_terms_all25.py &middot; data/sk_lod1_783_healed/*.swc &middot; output/C_matrix.npz</footer>
+</div>
