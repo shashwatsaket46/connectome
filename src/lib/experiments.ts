@@ -198,7 +198,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "For each of the 741 known cell types, its gene expression profile after the solve: P_refined @ G_metacell_p (741 types × 3,000 genes), types sorted alphabetically, genes sorted by descending variance. Drag to box-zoom into any region, double-click to reset, hover any cell for the exact type/gene/probability.",
     url: "/expt-add/type_gene_expression_heatmap.html",
     category: "Matrices",
-    enabled: true,
+    enabled: false,
     builtBy: "scripts/build_type_gene_expression_html.py",
   },
   {
