@@ -59,7 +59,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     id: "linked-explorer-rebalanced-all25",
     title: "Linked Explorer — All 25 Rebalanced Combos",
     description:
-      "Same linked UMAP ↔ C ↔ Ĉ ↔ P ↔ P-constraints ↔ G ↔ β interaction as the Linked Connectome Explorer below, now available for all 25 gene-selection × metacell-generation combos from the rebalanced grid (real per-combo metacell counts, 3,780–6,695, instead of the old fixed ~6,650). Each combo gets its own real UMAP refit on that combo's own selected genes. Opens an index sorted by solver loss — click any row for that combo's full explorer.",
+      "Same linked UMAP ↔ C ↔ Ĉ ↔ P ↔ P-constraints ↔ G ↔ β interaction as the Linked Connectome Explorer below, now available for all 25 gene-selection × metacell-generation combos from the rebalanced grid (real per-combo metacell counts, 3,780–6,695, instead of the old fixed ~6,650). Each combo gets its own real UMAP refit on that combo's own selected genes. The Ĉ panel is now animated — a slider/play button steps through 19 solver-iteration snapshots (every 5th iteration) plus the final converged frame, so you can watch the reconstruction sharpen as loss drops. Opens an index sorted by solver loss — click any row for that combo's full explorer.",
     url: "/expt-add/linked_explorer_index.html",
     category: "Full Solver Run",
     enabled: true,
@@ -240,9 +240,9 @@ export const SEED_EXPERIMENTS: Experiment[] = [
   },
   {
     id: "wiring-vs-distance",
-    title: "Wiring vs. Distance — C and d Matrices",
+    title: "Wiring vs. Distance — C, Soma & Neurite Matrices",
     description:
-      "Two independent 741×741 matrices, same alphabetical type order on both axes so a row/column lines up across panels: C is the binary synaptic connectome (does type i synapse onto type j, both hemispheres pooled); d is the mean soma-to-soma Euclidean distance between every cell of type i and every cell of type j, from each cell's traced SWC skeleton (95,079 skeletons). Scroll or drag to zoom on either heatmap — full cell-type labels fill in as you get closer — or use the jump-to-type search box to zoom both panels to the same neighborhood at once.",
+      "Three independent 741×741 matrices, same alphabetical type order on all axes so a row/column lines up across panels: C is the binary synaptic connectome (does type i synapse onto type j, both hemispheres pooled); d(soma) is the mean soma-to-soma Euclidean distance between every cell of type i and every cell of type j; d(neurite) is the true closest-approach distance instead — the minimum distance between any point on any neurite of type i and any point on any neurite of type j, using each cell's full traced SWC skeleton (95,079 skeletons) rather than just its cell body, so it reflects how close the actual axon/dendrite arbors get. Scroll or drag to zoom on any heatmap — full cell-type labels fill in as you get closer — or use the jump-to-type search box to zoom all three panels to the same neighborhood at once.",
     url: "/expt-add/wiring_vs_distance_heatmap.html",
     category: "Matrices",
     enabled: true,
