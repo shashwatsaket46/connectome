@@ -1,0 +1,211 @@
+<title>Linked Explorer — All 25 Combos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f6f7fa; --surface:#ffffff; --surface-2:#eef1f5; --border:#dbe1e8;
+  --text-primary:#14171c; --text-secondary:#565d68; --text-muted:#8a919b; --accent:#2a78d6;
+  --gm1:#2a78d6; --gm2:#eb6834; --gm3:#1baf7a; --gm4:#eda100; --gm5:#e87ba4;
+  --shadow: 0 1px 2px rgba(20,23,28,0.04), 0 6px 20px -8px rgba(20,23,28,0.12);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101317; --surface:#171b20; --surface-2:#1d2228; --border:#2b3138;
+    --text-primary:#f2f4f7; --text-secondary:#b6bdc7; --text-muted:#7c8492; --accent:#3987e5;
+    --gm1:#3987e5; --gm2:#d95926; --gm3:#199e70; --gm4:#c98500; --gm5:#d55181;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -10px rgba(0,0,0,0.5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101317; --surface:#171b20; --surface-2:#1d2228; --border:#2b3138;
+  --text-primary:#f2f4f7; --text-secondary:#b6bdc7; --text-muted:#7c8492; --accent:#3987e5;
+  --gm1:#3987e5; --gm2:#d95926; --gm3:#199e70; --gm4:#c98500; --gm5:#d55181;
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -10px rgba(0,0,0,0.5);
+  color-scheme: dark;
+}
+*{box-sizing:border-box;}
+body{ margin:0; background:var(--bg); color:var(--text-primary); font-family:"IBM Plex Sans",sans-serif; font-size:14px; }
+.wrap{ max-width:920px; margin:0 auto; padding:40px 24px 80px; }
+h1{ font-family:"Fraunces",serif; font-size:30px; font-weight:600; margin:0 0 8px; }
+p.lede{ color:var(--text-secondary); font-size:14px; line-height:1.6; max-width:70ch; margin:0 0 28px; }
+.legend{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:20px; font-size:12px; color:var(--text-secondary); }
+.legend span{ display:inline-flex; align-items:center; gap:5px; }
+.legend i{ width:9px; height:9px; border-radius:2px; display:inline-block; }
+.list{ background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); overflow:hidden; }
+.head-row{ display:grid; grid-template-columns: 14px 1fr 100px 110px; gap:12px; padding:10px 16px;
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
+  color:var(--text-muted); border-bottom:1px solid var(--border); }
+.row{ display:grid; grid-template-columns: 14px 1fr 100px 110px; gap:12px; align-items:center;
+  padding:11px 16px; text-decoration:none; color:var(--text-primary); border-bottom:1px solid var(--border); }
+.row:last-child{ border-bottom:none; }
+.row:hover{ background:var(--surface-2); }
+.chip{ width:9px; height:9px; border-radius:50%; }
+.combo{ font-size:13px; }
+.loss{ font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--accent); text-align:right; }
+.colvar{ font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--text-muted); text-align:right; }
+footer{ margin-top:24px; color:var(--text-muted); font-size:11.5px; text-align:center; }
+</style>
+<div class="wrap">
+  <h1>Linked Explorer — all 25 combos</h1>
+  <p class="lede">Each row opens the full linked UMAP &harr; C &harr; C&#770; &harr; P &harr; P-constraints &harr; G &harr; &beta; explorer for that gene-selection &times; metacell-generation combination (rebalanced grid). Sorted by solver loss, lower = better fit. col_var shows type-discriminability of the resulting P&times;G matrix &mdash; note the inverse relationship with loss.</p>
+  <div class="legend">
+    <span><i style="background:var(--gm1)"></i>raw_variance</span><span><i style="background:var(--gm2)"></i>seurat_vst_approx</span><span><i style="background:var(--gm3)"></i>dispersion_binned</span><span><i style="background:var(--gm4)"></i>trend_residual_approx</span><span><i style="background:var(--gm5)"></i>binomial_deviance_approx</span>
+  </div>
+  <div class="list">
+    <div class="head-row"><span></span><span>combo</span><span style="text-align:right">loss</span><span style="text-align:right">col_var median</span></div>
+    
+      <a class="row" href="linked_explorer_2_seurat_vst_approx__1_constrained_kmeans_local_pca.html">
+        <span class="chip" style="background:var(--gm2)"></span>
+        <span class="combo">seurat_vst_approx &times; 1_constrained_kmeans_local_pca</span>
+        <span class="loss">17,100</span>
+        <span class="colvar">1.46e-06</span>
+      </a>
+      <a class="row" href="linked_explorer_2_seurat_vst_approx__3_graph_ward_supercell.html">
+        <span class="chip" style="background:var(--gm2)"></span>
+        <span class="combo">seurat_vst_approx &times; 3_graph_ward_supercell</span>
+        <span class="loss">17,191</span>
+        <span class="colvar">1.23e-06</span>
+      </a>
+      <a class="row" href="linked_explorer_2_seurat_vst_approx__5_archetypal_farthest_point.html">
+        <span class="chip" style="background:var(--gm2)"></span>
+        <span class="combo">seurat_vst_approx &times; 5_archetypal_farthest_point</span>
+        <span class="loss">17,298</span>
+        <span class="colvar">1.58e-06</span>
+      </a>
+      <a class="row" href="linked_explorer_2_seurat_vst_approx__4_agglomerative_ward_full.html">
+        <span class="chip" style="background:var(--gm2)"></span>
+        <span class="combo">seurat_vst_approx &times; 4_agglomerative_ward_full</span>
+        <span class="loss">17,549</span>
+        <span class="colvar">1.26e-06</span>
+      </a>
+      <a class="row" href="linked_explorer_3_dispersion_binned__1_constrained_kmeans_local_pca.html">
+        <span class="chip" style="background:var(--gm3)"></span>
+        <span class="combo">dispersion_binned &times; 1_constrained_kmeans_local_pca</span>
+        <span class="loss">17,632</span>
+        <span class="colvar">1.19e-05</span>
+      </a>
+      <a class="row" href="linked_explorer_3_dispersion_binned__5_archetypal_farthest_point.html">
+        <span class="chip" style="background:var(--gm3)"></span>
+        <span class="combo">dispersion_binned &times; 5_archetypal_farthest_point</span>
+        <span class="loss">17,690</span>
+        <span class="colvar">1.15e-05</span>
+      </a>
+      <a class="row" href="linked_explorer_3_dispersion_binned__3_graph_ward_supercell.html">
+        <span class="chip" style="background:var(--gm3)"></span>
+        <span class="combo">dispersion_binned &times; 3_graph_ward_supercell</span>
+        <span class="loss">17,887</span>
+        <span class="colvar">1.09e-05</span>
+      </a>
+      <a class="row" href="linked_explorer_3_dispersion_binned__2_kmeans_global_pca.html">
+        <span class="chip" style="background:var(--gm3)"></span>
+        <span class="combo">dispersion_binned &times; 2_kmeans_global_pca</span>
+        <span class="loss">17,919</span>
+        <span class="colvar">1.16e-05</span>
+      </a>
+      <a class="row" href="linked_explorer_4_trend_residual_approx__3_graph_ward_supercell.html">
+        <span class="chip" style="background:var(--gm4)"></span>
+        <span class="combo">trend_residual_approx &times; 3_graph_ward_supercell</span>
+        <span class="loss">18,089</span>
+        <span class="colvar">9.19e-06</span>
+      </a>
+      <a class="row" href="linked_explorer_2_seurat_vst_approx__2_kmeans_global_pca.html">
+        <span class="chip" style="background:var(--gm2)"></span>
+        <span class="combo">seurat_vst_approx &times; 2_kmeans_global_pca</span>
+        <span class="loss">18,188</span>
+        <span class="colvar">6.12e-07</span>
+      </a>
+      <a class="row" href="linked_explorer_4_trend_residual_approx__4_agglomerative_ward_full.html">
+        <span class="chip" style="background:var(--gm4)"></span>
+        <span class="combo">trend_residual_approx &times; 4_agglomerative_ward_full</span>
+        <span class="loss">18,276</span>
+        <span class="colvar">5.13e-06</span>
+      </a>
+      <a class="row" href="linked_explorer_4_trend_residual_approx__1_constrained_kmeans_local_pca.html">
+        <span class="chip" style="background:var(--gm4)"></span>
+        <span class="combo">trend_residual_approx &times; 1_constrained_kmeans_local_pca</span>
+        <span class="loss">18,404</span>
+        <span class="colvar">4.74e-06</span>
+      </a>
+      <a class="row" href="linked_explorer_4_trend_residual_approx__5_archetypal_farthest_point.html">
+        <span class="chip" style="background:var(--gm4)"></span>
+        <span class="combo">trend_residual_approx &times; 5_archetypal_farthest_point</span>
+        <span class="loss">18,458</span>
+        <span class="colvar">7.21e-06</span>
+      </a>
+      <a class="row" href="linked_explorer_3_dispersion_binned__4_agglomerative_ward_full.html">
+        <span class="chip" style="background:var(--gm3)"></span>
+        <span class="combo">dispersion_binned &times; 4_agglomerative_ward_full</span>
+        <span class="loss">18,597</span>
+        <span class="colvar">8.20e-06</span>
+      </a>
+      <a class="row" href="linked_explorer_4_trend_residual_approx__2_kmeans_global_pca.html">
+        <span class="chip" style="background:var(--gm4)"></span>
+        <span class="combo">trend_residual_approx &times; 2_kmeans_global_pca</span>
+        <span class="loss">19,094</span>
+        <span class="colvar">1.69e-06</span>
+      </a>
+      <a class="row" href="linked_explorer_5_binomial_deviance_approx__2_kmeans_global_pca.html">
+        <span class="chip" style="background:var(--gm5)"></span>
+        <span class="combo">binomial_deviance_approx &times; 2_kmeans_global_pca</span>
+        <span class="loss">25,003</span>
+        <span class="colvar">5.46e-03</span>
+      </a>
+      <a class="row" href="linked_explorer_5_binomial_deviance_approx__4_agglomerative_ward_full.html">
+        <span class="chip" style="background:var(--gm5)"></span>
+        <span class="combo">binomial_deviance_approx &times; 4_agglomerative_ward_full</span>
+        <span class="loss">25,084</span>
+        <span class="colvar">3.74e-03</span>
+      </a>
+      <a class="row" href="linked_explorer_5_binomial_deviance_approx__5_archetypal_farthest_point.html">
+        <span class="chip" style="background:var(--gm5)"></span>
+        <span class="combo">binomial_deviance_approx &times; 5_archetypal_farthest_point</span>
+        <span class="loss">25,177</span>
+        <span class="colvar">3.76e-03</span>
+      </a>
+      <a class="row" href="linked_explorer_5_binomial_deviance_approx__1_constrained_kmeans_local_pca.html">
+        <span class="chip" style="background:var(--gm5)"></span>
+        <span class="combo">binomial_deviance_approx &times; 1_constrained_kmeans_local_pca</span>
+        <span class="loss">25,185</span>
+        <span class="colvar">5.21e-03</span>
+      </a>
+      <a class="row" href="linked_explorer_5_binomial_deviance_approx__3_graph_ward_supercell.html">
+        <span class="chip" style="background:var(--gm5)"></span>
+        <span class="combo">binomial_deviance_approx &times; 3_graph_ward_supercell</span>
+        <span class="loss">25,247</span>
+        <span class="colvar">4.74e-03</span>
+      </a>
+      <a class="row" href="linked_explorer_1_raw_variance__3_graph_ward_supercell.html">
+        <span class="chip" style="background:var(--gm1)"></span>
+        <span class="combo">raw_variance &times; 3_graph_ward_supercell</span>
+        <span class="loss">25,253</span>
+        <span class="colvar">4.50e-03</span>
+      </a>
+      <a class="row" href="linked_explorer_1_raw_variance__2_kmeans_global_pca.html">
+        <span class="chip" style="background:var(--gm1)"></span>
+        <span class="combo">raw_variance &times; 2_kmeans_global_pca</span>
+        <span class="loss">25,695</span>
+        <span class="colvar">5.68e-03</span>
+      </a>
+      <a class="row" href="linked_explorer_1_raw_variance__1_constrained_kmeans_local_pca.html">
+        <span class="chip" style="background:var(--gm1)"></span>
+        <span class="combo">raw_variance &times; 1_constrained_kmeans_local_pca</span>
+        <span class="loss">25,737</span>
+        <span class="colvar">4.76e-03</span>
+      </a>
+      <a class="row" href="linked_explorer_1_raw_variance__4_agglomerative_ward_full.html">
+        <span class="chip" style="background:var(--gm1)"></span>
+        <span class="combo">raw_variance &times; 4_agglomerative_ward_full</span>
+        <span class="loss">26,021</span>
+        <span class="colvar">3.86e-03</span>
+      </a>
+      <a class="row" href="linked_explorer_1_raw_variance__5_archetypal_farthest_point.html">
+        <span class="chip" style="background:var(--gm1)"></span>
+        <span class="combo">raw_variance &times; 5_archetypal_farthest_point</span>
+        <span class="loss">26,485</span>
+        <span class="colvar">4.38e-03</span>
+      </a>
+  </div>
+  <footer>ConnectionMiner &middot; rebalanced 25-combo grid &middot; experiments/report_images/build_linked_all25.py</footer>
+</div>
