@@ -71,7 +71,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "C, Ĉ, error (Ĉ−C), P, and β for all 25 gene-selection × metacell-generation combinations, after adding production's merge/re-split metacell rebalancing to the experiment harness (metacell counts now range 3,780–6,695 instead of a fixed ~6,650). Pick any combo from the sidebar — grouped and color-coded by gene method — to inspect its matrices and loss trajectory (hover for exact values). Reproduces the headline finding as a live scatter: raw_variance/binomial_deviance_approx keep genes type-specific but fit worse; seurat_vst_approx/trend_residual_approx/dispersion_binned fit better but flatten to near-uniform gene probabilities across types.",
     url: "/expt-add/solver_diagnostics_rebalanced_25combos.html",
     category: "Full Solver Run",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "solver-overview",
@@ -80,7 +80,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "The regular (non-recovery-battery) end-to-end solver run, at full resolution — P and P Constraints across all 5,333 metacells, G across all 3000 genes, no subsampling. A UMAP paired with a tab-switcher for every matrix the solver produces or consumes; hover a UMAP point to highlight its type's row on the active tab, or hover a matrix cell to spotlight that type's cells on the UMAP.",
     url: "/expt-add/solver_run_dashboard_v2.html",
     category: "Full Solver Run",
-    enabled: true,
+    enabled: false,
     builtBy: "scripts/build_experiment_solver_overview.py",
   },
   {
@@ -189,7 +189,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "One shared selection across every matrix the solver touches: click a cell in any panel and its type lights up everywhere else — row/column in C and Ĉ (true vs. reconstructed connectome), the row in G (per-type gene detection), and the row in P (soft per-metacell type assignment). Click a P column, a UMAP point, or pick a metacell from the dropdown, and its exact cells spotlight on the UMAP. Now also includes β (learned gene-gene interaction) as a static reference panel — it has no type/metacell axis, so it isn't linked to the shared selection.",
     url: "/expt-add/linked_connectome_explorer_v2.html",
     category: "Full Solver Run",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "type-gene-expression-postsolve",
@@ -198,7 +198,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "For each of the 741 known cell types, its gene expression profile after the solve: P_refined @ G_metacell_p (741 types × 3,000 genes), types sorted alphabetically, genes sorted by descending variance. Drag to box-zoom into any region, double-click to reset, hover any cell for the exact type/gene/probability.",
     url: "/expt-add/type_gene_expression_heatmap.html",
     category: "Matrices",
-    enabled: true,
+    enabled: false,
     builtBy: "scripts/build_type_gene_expression_html.py",
   },
   {
@@ -208,7 +208,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "Same 741 types × 3,000 genes matrix, but built from the static, un-optimized P_meta prior (row-stochastic per metacell, not solver-refined) instead of P_refined — the 667 orphan-pool types collapse into near-identical rows here since nothing disambiguates them pre-solve. Useful as a baseline comparison against the post-solve version.",
     url: "/expt-add/type_gene_expression_heatmap_static5310.html",
     category: "Matrices",
-    enabled: true,
+    enabled: false,
     builtBy: "scripts/build_type_gene_expression_matrix_static5310.py",
   },
   {
@@ -218,7 +218,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "P_refined mapped onto the 241 raw MultiomeNN clusters via the cluster→metacell matrix: for each type, how much of its inferred mass lands in each raw cluster (741 types × 241 clusters). Hover any cell for the type, raw cluster, ground-truth label, and weighted mass.",
     url: "/expt-add/p_x_cluster_matrix_heatmap.html",
     category: "Matrices",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "p-x-m-prime",
@@ -227,7 +227,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "P_refined expanded down to individual cells rather than metacells (741 types × 99,656 cells) — each cell inherits its metacell's soft type distribution.",
     url: "/expt-add/p_x_m_prime_heatmap.html",
     category: "Matrices",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "p-x-m-prime-proportional",
@@ -236,7 +236,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "Same per-cell P × M′ matrix, column-normalized and drawn with cell columns width-proportional to their metacell (55,749 cells in named metacells | 43,907 non-named), so metacell size is visible directly in the layout.",
     url: "/expt-add/p_x_m_prime_heatmap_proportional.html",
     category: "Matrices",
-    enabled: true,
+    enabled: false,
   },
   {
     id: "wiring-vs-distance",
