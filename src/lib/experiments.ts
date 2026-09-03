@@ -208,7 +208,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "Same 741 types × 3,000 genes matrix, but built from the static, un-optimized P_meta prior (row-stochastic per metacell, not solver-refined) instead of P_refined — the 667 orphan-pool types collapse into near-identical rows here since nothing disambiguates them pre-solve. Useful as a baseline comparison against the post-solve version.",
     url: "/expt-add/type_gene_expression_heatmap_static5310.html",
     category: "Matrices",
-    enabled: true,
+    enabled: false,
     builtBy: "scripts/build_type_gene_expression_matrix_static5310.py",
   },
   {
