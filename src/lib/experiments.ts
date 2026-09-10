@@ -62,7 +62,12 @@ export const SEED_EXPERIMENTS: Experiment[] = [
       "Same linked UMAP ↔ C ↔ Ĉ ↔ P ↔ P-constraints ↔ G ↔ β interaction as the Linked Connectome Explorer below, now available for all 25 gene-selection × metacell-generation combos from the rebalanced grid (real per-combo metacell counts, 3,780–6,695, instead of the old fixed ~6,650). Each combo gets its own real UMAP refit on that combo's own selected genes. The Ĉ panel is now animated — a slider/play button steps through 19 solver-iteration snapshots (every 5th iteration) plus the final converged frame, so you can watch the reconstruction sharpen as loss drops. Opens an index sorted by solver loss — click any row for that combo's full explorer.",
     url: "/expt-add/linked_explorer_index.html",
     category: "Full Solver Run",
-    enabled: true,
+    // Disabled: the 25 per-combo explorer HTMLs (1.3 GB) were pulled out of
+    // public/ to get the deployed site back under control. They are backed up
+    // at /scratch/ss20308/cm_active/backups/expt-add_linked_explorer_25combos_20260909/
+    // and rebuildable via experiments/report_images/build_linked_all25.py.
+    // Re-enable once they are re-encoded small enough to ship.
+    enabled: false,
   },
   {
     id: "solver-diagnostics-rebalanced-25combos",
