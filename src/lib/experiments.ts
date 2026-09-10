@@ -59,7 +59,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     id: "type-split-atlas-seurat-vst",
     title: "Connectome Atlas — Type Split (seurat_vst)",
     description:
-      "All three blocks of the type-level 80/20 split of C on one page, with the FlyWire morphology behind every type. Switch between the held-out block (148 types, \u03b2 frozen — every connection shown was predicted without the model seeing the block, r +0.588), the training block \u03b2 was fitted on (593 types, r +0.670), and the whole 741-type catalogue solved in one piece (r +0.439). Hover the C matrix for a pair, or pick a type to light up its neurons in 3D along with its connectome partners. Test and train share no type and the catalogue is their union, so all three blocks are contiguous slices of a single shared skeleton pool in one global frame.",
+      "All three blocks of the type-level 80/20 split of C on one page, with the FlyWire morphology behind every type. Switch between the held-out block (148 types, \u03b2 frozen — every connection shown was predicted without the model seeing the block, r +0.588), the training block \u03b2 was fitted on (593 types, r +0.670), and the whole 741-type catalogue solved in one piece on the same gene set (r +0.699). Hover the C matrix for a pair, or pick a type to light up its neurons in 3D along with its connectome partners. Test and train share no type and the catalogue is their union, so all three blocks are contiguous slices of a single shared skeleton pool in one global frame.",
     url: "/expt-add/type_split_atlas_seurat_vst.html",
     category: "Full Solver Run",
     enabled: true,
