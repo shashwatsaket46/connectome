@@ -56,14 +56,24 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     builtBy: "scripts/build_experiment_recovery_battery_explainer.py",
   },
   {
-    id: "replication-visual-disp2000",
-    title: "Replication — Visual disp h2000 (train · test · G-null)",
+    id: "replication-visual-disp2000-s0",
+    title: "Replication — Visual disp h2000 seed 0",
     description:
-      "The grid's top-2 visual variants (3_dispersion_binned, h=2000, uniform init, seeds 0 and 1) re-run end to end from a clean clone of the repository, with the G-metacell null for each. Eight solves in one viewer \u2014 C, \u0108, P, P_constraints, G and \u03b2 for every one; null solves carry tag=\"gnull\" in the metadata so they can never be read as a real fit. The headline: three of the four real numbers reproduce within \u00b10.008, but s0 test fell 0.650 \u2192 0.604, and because the original rank-1/rank-2 margin on d_test was only 0.005 the ordering inverts on re-run \u2014 these two seeds are tied at the run-to-run noise level, so \"disp:2000:uniform:0 is best\" does not reproduce. The nulls themselves reproduce closely.",
-    url: "/expt-add/replication_visual_disp2000.html",
+      "The grid\u2019s rank-1 visual variant (3_dispersion_binned, h=2000, uniform init, seed 0) re-run end to end from a clean clone. Train r 0.6509 against the original 0.6590, but test r fell to 0.6044 from 0.6503 \u2014 a drop of 0.046, beyond the ~0.03 this codebase attributes to cuBLAS reduction order. The G-metacell null for the same variant is reported alongside. Rebuilt with the workbench dashboard (scripts/build_solver_tabs_dashboard.py), the same builder behind the site\u2019s own visual pages \u2014 14 matrix panels over 4 runs, the cell atlas, and 1,591 FlyWire skeletons (1,122 train / 469 test).",
+    url: "/expt-add/replication_visual_disp2000_s0.html",
     category: "Full Solver Run",
     enabled: true,
-    builtBy: "grid_s5/build_full_viewer.py + emit_single_html.py",
+    builtBy: "scripts/build_solver_tabs_dashboard.py",
+  },
+  {
+    id: "replication-visual-disp2000-s1",
+    title: "Replication — Visual disp h2000 seed 1",
+    description:
+      "The rank-2 visual variant (seed 1), same protocol. This one reproduces closely \u2014 train r 0.6622 vs 0.6599, test r 0.6266 vs 0.6245, both within \u00b10.002. Read with seed 0: the original rank-1/rank-2 margin on d_test was 0.005 while seed 0 moved by 0.046 on re-run, so the two are tied at the run-to-run noise level and the published ordering does not reproduce. The G-metacell null for the same variant is reported alongside. Rebuilt with the workbench dashboard (scripts/build_solver_tabs_dashboard.py), the same builder behind the site\u2019s own visual pages \u2014 14 matrix panels over 4 runs, the cell atlas, and 1,591 FlyWire skeletons (1,122 train / 469 test).",
+    url: "/expt-add/replication_visual_disp2000_s1.html",
+    category: "Full Solver Run",
+    enabled: true,
+    builtBy: "scripts/build_solver_tabs_dashboard.py",
   },
   {
     id: "replication-motor-seurat2000-s0",
