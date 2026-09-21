@@ -56,6 +56,36 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     builtBy: "scripts/build_experiment_recovery_battery_explainer.py",
   },
   {
+    id: "replication-visual-disp2000",
+    title: "Replication — Visual disp h2000 (train · test · G-null)",
+    description:
+      "The grid's top-2 visual variants (3_dispersion_binned, h=2000, uniform init, seeds 0 and 1) re-run end to end from a clean clone of the repository, with the G-metacell null for each. Eight solves in one viewer \u2014 C, \u0108, P, P_constraints, G and \u03b2 for every one; null solves carry tag=\"gnull\" in the metadata so they can never be read as a real fit. The headline: three of the four real numbers reproduce within \u00b10.008, but s0 test fell 0.650 \u2192 0.604, and because the original rank-1/rank-2 margin on d_test was only 0.005 the ordering inverts on re-run \u2014 these two seeds are tied at the run-to-run noise level, so \"disp:2000:uniform:0 is best\" does not reproduce. The nulls themselves reproduce closely.",
+    url: "/expt-add/replication_visual_disp2000.html",
+    category: "Full Solver Run",
+    enabled: true,
+    builtBy: "grid_s5/build_full_viewer.py + emit_single_html.py",
+  },
+  {
+    id: "replication-motor-seurat2000-s0",
+    title: "Replication — Motor seurat h2000 seed 0",
+    description:
+      "Motor's top-2 variant (2_seurat_vst, h=2000, uniform init, seed 0) re-run from a clean clone: train, test and the G-metacell null, 14 matrix panels over 4 runs. Both real numbers reproduce bit-exactly against the original \u2014 train r 0.723821420 and test r 0.435808603, to machine precision. The null arm is the substantive result: on train it is indistinguishable from the real fit (0.713 vs 0.724), so the train block's fit does not rest on G's metacell axis; the test gap of 0.068 is where the signal actually lives.",
+    url: "/expt-add/replication_motor_seurat2000_s0.html",
+    category: "Full Solver Run",
+    enabled: true,
+    builtBy: "scripts/build_solver_tabs_dashboard.py",
+  },
+  {
+    id: "replication-motor-seurat2000-s1",
+    title: "Replication — Motor seurat h2000 seed 1",
+    description:
+      "The other motor top-2 variant (2_seurat_vst, h=2000, uniform init, seed 1), same protocol: train, test and G-metacell null, 14 matrix panels over 4 runs. Reproduces bit-exactly \u2014 train r 0.723264675, test r 0.438981261. Here the train-side null scores slightly ABOVE the real fit (0.725 vs 0.723), which is the cleanest statement of the same point: permuting which metacell carries which transcriptome costs nothing on train. The test gap is 0.095.",
+    url: "/expt-add/replication_motor_seurat2000_s1.html",
+    category: "Full Solver Run",
+    enabled: true,
+    builtBy: "scripts/build_solver_tabs_dashboard.py",
+  },
+  {
     id: "type-split-atlas-seurat-vst",
     title: "Connectome Atlas — Type Split (seurat_vst)",
     description:
