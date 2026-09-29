@@ -94,7 +94,7 @@ const ramp = t => { const c = new THREE.Color("#2a78d6");
 // so it is a spread over one hue rather than cycled categoricals that would read
 // as repeats.
 const perNeuron = si => new THREE.Color().setHSL(0.58 - 0.45*(si/D.skel.length), 0.62, 0.48);
-let mode = "group";
+let mode = "depth";   // default: depth reads the 3D layout at a glance
 function baseColour(si){
   const s = D.skel[si];
   if (mode === "side")   return new THREE.Color(D.side_colour[s.side]);
@@ -198,6 +198,7 @@ function resize(){
   const w=view.clientWidth,h=view.clientHeight;
   rend.setSize(w,h); cam.aspect=w/h; cam.updateProjectionMatrix();
 }
+el('legend').style.opacity = (mode === 'group') ? '1' : '.4';
 addEventListener('resize',resize); resize(); place(); recolour(); applyFilter();
 (function loop(){ requestAnimationFrame(loop);
   if (spin && !drag){ rot.y -= 0.004; place(); }
