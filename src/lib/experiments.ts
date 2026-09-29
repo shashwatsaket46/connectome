@@ -22,6 +22,8 @@ export type Experiment = {
   enabled: boolean;
   builtBy?: string;
   custom?: boolean;
+  // Shows the red "new" pill next to the entry in the sidebar.
+  isNew?: boolean;
 };
 
 export const SEED_EXPERIMENTS: Experiment[] = [
@@ -34,6 +36,28 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     category: "Pipeline",
     enabled: true,
     builtBy: "scripts/build_experiment_confusion_matrix.py",
+  },
+  {
+    id: "morphology-motor",
+    title: "Morphology — Motor",
+    description:
+      "3D viewer of the motor connectome's skeletons: 707 of the 730 C-matrix types have a local skeleton (the rest are absent from the cm730 bundle), 127,839 nodes after twig pruning and contraction. Orbit, zoom and pan; colour by population, side, depth or neuron; filter by side. Depth fog fades far branches toward the background and an optional slow spin adds parallax, so near and far arbors read apart.",
+    url: "/expt-add/morphology_motor.html",
+    category: "Morphology",
+    enabled: true,
+    isNew: true,
+    builtBy: "cm_motor/scripts/build_morphology_viewer.py",
+  },
+  {
+    id: "morphology-visual",
+    title: "Morphology — Visual",
+    description:
+      "3D viewer of FlyWire visual-system skeletons: a stratified sample of one neuron per type per side across all 741 types (1,399 skeletons, 326,698 nodes), drawn from 95,079 reconstructions. Sampling is by side so both optic lobes appear. Colour by subsystem, side, depth or neuron; depth fog and an optional slow spin make the 3D structure readable.",
+    url: "/expt-add/morphology_visual.html",
+    category: "Morphology",
+    enabled: true,
+    isNew: true,
+    builtBy: "cm_motor/scripts/build_visual_morphology_viewer.py",
   },
   {
     id: "umap-vs-confusion",

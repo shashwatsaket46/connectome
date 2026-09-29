@@ -50,6 +50,7 @@ export function HubShell({ children }: { children: ReactNode }) {
                       to="/experiments/$id"
                       params={{ id: e.id }}
                       label={e.title}
+                      isNew={e.isNew}
                       active={pathname === `/experiments/${e.id}`}
                     />
                     {activeId === e.id && sections.length > 0 && (
@@ -139,24 +140,38 @@ function SideLink({
   params,
   label,
   active,
+  isNew,
 }: {
   to: string;
   params?: Record<string, string>;
   label: string;
   active: boolean;
+  isNew?: boolean | undefined;
 }) {
   return (
     <Link
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       to={to as any}
       params={params as never}
-      className={`block rounded-md px-2.5 py-2 text-sm leading-snug transition-colors ${
+      className={`flex items-center gap-2 rounded-md px-2.5 py-2 text-sm leading-snug transition-colors ${
         active
           ? "bg-accent font-semibold text-accent-foreground"
           : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
       }`}
     >
-      {label}
+      <span className="min-w-0">{label}</span>
+      {isNew && <NewPill />}
     </Link>
+  );
+}
+
+// Small red "new" marker shaped like a switched-on toggle: a pill track with
+// the white knob on the right, echoing the dark-mode switch below.
+function NewPill() {
+  return (
+    <span className="ml-auto inline-flex h-4 shrink-0 items-center gap-1 rounded-full bg-red-600 py-0 pl-1.5 pr-0.5 text-[0.55rem] font-bold uppercase leading-none tracking-wider text-white">
+      new
+      <span aria-hidden className="h-3 w-3 rounded-full bg-white" />
+    </span>
   );
 }
