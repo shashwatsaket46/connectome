@@ -121,7 +121,9 @@ function updateFog(){
   scene.fog.far = fogK > 0 ? scene.fog.near + 2*R/(0.9*fogK) : 1e9;
 }
 el('fog').oninput = e => { fogK = e.target.value/100; el('fogv').textContent = e.target.value; updateFog(); };
-let spin = false;
+// spin on by default, except for readers who asked the OS for reduced motion
+let spin = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+el('spin').setAttribute('aria-pressed', String(spin));
 el('spin').onclick = () => { spin = !spin; el('spin').setAttribute('aria-pressed', String(spin)); };
 
 const base = new Float32Array(col.length);
