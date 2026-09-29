@@ -45,8 +45,8 @@ button[aria-pressed="true"]{background:#2a78d6;border-color:#2a78d6;color:#fff}
     <div><button data-side="both">both</button><button data-side="left">left</button>
          <button data-side="right">right</button></div>
     <h2 style="margin-top:16px">Depth</h2>
-    <label class="dc">fog <input id="fog" type="range" min="0" max="100" value="65"
-      aria-label="depth fog strength"><span id="fogv">65</span></label>
+    <label class="dc">fog <input id="fog" type="range" min="0" max="100" value="0"
+      aria-label="depth fog strength"><span id="fogv">0</span></label>
     <div><button id="spin" aria-pressed="false">spin</button></div>
     <p class="note" style="margin-top:6px">Far branches fade toward the background;
     spinning adds parallax. Set fog to 0 for flat colour.</p>
@@ -112,7 +112,7 @@ scene.add(lines);
 geo.computeBoundingSphere();
 const R = geo.boundingSphere.radius || 1;
 scene.fog = new THREE.Fog(0xfcfcfb, 1, 2);
-let fogK = 0.65;
+let fogK = 0;   // fog off by default; the slider turns it on
 function updateFog(){
   // nearest branch unfogged; farthest reaches ~90% of the way to the page colour
   // at full strength. fogK = 0 pushes far out of reach, i.e. no fog.
