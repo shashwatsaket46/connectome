@@ -94,7 +94,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     id: "cx-best-g5-h2000-train-test",
     title: "Central Complex — Best Solve (g5 h2000, train | test)",
     description:
-      "The central-complex winner of the nested split, chosen on validation before test was touched: gene set 5 (dispersion-binned with batch), 2,000 HVGs, batch-normalised, constrained k-means metacells. Of 100 configs it had the best validation r (0.792); it was then refit on train (681 types, r 0.648) and scored once on the 172 held-out test types with \u03b2 frozen: r 0.635, AUC 0.876 (degree-only baseline 0.862). The pre-specified reference config (g3 h3000) reaches test r 0.577. 853 types in all (116 CX-class), TRAIN and TEST panels side by side: C, Chat, P, P constraints, G, \u03b2, P x G.",
+      "The central-complex winner of the nested split, chosen on validation before test was touched: gene set 5 (dispersion-binned with batch), 2,000 HVGs, batch-normalised, constrained k-means metacells. Of 100 configs it had the best validation r (0.792); it was then refit on train (681 types, r 0.648) and scored once on the 172 held-out test types with \u03b2 frozen: r 0.635, AUC 0.876 (degree-only baseline 0.862). The pre-specified reference config (g3 h3000) reaches test r 0.577. 853 types in all (116 CX-class), TRAIN and TEST panels side by side: C, Chat, P, P constraints, G, \u03b2, P x G. Click the r 0.792 point in the run scatter to open the same config's FIT | VAL page, the validation solve that selected it.",
     url: "/expt-add/cx_best_g5_h2000_bn1_train_test.html",
     category: "Full Solver Run",
     enabled: true,
