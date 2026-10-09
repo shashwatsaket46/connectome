@@ -60,6 +60,17 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     builtBy: "cm_motor/scripts/build_visual_morphology_viewer.py",
   },
   {
+    id: "morphology-cx",
+    title: "Morphology — Central Complex",
+    description:
+      "3D viewer of every CX-class neuron in the T2 central-complex model: 2,102 FlyWire reconstructions over 116 types (407,108 nodes after twig pruning and contraction), none sampled out, so the columnar tiling of the protocerebral bridge, fan-shaped body and ellipsoid body is complete. Colour by CX group (EB columnar, ring, PB-FB columnar, h\u0394, v\u0394, FB columnar, FB tangential), side, depth or neuron; click a group to hide it.",
+    url: "/expt-add/morphology_cx.html",
+    category: "Morphology",
+    enabled: true,
+    isNew: true,
+    builtBy: "cm_central_complex/scripts/build_cx_morphology_viewer.py",
+  },
+  {
     id: "umap-vs-confusion",
     title: "UMAP + Confusion Matrix — per Family",
     description:
@@ -78,6 +89,17 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     category: "Recovery Battery",
     enabled: false,
     builtBy: "scripts/build_experiment_recovery_battery_explainer.py",
+  },
+  {
+    id: "cx-best-g5-h2000-train-test",
+    title: "Central Complex — Best Solve (g5 h2000, train | test)",
+    description:
+      "The central-complex winner of the nested split, chosen on validation before test was touched: gene set 5 (dispersion-binned with batch), 2,000 HVGs, batch-normalised, constrained k-means metacells. Of 100 configs it had the best validation r (0.792); it was then refit on train (681 types, r 0.648) and scored once on the 172 held-out test types with \u03b2 frozen: r 0.635, AUC 0.876 (degree-only baseline 0.862). The pre-specified reference config (g3 h3000) reaches test r 0.577. 853 types in all (116 CX-class), TRAIN and TEST panels side by side: C, Chat, P, P constraints, G, \u03b2, P x G.",
+    url: "/expt-add/cx_best_g5_h2000_bn1_train_test.html",
+    category: "Full Solver Run",
+    enabled: true,
+    isNew: true,
+    builtBy: "cm_central_complex/scripts/build_cx_grid_workbench.py",
   },
   {
     id: "replication-visual-disp2000-s0",
