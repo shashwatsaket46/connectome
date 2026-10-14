@@ -1,0 +1,1626 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>P·G Solve Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lab console on cream paper. Control strip on top; matrix beside the full cell UMAP;
+   the region readout sits under the UMAP; the solve breakdown opens as a floating card. */
+:root {
+  /* single cream theme on purpose: it stays cream in light and dark viewers */
+  color-scheme: light;
+  --bg: #f4ecda;
+  --panel: #fbf6ea;
+  --ink: #1d1b16;
+  --ink-2: #4f4a40;
+  --ink-3: #847d70;
+  --rule: #e2d6bd;
+  --accent: #2a78d6;
+  --accent-ink: #ffffff;
+  --sel: #eb6834;
+  --dot: #d3c7ae;
+  --named: #2a78d6;
+  --unnamed: #c7b9a0;
+  --good: #1baf7a; --bad: #e34948;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; }
+.wrap { padding-inline: 16px; padding-block: 14px 24px; max-width: 1760px; margin: 0 auto; display: grid; gap: 12px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+.sub { color: var(--ink-3); font-size: 12.5px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; background: var(--panel);
+  border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; }
+.ctl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ctl > span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); }
+select, button, input[type=range] { font-family: inherit; font-size: 13px; }
+select { padding: 5px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); color: var(--ink); }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; background: transparent; color: var(--ink-2); padding: 5px 10px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.btn { border: 1px solid var(--rule); background: var(--panel); color: var(--ink); padding: 5px 10px; border-radius: 6px; cursor: pointer; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+button:focus-visible, select:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.main { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 1080px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px 16px; min-width: 0; }
+.card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-3); font-weight: 500; margin: 0 0 8px; }
+.hm-frame { position: relative; margin: 8px 12px 0 0; display: grid; grid-template-columns: 150px minmax(0, 1fr); }
+.ylab { display: block; width: 100%; }
+.zoombadge { position: absolute; top: 6px; right: 6px; z-index: 2; display: flex; gap: 8px; align-items: center; font-size: 12px;
+  background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 4px 8px; box-shadow: 0 2px 8px rgb(40 30 10 / 0.12); }
+.zoombadge button { border: 0; background: var(--accent); color: var(--accent-ink); border-radius: 4px; padding: 3px 8px; cursor: pointer; font: inherit; }
+.xlab { display: block; width: 100%; height: 86px; }
+.bm-frame { margin: 8px 12px 0 0; display: grid; grid-template-columns: 110px minmax(0, 1fr); }
+.rowlabels { position: relative; font-size: 11px; color: var(--ink-2); }
+.rowlabels div { position: absolute; right: 8px; transform: translateY(-50%); text-align: right; line-height: 1.2; }
+.hm-box { position: relative; min-width: 0; }
+#hm, #hmo { display: block; width: 100%; height: clamp(340px, calc(100vh - 300px), 980px); touch-action: none; }
+#hmo { position: absolute; inset: 0; cursor: crosshair; }
+.axisnote { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-3); margin-top: 6px; padding-left: 150px; gap: 8px; flex-wrap: wrap; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); align-items: center; }
+.legend .ramp { width: 120px; height: 9px; border-radius: 2px; border: 1px solid var(--rule); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.um-box { position: relative; width: calc(100% - 16px); margin: 8px; aspect-ratio: 1 / 1; max-width: 100%; }
+#um, #umo { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+#umo { cursor: crosshair; }
+.side { display: grid; gap: 12px; min-width: 0; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; margin: 0; }
+.kv dt { color: var(--ink-3); }
+.kv dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; min-width: 0; overflow-wrap: anywhere; }
+.tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--panel); font-size: 12px; padding: 6px 8px;
+  border-radius: 5px; z-index: 30; max-width: 300px; line-height: 1.35; font-family: var(--font-mono); }
+.pop { position: fixed; z-index: 20; width: min(540px, calc(100vw - 32px)); max-height: min(80vh, 740px); display: flex; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--rule); border-radius: 10px; box-shadow: 0 12px 36px rgb(40 30 10 / 0.22); }
+.pop-head { display: flex; justify-content: space-between; align-items: start; gap: 12px; padding: 12px 14px 8px; border-bottom: 1px solid var(--rule); cursor: move; }
+.pop-head h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.pop-head p { margin: 3px 0 0; font-size: 12px; color: var(--ink-3); }
+.x { border: 1px solid var(--rule); background: var(--panel); color: var(--ink-2); font-size: 18px; line-height: 1; cursor: pointer; padding: 3px 9px; border-radius: 6px; }
+.x:hover { color: var(--ink); border-color: var(--ink-3); }
+.pop-body { padding: 10px 14px 14px; overflow: auto; display: grid; gap: 12px; }
+.big { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; }
+.big b { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.big span { color: var(--ink-2); font-size: 13px; }
+.thr { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2); flex-wrap: wrap; }
+.thr output { font-family: var(--font-mono); color: var(--ink); min-width: 3.5ch; }
+#hist { width: 100%; height: 120px; display: block; }
+.splits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.splits div { border: 1px solid var(--rule); border-radius: 6px; padding: 6px 8px; font-size: 12px; color: var(--ink-2); }
+.splits b { display: block; font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.tbl-wrap { overflow: auto; max-height: 280px; border: 1px solid var(--rule); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+th, td { padding: 4px 8px; text-align: right; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { position: sticky; top: 0; background: var(--panel); color: var(--ink-3); font-weight: 500; cursor: pointer; user-select: none; }
+td.m { font-family: var(--font-mono); }
+.pill { display: inline-block; padding: 0 6px; border-radius: 9px; font-size: 11px; border: 1px solid currentColor; }
+.pill.ok { color: var(--good); } .pill.no { color: var(--bad); }
+/* anatomy tab */
+.anat-main { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 1080px) { .anat-main { grid-template-columns: minmax(0, 1fr); } }
+.anat-stage { position: relative; height: clamp(440px, calc(100vh - 260px), 920px); border-radius: 6px; overflow: hidden; background: #fbf6ea; border: 1px solid var(--rule); }
+.anat-stage canvas { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+.anat-hint { position: absolute; left: 10px; bottom: 8px; font-size: 11.5px; color: var(--ink-3); background: rgb(251 246 234 / 0.85); padding: 3px 7px; border-radius: 4px; }
+.anat-pick { position: absolute; right: 10px; top: 10px; max-width: 320px; font-size: 12.5px; background: var(--ink); color: var(--panel); padding: 8px 10px; border-radius: 6px; line-height: 1.45; }
+.anat-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.anat-kpis div { border: 1px solid var(--rule); border-radius: 6px; padding: 6px 8px; }
+.anat-kpis b { display: block; font-family: var(--font-mono); font-size: 18px; font-weight: 500; }
+.anat-kpis span { font-size: 11.5px; color: var(--ink-3); }
+.achips { display: flex; flex-wrap: wrap; gap: 4px; }
+.achip { border: 1px solid var(--rule); background: var(--bg); border-radius: 999px; padding: 2px 8px; font-size: 12px; cursor: pointer; color: var(--ink-2); font-family: inherit; }
+.achip b { font-family: var(--font-mono); font-weight: 500; color: var(--ink); }
+tr.aon td { background: #e4eefb; }
+/* experiments tab */
+.xgrid { display: grid; grid-template-columns: minmax(330px, 0.9fr) minmax(0, 1.6fr); gap: 14px; align-items: start; }
+@media (max-width: 1050px) { .xgrid { grid-template-columns: minmax(0, 1fr); } }
+.xfilters { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-bottom: 8px; font-size: 12.5px; }
+.xfilters select { font: inherit; font-size: 12.5px; padding: 3px 6px; border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); color: var(--ink); }
+.xtable { max-height: 640px; overflow: auto; border: 1px solid var(--rule); border-radius: 6px; }
+.xtable td:first-child { white-space: normal; min-width: 14em; }
+.xtable tr.click { cursor: pointer; }
+.xtable tr.click:hover td { background: var(--bg); }
+.xtable tr.on td { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
+.xtable tr.grp td { background: var(--bg); color: var(--ink-3); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; cursor: default; }
+.xbar { display: inline-block; height: 7px; border-radius: 2px; background: var(--accent); opacity: .55; vertical-align: middle; margin-left: 6px; }
+.xbox { position: relative; height: 620px; }
+.xbox canvas { width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: none; }
+.xhead { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.xstats { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--ink-2); }
+.xstats b { font-family: var(--font-mono); font-weight: 500; color: var(--ink); }
+.xfind { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 12.5px; }
+.xfind input { font: inherit; font-size: 12.5px; padding: 4px 7px; border: 1px solid var(--rule); border-radius: 6px; background: var(--panel); color: var(--ink); width: 11em; }
+.status { font-size: 12.5px; color: var(--ink-3); }
+.note { font-size: 12px; color: var(--ink-3); line-height: 1.45; margin: 0; }
+.bm-box { position: relative; width: 100%; aspect-ratio: 1 / 1; max-width: 100%; }
+#bm, #bmo { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+#bmo { cursor: crosshair; }
+.search { display: grid; gap: 10px; }
+.sboxes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 760px) { .sboxes { grid-template-columns: minmax(0, 1fr); } }
+.sfield { display: grid; gap: 6px; min-width: 0; }
+.sfield > label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); }
+.sbox { position: relative; }
+.sbox input { width: 100%; font: inherit; font-size: 14px; padding: 9px 12px; border: 1px solid var(--rule); border-radius: 8px; background: var(--panel); color: var(--ink); }
+.sbox input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.sdrop { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 25; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px;
+  box-shadow: 0 10px 28px rgb(40 30 10 / 0.18); display: grid; grid-template-columns: minmax(0, 1fr); max-height: 360px; overflow: auto; }
+.sdrop .col { padding: 6px; min-width: 0; }
+.sdrop .col + .col { border-left: 1px solid var(--rule); }
+.sdrop h4 { margin: 4px 6px 6px; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); display: flex; justify-content: space-between; gap: 8px; }
+.sdrop h4 button { border: 0; background: none; color: var(--accent); cursor: pointer; font: inherit; text-transform: none; letter-spacing: 0; padding: 0; }
+.sopt { display: flex; justify-content: space-between; gap: 8px; padding: 5px 8px; border-radius: 5px; cursor: pointer; font-size: 13px; }
+.sopt .n { color: var(--ink-3); font-family: var(--font-mono); font-size: 11.5px; white-space: nowrap; }
+.sopt mark { background: #fbe3a6; color: inherit; border-radius: 2px; padding: 0 1px; }
+.sopt[aria-selected="true"], .sopt:hover { background: #f0e7d3; }
+.sopt.on { opacity: 0.45; }
+.terms { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--ink-3); }
+.term { border: 1px solid var(--rule); background: var(--bg); color: var(--ink-2); border-radius: 999px; padding: 2px 9px; cursor: pointer; font: inherit; font-size: 12px; }
+.term b { font-weight: 500; color: var(--ink); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 3px 4px 3px 10px; font-size: 12.5px; border: 1px solid var(--rule); }
+.chip.t { background: #e4eefb; } .chip.g { background: #f7e9df; }
+.chip button { border: 0; background: transparent; cursor: pointer; color: var(--ink-3); font-size: 15px; line-height: 1; padding: 0 5px; }
+.mres { overflow: auto; max-height: 420px; border: 1px solid var(--rule); border-radius: 6px; }
+.mres table td.y { color: var(--good); font-weight: 600; } .mres table td.no { color: var(--ink-3); }
+.mres th.rot { white-space: nowrap; }
+.linky { border: 0; background: none; color: var(--accent); cursor: pointer; font: inherit; padding: 0; text-decoration: underline dotted; }
+.typelist { font-size: 12px; color: var(--ink-2); line-height: 1.5; max-height: 6.2em; overflow: auto; margin: 0; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>P·G Solve Explorer</h1>
+    <span class="sub">Real solves, 10 folds × 5 seeds per type. Drag a box on the matrix or the cell UMAP, or click a type to select its whole row. Scroll over a panel to zoom it; scroll in the margins to move the page. Double-click zooms out.</span>
+  </header>
+
+  <div class="controls" role="toolbar" aria-label="View controls">
+    <label class="ctl"><span>Dataset</span><select id="ds"></select></label>
+    <div class="ctl"><span>Same as consensus if match ≥</span>
+      <input type="range" class="thr-in" id="thr-top" min="50" max="100" step="1" value="90" aria-label="Same as consensus threshold">
+      <output class="thr-out" style="font-family:var(--font-mono);min-width:3.5ch">90%</output></div>
+    <div class="ctl"><span>View</span>
+      <div class="seg" id="tab">
+        <button data-v="pg" aria-pressed="true">P·G (types × genes)</button>
+        <button data-v="beta" aria-pressed="false">β (genes × genes)</button>
+        <button data-v="filter" aria-pressed="false">Gene filter test</button>
+        <button data-v="anat" aria-pressed="false">Anatomy (fit on neurons)</button>
+        <button data-v="exp-motor" aria-pressed="false">Motor experiments</button>
+        <button data-v="exp-cx" aria-pressed="false">Central complex experiments</button>
+      </div>
+    </div>
+    <label class="ctl pgonly"><span>Find type</span>
+      <input id="tfind" list="tlist" placeholder="e.g. T4a, then Enter" autocomplete="off"
+        style="font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--panel);color:var(--ink);width:12em">
+      <datalist id="tlist"></datalist></label>
+    <div class="ctl pgonly"><span>Matrix</span>
+      <div class="seg" id="mode">
+        <button data-v="mean" aria-pressed="true">Average</button>
+        <button data-v="major" aria-pressed="false">Majority</button>
+        <button data-v="agree" aria-pressed="false">Solve agreement</button>
+      </div>
+    </div>
+    <div class="ctl pgonly"><span>Cell → type</span>
+      <div class="seg" id="assign">
+        <button data-v="avg" aria-pressed="true">Average solves</button>
+        <button data-v="maj" aria-pressed="false">Majority solves</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <button class="btn" id="zoomin" disabled>Zoom to selection</button>
+      <button class="btn" id="zoomout" disabled>Full matrix</button>
+      <button class="btn" id="openpop" disabled>Solves for selection</button>
+      <button class="btn" id="clear" disabled>Clear selection</button>
+    </div>
+    <span class="status" id="status">Loading…</span>
+  </div>
+
+  <section class="card search pgonly-block" id="searchcard" aria-label="Search types and genes">
+    <h2 style="margin:0">Search types and genes</h2>
+    <div class="sboxes">
+      <div class="sfield">
+        <label for="sq-t">Cell types</label>
+        <div class="sbox">
+          <input id="sq-t" data-k="t" type="search" placeholder="e.g. tm4, lc1, t4 — case does not matter" autocomplete="off"
+            role="combobox" aria-expanded="false" aria-controls="sdrop-t">
+          <div class="sdrop" id="sdrop-t" role="listbox" hidden></div>
+        </div>
+        <div class="terms" id="sterms-t"></div>
+      </div>
+      <div class="sfield">
+        <label for="sq-g">Genes</label>
+        <div class="sbox">
+          <input id="sq-g" data-k="g" type="search" placeholder="e.g. nachr, cg13, dpr — case does not matter" autocomplete="off"
+            role="combobox" aria-expanded="false" aria-controls="sdrop-g">
+          <div class="sdrop" id="sdrop-g" role="listbox" hidden></div>
+        </div>
+        <div class="terms" id="sterms-g"></div>
+      </div>
+    </div>
+    <div class="chips" id="schips"></div>
+    <div id="sres"></div>
+  </section>
+
+  <div class="main" id="pgview">
+    <section class="card" aria-label="P·G matrix">
+      <h2 id="hmtitle">P·G matrix</h2>
+      <div class="hm-frame">
+        <canvas class="ylab" id="hmy" aria-hidden="true"></canvas>
+        <div class="hm-box">
+          <canvas id="hm" aria-hidden="true"></canvas>
+          <canvas id="hmo" tabindex="0" aria-label="Matrix. Drag to select a region; click a cell to select that type's whole row."></canvas>
+          <div class="zoombadge" id="hmzoom" hidden><span id="hmzoomtxt"></span><button type="button" id="hmfull">Show full matrix</button></div>
+        </div>
+        <div></div>
+        <canvas class="xlab" id="hmx" aria-hidden="true"></canvas>
+      </div>
+      <div class="axisnote"><span>genes, high → low mean P·G</span><span id="ax-right"></span></div>
+      <div class="legend" id="hmlegend" style="margin-top:8px"></div>
+    </section>
+
+    <div class="side">
+      <section class="card" aria-label="Cell UMAP">
+        <h2 id="umtitle">Cell UMAP</h2>
+        <div class="controls" style="padding:0;border:0;background:transparent;margin-bottom:8px">
+          <label class="ctl"><span>Colour cells by</span>
+            <select id="umcol">
+              <option value="sel">Selected types</option>
+              <option value="named">Assigned to named / unnamed type</option>
+              <option value="conf">Assignment confidence</option>
+            </select>
+          </label>
+          <label class="ctl" style="gap:6px"><input type="checkbox" id="umfollow" checked> <span style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink-2)">Zoom to selection</span></label>
+          <button class="btn" id="umzoom">Zoom to selected cells</button>
+          <button class="btn" id="umfull" disabled>Full UMAP</button>
+        </div>
+        <div class="um-box">
+          <canvas id="um" aria-hidden="true"></canvas>
+          <canvas id="umo" tabindex="0" aria-label="Cell UMAP. Drag a box to select the types of the cells inside it and zoom there; click a cell to select its type; scroll to zoom."></canvas>
+        </div>
+        <div class="legend" id="umlegend" style="margin-top:8px"></div>
+      </section>
+
+      <section class="card" aria-label="Selected region">
+        <h2>Selected region</h2>
+        <dl class="kv" id="region"></dl>
+        <p class="typelist" id="typelist" style="margin-top:8px"></p>
+        <p class="note" style="margin-top:10px">A solve is one (fold, seed, split) run. "Same" means the solve's on/off calls (P·G &gt; 0.5)
+          match the majority over all solves on at least the threshold share of the region cells it covers.
+          Cells take the type their metacell is assigned to: the type with the largest summed P over all solves (average),
+          or the type that wins most of the 50 fold × seed runs (majority).</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="card" id="filterview" hidden aria-label="Gene filter test" style="display:grid;gap:14px">
+    <div>
+      <h2 style="margin:0 0 4px">Gene filter test: central complex, best config (g5_h2000_bn1_m1)</h2>
+      <p class="note" style="font-size:13px;max-width:95ch">Same types, folds, seeds and metacells; only the gene filter differs. <b>With the filter</b> the 2000 genes
+        are the top-dispersion genes among those detected in ≥ 5 cells (the default, kept everywhere). <b>Without it</b> they are chosen among genes
+        detected in ≥ 1 cell. Full 10-fold × 5 seeds in both, 50 paired chains. Open either version from the Dataset menu:
+        <button class="linky" data-ds="CXbest">with the filter</button> · <button class="linky" data-ds="CXbestmc1">without it</button>.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px">
+      <div>
+        <h3 style="font-size:13px;margin:0 0 6px">Connectome fit, mean r (C vs Ĉ)</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>split</th><th>with filter</th><th>without</th><th>paired difference</th><th>chains better without</th></tr></thead>
+          <tbody>
+            <tr><td>train</td><td class="m">0.666</td><td class="m">0.672</td><td class="m">+0.005</td><td class="m">27 / 50</td></tr>
+            <tr><td>val</td><td class="m">0.796</td><td class="m">0.819</td><td class="m">+0.023</td><td class="m">28 / 50</td></tr>
+            <tr><td>test</td><td class="m">0.800</td><td class="m">0.815</td><td class="m">+0.014</td><td class="m">29 / 50</td></tr>
+          </tbody></table></div>
+        <p class="note" style="margin-top:6px">Slightly higher on average without the filter, but close to a coin flip chain by chain.</p>
+      </div>
+      <div>
+        <h3 style="font-size:13px;margin:0 0 6px">Which genes change</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>genes</th><th>count</th><th>types with P·G &gt; 0.5</th><th>median max P·G</th></tr></thead>
+          <tbody>
+            <tr><td>shared</td><td class="m">1476</td><td class="m">12.4%</td><td class="m">0.031</td></tr>
+            <tr><td>dropped when the filter is removed</td><td class="m">524</td><td class="m">14.3%</td><td class="m">0.011</td></tr>
+            <tr><td>new, seen in ≥ 5 cells</td><td class="m">373</td><td class="m">1.9%</td><td class="m">0.007</td></tr>
+            <tr><td>new, seen in &lt; 5 cells</td><td class="m">151</td><td class="m">0%</td><td class="m">0.001</td></tr>
+          </tbody></table></div>
+        <p class="note" style="margin-top:6px">Removing the filter re-ranks dispersion, so expressed genes drop out and near-empty ones come in.</p>
+      </div>
+      <div>
+        <h3 style="font-size:13px;margin:0 0 6px">P·G and β</h3>
+        <dl class="kv">
+          <dt>P·G on shared genes</dt><dd>r 0.997 · calls agree 99.9%</dd>
+          <dt>Present by majority</dt><dd>0.9% with · 0.23% without</dd>
+          <dt>β pairs on per train solve</dt><dd>675 with · 720 without</dd>
+          <dt>β genes seen in &lt; 5 cells</dt><dd>0 with · 40 without</dd>
+          <dt>β pairs on by majority</dt><dd>35 with · 25 without</dd>
+        </dl>
+      </div>
+    </div>
+    <figure style="margin:0">
+      <img src="figs/cx_mincells.png" alt="Mean P·G with the gene filter, without it, and the difference, for the central complex best config" style="width:100%;border:1px solid var(--rule);border-radius:6px;background:#fff">
+      <figcaption class="note" style="margin-top:6px">Mean P·G over the 50 paired chains. Rows: 21 named types above the red line, 832 unnamed below. Columns: shared genes,
+        genes only in the filtered run, new genes seen in ≥ 5 cells, and new genes seen in &lt; 5 cells (grey = not in that run). Right: without − with, shared genes.</figcaption>
+    </figure>
+  </section>
+
+  <section class="card" id="expview" hidden aria-label="Experiments" style="display:grid;gap:10px">
+    <div>
+      <h2 style="margin:0 0 4px" id="x-title">Experiments</h2>
+      <p class="note" style="font-size:13px;max-width:120ch;margin:0" id="x-proto"></p>
+    </div>
+    <div class="xfilters" id="x-filters"></div>
+    <div class="xtable" style="max-height:70vh"><table><thead><tr><th data-k="label">Experiment</th><th data-k="n_genes">Genes</th><th data-k="train" id="x-th-train">Train r</th><th data-k="val">Val r</th><th data-k="test">Test r</th><th data-k="beta_pairs">β pairs on</th><th data-k="on_frac">P·G &gt; 0.5</th><th></th></tr></thead>
+      <tbody id="x-rows"></tbody></table></div>
+    <p class="note">Click a row to open that experiment with everything the main datasets have: P·G matrix, cell UMAP, β, search and the solve popup.
+      Every experiment is also in the Dataset menu. One solve per split, so a single run's seed noise is about ±0.02 r.</p>
+  </section>
+
+  <section class="card" id="anatview" hidden aria-label="Anatomy" style="display:grid;gap:10px">
+    <div>
+      <h2 style="margin:0 0 4px" id="a-title">Anatomy: where the model fits</h2>
+      <p class="note" style="font-size:13px;max-width:125ch;margin:0">Held-out fit drawn on the real neurons. Every type is scored on the test block of the fold that held it out
+        (10 folds × 5 seeds): <b>r</b> = Pearson r between observed C and predicted Ĉ over the type's row and column there, <b>loss</b> = their mean squared residual
+        after one rescale of Ĉ per solve. Voxels average r (or loss) over the types whose arbors pass through them.</p>
+    </div>
+    <div class="controls" style="padding:8px 10px">
+      <label class="ctl"><span>Dataset</span><select id="a-ds"></select></label>
+      <div class="ctl"><span>Show</span><div class="seg" id="a-show"><button data-v="both" aria-pressed="true">Neurons + voxels</button><button data-v="neurons" aria-pressed="false">Neurons</button><button data-v="voxels" aria-pressed="false">Voxels</button></div></div>
+      <div class="ctl"><span>Colour by</span><div class="seg" id="a-col"><button data-v="r" aria-pressed="true">Held-out r</button><button data-v="loss" aria-pressed="false">Loss</button></div></div>
+      <div class="ctl"><span id="a-thr-lab">Show the worst voxels</span><input type="range" id="a-thr" min="0" max="1" step="0.01" value="1"><output id="a-thr-out" style="font-family:var(--font-mono);font-size:12.5px">all</output></div>
+      <div class="ctl"><span>Voxel opacity</span><input type="range" id="a-op" min="0.1" max="1" step="0.05" value="0.6"></div>
+      <label class="ctl"><span>Find type</span><input id="a-tq" list="a-tl" placeholder="e.g. T4a" autocomplete="off"
+        style="font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--rule);border-radius:6px;background:var(--panel);color:var(--ink);width:10em"><datalist id="a-tl"></datalist></label>
+      <button class="btn" id="a-clear" type="button">Show all</button>
+      <button class="btn" id="a-spin" type="button">Spin</button>
+    </div>
+    <div class="anat-main">
+      <div style="min-width:0">
+        <div class="anat-stage"><canvas id="a-cv" tabindex="0" aria-label="3D view of neurons and voxels"></canvas>
+          <div class="anat-hint" id="a-hint">Drag to rotate · Shift-drag to pan · scroll to zoom · click a neuron or a voxel</div>
+          <div class="anat-pick" id="a-pick" hidden></div></div>
+        <div class="legend" id="a-legend" style="margin-top:8px"></div>
+      </div>
+      <div class="side">
+        <section class="card"><h2>Summary</h2><div class="anat-kpis" id="a-kpis"></div><p class="note" id="a-sumnote"></p></section>
+        <section class="card"><h2>Neuropils</h2>
+          <div class="tbl-wrap" style="max-height:340px"><table><thead><tr><th data-k="neuropil">Neuropil</th><th data-k="r">r</th><th data-k="loss">Loss</th><th data-k="miss">Missed</th><th data-k="false_alarm">False</th><th data-k="n_pairs">Pairs</th></tr></thead><tbody id="a-np"></tbody></table></div>
+          <p class="note" id="a-npnote">Every held-out type pair counts for a neuropil by how much of both types' synapses lie there, so unconnected pairs count too.
+            Missed = loss on connected pairs; False = loss on unconnected pairs. Click a neuropil to show the 40 types with most arbor there.</p></section>
+        <section class="card"><h2>Types</h2>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+            <div><p class="note" style="margin:0 0 4px"><b>Worst fit</b> (lowest r)</p><div class="achips" id="a-worst"></div></div>
+            <div><p class="note" style="margin:0 0 4px"><b>Best fit</b> (highest r)</p><div class="achips" id="a-best"></div></div></div>
+          <p class="note" id="a-nan"></p></section>
+      </div>
+    </div>
+  </section>
+
+  <div class="main" id="betaview" hidden>
+    <section class="card" aria-label="beta matrix">
+      <h2 id="btitle">β matrix</h2>
+      <div class="controls" style="padding:0;border:0;background:transparent;margin-bottom:8px">
+        <label class="ctl"><span>Colour</span>
+          <select id="bcol">
+            <option value="vote">Share of β with the pair on</option>
+            <option value="major">Majority pairs only</option>
+            <option value="mean">Mean β (log scale)</option>
+          </select>
+        </label>
+        <label class="ctl"><span>Gene order</span>
+          <select id="bord">
+            <option value="pg">Same as P·G columns</option>
+            <option value="act">β activity (busiest genes first)</option>
+          </select>
+        </label>
+        <button class="btn" id="buse">Use the P·G selected genes</button>
+      </div>
+      <div class="bm-frame">
+        <canvas class="ylab" id="bmy" aria-hidden="true"></canvas>
+        <div class="bm-box">
+          <canvas id="bm" aria-hidden="true"></canvas>
+          <canvas id="bmo" tabindex="0" aria-label="beta matrix, gene i (rows) by gene j (columns). Drag a box to select gene pairs."></canvas>
+        </div>
+        <div></div>
+        <canvas class="xlab" id="bmx" aria-hidden="true"></canvas>
+      </div>
+      <div class="axisnote" style="padding-left:110px"><span>rows: gene i · columns: gene j</span><span id="bax"></span></div>
+      <div class="legend" id="blegend" style="margin-top:8px"></div>
+    </section>
+    <div class="side">
+      <section class="card" aria-label="Selected beta region">
+        <h2>Selected β region</h2>
+        <dl class="kv" id="bregion"></dl>
+        <div class="tbl-wrap" style="max-height:360px;margin-top:10px"><table>
+          <thead><tr><th>Gene i</th><th>Gene j</th><th>On in</th><th>Mean β</th></tr></thead>
+          <tbody id="bpairs"></tbody></table></div>
+        <p class="note" style="margin-top:10px">β is fitted on train and frozen for val and test (rescaled by one number), so each
+          dataset has 50 distinct β: 10 folds × 5 seeds. A pair is on when β &gt; 0.1; β is otherwise ~1e-14.
+          Only pairs on in at least one β are drawn. "Same" means a β's on/off calls match the majority on at least the
+          threshold share of the region's active pairs it holds.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="tip" id="tip" hidden></div>
+
+<div class="pop" id="pop" hidden role="dialog" aria-labelledby="pop-title">
+  <div class="pop-head" id="pophead">
+    <div><h3 id="pop-title">Solves for this region</h3><p id="pop-sub"></p></div>
+    <button class="x" id="popx" type="button" aria-label="Close">×</button>
+  </div>
+  <div class="pop-body">
+    <div class="big" id="pop-big"></div>
+    <div class="thr"><label for="thr">Same as consensus if match ≥</label>
+      <input type="range" class="thr-in" id="thr" min="50" max="100" step="1" value="90"><output class="thr-out" id="thrv">90%</output></div>
+    <canvas id="hist" aria-label="Histogram of per-solve match"></canvas>
+    <div class="splits" id="pop-splits"></div>
+    <div class="tbl-wrap"><table>
+      <thead id="pophd"></thead>
+      <tbody id="pop-rows"></tbody></table></div>
+    <div id="pop-types"></div>
+    <div id="pop-genes"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const STAGES = [
+  ["Adult","Adult"],["Adult_prio","Adult (prio build)"],["P15","P15"],["P30","P30"],["P50","P50"],["P70","P70"],
+  ["Zipursky_Earlyupdate","Zip Early"],["Zipursky_P24update","Zip P24"],["Zipursky_P36update","Zip P36"],
+  ["Zipursky_P48update","Zip P48"],["Zipursky_P60update","Zip P60"],["Zipursky_P72update","Zip P72"],
+  ["Zipursky_P84update","Zip P84"],["Zipursky_P96update","Zip P96"],
+  ["motor_tp0","Motor tp0"],["motor_tp1","Motor tp1"],["motor_tp2","Motor tp2"],["motor_tp3","Motor tp3"],
+  ["CX","Central complex (T2)"],["CXbest","Central complex, best grid config"],["CXbestmc1","Central complex, best config, no gene filter"],
+  ["Adult_nofilt","Adult, no gene filter"],["Adult_prio_s103_nofilt","Adult 103 (own 103-named folds), no gene filter"],["Zipursky_P84update_nofilt","Zip P84, no gene filter"],["Zipursky_Earlyupdate_nofilt","Zip Early, no gene filter"],["Zipursky_P60update_nofilt","Zip P60, no gene filter"],["Zipursky_P36update_nofilt","Zip P36, no gene filter"],["Zipursky_P96update_nofilt","Zip P96, no gene filter"],["P50_nofilt","P50, no gene filter"],["motor_tp0_nofilt","Motor tp0, no gene filter (= filtered: no gene removed)"],["motor_tp1_nofilt","Motor tp1, no gene filter (= filtered: no gene removed)"],["motor_tp2_nofilt","Motor tp2, no gene filter (= filtered: no gene removed)"],["motor_tp3_nofilt","Motor tp3, no gene filter (= filtered: no gene removed)"],
+  ["Adult_nofilt_all","Adult, no gene filter · all 12,028 genes (3,000 fitted + 9,028 read-out)"]];   // pbnull/pg_allgenes.py + dash2_export.py
+const SPLITS = ["train", "val", "test"];
+const $ = (id) => document.getElementById(id);
+const label = (s) => STAGES.find(x => x[0] === s)[1];
+const cache = new Map();
+const S = { stage: "Adult_nofilt", D: null, mode: "mean", assign: "avg", umcol: "sel", view: null, sel: null,
+  thr: 0.9, sortK: "match", sortDir: 1, region: null, rowMask: null,
+  umv: { x0: 0, x1: 1, y0: 0, y1: 1 }, umFollow: true,
+  tab: "pg", popKind: "pg", bcol: "vote", bord: "pg", bv: null, bsel: null, bregion: null };
+
+/* ---------- theme-aware colours ---------- */
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function hex(h) { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map(c => c + c).join(""); const n = parseInt(h, 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+function isDark() { return false; }   // the page is cream in every theme
+function ramp(stops) {
+  const c = stops.map(hex), lut = new Uint8Array(256 * 3);
+  for (let i = 0; i < 256; i++) { const x = i / 255 * (c.length - 1), k = Math.min(c.length - 2, Math.floor(x)), f = x - k;
+    for (let j = 0; j < 3; j++) lut[i * 3 + j] = Math.round(c[k][j] + (c[k + 1][j] - c[k][j]) * f); }
+  return lut;
+}
+const LUT = {};
+function buildLuts() {
+  const d = isDark();
+  LUT.mean = ramp(d ? ["#1d1c17", "#13335c", "#1c5cab", "#3987e5", "#86b6ef", "#cde2fb"] : ["#fbf6ea", "#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"]);
+  LUT.agree = ramp(d ? ["#1d1c17", "#5c2a12", "#a8481d", "#e8753e", "#ffb48c"] : ["#fbf6ea", "#fbd9c7", "#f4a47b", "#e2622e", "#9c3a12"]);
+  LUT.major = ramp(d ? ["#1d1c17", "#86b6ef"] : ["#fbf6ea", "#1c5cab"]);
+}
+
+/* ---------- data: fetch when served, <script> files when opened from disk ---------- */
+const OFFLINE = location.protocol === "file:";
+function dec64(b) { const s = atob(b.trim()), u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u.buffer; }
+async function rawData(stage) {
+  const base = `data/${stage}/`;
+  if (OFFLINE) {
+    if (!(window.__PG && window.__PG[stage])) await new Promise((res, rej) => {
+      const s = document.createElement("script"); s.src = base + "data.js"; s.onload = res;
+      s.onerror = () => rej(new Error(`${base}data.js is missing next to index.html`)); document.head.appendChild(s); });
+    const P = window.__PG[stage]; delete window.__PG[stage]; return P;
+  }
+  const txt = async (f) => { const r = await fetch(base + f); if (!r.ok) throw new Error(`${f}: HTTP ${r.status}`); return r.text(); };
+  if (/^(mexp|cxg)_/.test(stage)) {   // experiments ship as one bundle each (the artifact's file-count cap)
+    const out = JSON.parse(await txt("bundle.json"));
+    if (out.cells.xy_ref) { const r = await fetch(`data/${out.cells.xy_ref}`); if (!r.ok) throw new Error(`${out.cells.xy_ref}: HTTP ${r.status}`);
+      out.cells.xy = (await r.json()).xy; }
+    return out; }
+  // matrices ship gzip-compressed (<key>.gz.b64.txt); older uploads were plain base64 (<key>.b64.txt)
+  const bin = async (k) => { const r = await fetch(base + k + ".gz.b64.txt");
+    return r.ok ? { gz: await r.text() } : { b64: await txt(k + ".b64.txt") }; };
+  const keys = ["mean.u8", "vote.u8", "mix_idx.u32", "mix_bits.u32"];
+  const [meta, cells, beta, ...b] = await Promise.all([txt("meta.json"), txt("cells.json"), txt("beta.json"), ...keys.map(bin)]);
+  const out = { meta: JSON.parse(meta), cells: JSON.parse(cells), beta: JSON.parse(beta) };
+  if (out.cells.xy_ref) {   // experiments share one cell UMAP per system
+    const r = await fetch(`data/${out.cells.xy_ref}`); if (!r.ok) throw new Error(`${out.cells.xy_ref}: HTTP ${r.status}`);
+    out.cells.xy = (await r.json()).xy; }
+  keys.forEach((k, i) => { if (b[i].gz) out[k + ".gz"] = b[i].gz; else out[k] = b[i].b64; });
+  return out;
+}
+async function gunzip64(s) {          // base64 of a gzip stream -> ArrayBuffer (browser's own DecompressionStream)
+  const u = new Uint8Array(dec64(s));
+  return await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+}
+async function binOf(P, k) { return P[k + ".gz"] ? gunzip64(P[k + ".gz"]) : dec64(P[k]); }
+async function load(stage) {
+  if (cache.has(stage)) return cache.get(stage);
+  const P = await rawData(stage), m = P.meta, C = P.cells;
+  const [bm, bv, bi, bb] = await Promise.all(["mean.u8", "vote.u8", "mix_idx.u32", "mix_bits.u32"].map(k => binOf(P, k)));
+  const D = { ...m, mean: new Uint8Array(bm), vote: new Uint8Array(bv), mixIdx: new Uint32Array(bi), mixBits: new Uint32Array(bb) };
+  D.cells = { n: C.n_cells, xy: new Uint16Array(dec64(C.xy)), gm: new Uint16Array(dec64(C.gm)),
+    type: { avg: new Uint16Array(dec64(C.avg_type)), maj: new Uint16Array(dec64(C.maj_type)) },
+    conf: { avg: new Uint8Array(dec64(C.avg_share)), maj: new Uint8Array(dec64(C.maj_frac)) } };
+  D.nf = D.n_folds || 10; D.ns = D.n_seeds || 5; D.nk = D.nf * D.ns;   // experiments: 1 fold x 1 seed
+  D.beta = decodeBeta(P.beta, D.ns);
+  D.nG5 = new Uint8Array(D.n_genes);
+  for (let g = 0; g < D.n_genes; g++) { let k = 0, x = D.gene_fold_mask[g]; while (x) { k += x & 1; x >>= 1; } D.nG5[g] = D.ns * k; }
+  // cells per type, for each assignment
+  D.cellsPerType = {};
+  for (const a of ["avg", "maj"]) { const n = new Uint32Array(D.n_types), t = D.cells.type[a];
+    for (let i = 0; i < D.cells.n; i++) { const k = t[D.cells.gm[i]]; if (k < D.n_types) n[k]++; } D.cellsPerType[a] = n; }
+  // spatial grid for nearest-cell lookup (128 x 128 buckets in data space)
+  const G = 128, head = new Int32Array(G * G).fill(-1), next = new Int32Array(D.cells.n);
+  for (let i = 0; i < D.cells.n; i++) { const bx = Math.min(G - 1, D.cells.xy[2 * i] * G >> 16), by = Math.min(G - 1, D.cells.xy[2 * i + 1] * G >> 16), b = by * G + bx;
+    next[i] = head[b]; head[b] = i; }
+  D.grid = { G, head, next };
+  cache.set(stage, D);
+  return D;
+}
+
+/* ---------- matrix ---------- */
+let fullImg = null;
+function buildImage() {
+  const D = S.D, T = D.n_types, G = D.n_genes;
+  const cv = document.createElement("canvas"); cv.width = G; cv.height = T;
+  const ctx = cv.getContext("2d"), im = ctx.createImageData(G, T), px = im.data, lut = LUT[S.mode];
+  for (let r = 0; r < T; r++) for (let g = 0; g < G; g++) {
+    const i = r * G + g; let v;
+    if (S.mode === "mean") v = D.mean[i];
+    else { const n = D.nG5[g], k = D.vote[i];
+      v = S.mode === "major" ? (2 * k > n ? 255 : 0) : Math.round((1 - Math.max(k, n - k) / n) * 2 * 255); }
+    const o = i * 4; px[o] = lut[v * 3]; px[o + 1] = lut[v * 3 + 1]; px[o + 2] = lut[v * 3 + 2]; px[o + 3] = 255;
+  }
+  ctx.putImageData(im, 0, 0);
+  fullImg = cv;
+}
+function sizeCanvas(cv) { const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; } return dpr; }
+function drawMatrix() {
+  const cv = $("hm"); sizeCanvas(cv); const ctx = cv.getContext("2d"), v = S.view;
+  ctx.fillStyle = css("--panel"); ctx.fillRect(0, 0, cv.width, cv.height);
+  const sw = v.c1 - v.c0 + 1, sh = v.r1 - v.r0 + 1;
+  ctx.imageSmoothingEnabled = sw > cv.width || sh > cv.height; ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(fullImg, v.c0, v.r0, sw, sh, 0, 0, cv.width, cv.height);
+  drawOverlay(); drawRowLabels();
+  const D = S.D, zoomed = v.r0 > 0 || v.c0 > 0 || v.r1 < D.n_types - 1 || v.c1 < D.n_genes - 1;
+  $("hmzoom").hidden = !zoomed; $("zoomout").disabled = !zoomed;
+  if (zoomed) $("hmzoomtxt").textContent = `Zoomed: types ${v.r0 + 1}–${v.r1 + 1} of ${D.n_types}, genes ${v.c0 + 1}–${v.c1 + 1} of ${D.n_genes}`;
+}
+function cellToPx(r, c) { const cv = $("hmo"), v = S.view;
+  return [(c - v.c0) / (v.c1 - v.c0 + 1) * cv.width, (r - v.r0) / (v.r1 - v.r0 + 1) * cv.height]; }
+function pxToCell(x, y) { const cv = $("hmo"), v = S.view, dpr = window.devicePixelRatio || 1;
+  const c = v.c0 + Math.floor(x * dpr / cv.width * (v.c1 - v.c0 + 1)), r = v.r0 + Math.floor(y * dpr / cv.height * (v.r1 - v.r0 + 1));
+  return [Math.min(v.r1, Math.max(v.r0, r)), Math.min(v.c1, Math.max(v.c0, c))]; }
+function matchOn(r, c) { const D = S.D, i = r * D.n_genes + c; return 2 * D.vote[i] > D.nG5[c]; }
+function drawMatchLines(ctx, dpr) {
+  if (typeof SR === "undefined" || (!SR.types.length && !SR.genes.length)) return;
+  const v = S.view, cv = $("hmo"), ink = css("--accent");
+  ctx.save(); ctx.strokeStyle = ink; ctx.globalAlpha = 0.85; ctx.lineWidth = 1.2 * dpr; ctx.setLineDash([5 * dpr, 4 * dpr]);
+  for (const r of SR.types) { if (r < v.r0 || r > v.r1) continue; const y = cellToPx(r + 0.5, 0)[1];
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cv.width, y); ctx.stroke(); }
+  for (const c of SR.genes) { if (c < v.c0 || c > v.c1) continue; const x = cellToPx(0, c + 0.5)[0];
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, cv.height); ctx.stroke(); }
+  ctx.setLineDash([]); ctx.globalAlpha = 1;
+  const rad = 5 * dpr;
+  for (const r of SR.types) for (const c of SR.genes) {
+    if (r < v.r0 || r > v.r1 || c < v.c0 || c > v.c1) continue;
+    const [x, y] = cellToPx(r + 0.5, c + 0.5), on = matchOn(r, c);
+    ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fillStyle = css("--panel"); ctx.fill();
+    ctx.lineWidth = 2.2 * dpr; ctx.strokeStyle = on ? css("--good") : css("--bad"); ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y, rad * 0.45, 0, 7); ctx.fillStyle = on ? css("--good") : css("--bad"); if (on) ctx.fill(); }
+  ctx.restore();
+}
+function drawOverlay(drag) {
+  const cv = $("hmo"), dpr = sizeCanvas(cv), ctx = cv.getContext("2d"), D = S.D, v = S.view;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  if (D.n_named > v.r0 && D.n_named <= v.r1) {
+    const y = cellToPx(D.n_named, 0)[1]; ctx.strokeStyle = css("--bad"); ctx.lineWidth = 1.5 * dpr;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cv.width, y); ctx.stroke(); }
+  const selc = css("--sel");
+  drawMatchLines(ctx, dpr);
+  if (drag) { const [x0, y0] = cellToPx(drag.r0, drag.c0), [x1, y1] = cellToPx(drag.r1 + 1, drag.c1 + 1);
+    ctx.fillStyle = "rgba(235,104,52,0.10)"; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    ctx.strokeStyle = selc; ctx.lineWidth = 2 * dpr; ctx.strokeRect(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0)); return; }
+  const s = S.sel; if (!s) return;
+  if (s.rect) { const [x0, y0] = cellToPx(s.r0, s.c0), [x1, y1] = cellToPx(s.r1 + 1, s.c1 + 1);
+    ctx.fillStyle = "rgba(235,104,52,0.10)"; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    ctx.strokeStyle = selc; ctx.lineWidth = 2 * dpr; ctx.strokeRect(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0)); return; }
+  // a set of rows (from the UMAP): a band across the selected genes + a tick at the left edge for each row
+  const xa = cellToPx(0, s.c0)[0], xb = cellToPx(0, s.c1 + 1)[0];
+  ctx.fillStyle = "rgba(235,104,52,0.22)";
+  for (const r of s.rows) { if (r < v.r0 || r > v.r1) continue; const y0 = cellToPx(r, 0)[1], y1 = cellToPx(r + 1, 0)[1];
+    ctx.fillRect(xa, y0, xb - xa, Math.max(dpr, y1 - y0)); }
+  ctx.fillStyle = selc;
+  for (const r of s.rows) { if (r < v.r0 || r > v.r1) continue; const y0 = cellToPx(r, 0)[1], y1 = cellToPx(r + 1, 0)[1];
+    ctx.fillRect(0, y0, 6 * dpr, Math.max(1.5 * dpr, y1 - y0)); }
+  ctx.strokeStyle = selc; ctx.lineWidth = 1.5 * dpr; ctx.setLineDash([4 * dpr, 3 * dpr]);
+  ctx.beginPath(); ctx.moveTo(xa, 0); ctx.lineTo(xa, cv.height); ctx.moveTo(xb, 0); ctx.lineTo(xb, cv.height); ctx.stroke(); ctx.setLineDash([]);
+}
+/* Axis labels: every row / column when there is room, otherwise an evenly thinned subset
+   (spacing >= ~11 px), so names appear as you zoom. hi(i) marks selected entries. */
+function drawYLabels(cv, matH, r0, r1, text, hi, bar) {
+  cv.style.height = matH + "px"; const dpr = sizeCanvas(cv), ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H); const n = r1 - r0 + 1, rh = H / n, step = Math.max(1, Math.ceil(11 * dpr / rh));
+  if (bar) for (let r = r0; r <= r1; r++) { ctx.fillStyle = bar(r); ctx.fillRect(W - 5 * dpr, (r - r0) * rh, 4 * dpr, Math.max(dpr, rh)); }
+  const fs = Math.min(11, Math.max(8, rh / dpr - 1)) * dpr;
+  ctx.font = `${fs}px ${css("--font-mono") || "monospace"}`; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let r = r0; r <= r1; r++) {
+    if ((r - r0) % step && !(hi && hi(r) && rh >= 3 * dpr)) continue;
+    ctx.fillStyle = hi && hi(r) ? css("--sel") : css("--ink-2");
+    let t = text(r); while (t.length > 4 && ctx.measureText(t).width > W - 10 * dpr) t = t.slice(0, -2) + "…";
+    ctx.fillText(t, W - 8 * dpr, (r - r0 + 0.5) * rh);
+  }
+}
+function drawXLabels(cv, c0, c1, text, hi) {
+  const dpr = sizeCanvas(cv), ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H); const n = c1 - c0 + 1, cw = W / n, step = Math.max(1, Math.ceil(11 * dpr / cw));
+  ctx.font = `${10 * dpr}px ${css("--font-mono") || "monospace"}`; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let c = c0; c <= c1; c++) {
+    if ((c - c0) % step) continue;
+    const x = (c - c0 + 0.5) * cw; ctx.save(); ctx.translate(x, 4 * dpr); ctx.rotate(-Math.PI / 3);
+    ctx.fillStyle = hi && hi(c) ? css("--sel") : css("--ink-2");
+    let t = text(c); if (t.length > 14) t = t.slice(0, 13) + "…"; ctx.fillText(t, 0, 0); ctx.restore();
+  }
+}
+function drawRowLabels() {
+  const D = S.D, v = S.view, s = S.sel, h = $("hm").getBoundingClientRect().height;
+  drawYLabels($("hmy"), h, v.r0, v.r1, (r) => `#${r + 1} ${D.types[r]}`, (r) => S.rowMask && S.rowMask[r],
+    (r) => D.named[r] ? css("--named") : css("--unnamed"));
+  drawXLabels($("hmx"), v.c0, v.c1, (c) => D.genes[c], (c) => s && c >= s.c0 && c <= s.c1 && (s.c1 - s.c0) < D.n_genes - 1);
+}
+function rampCanvas(id, lut) { const rc = $(id); if (!rc) return; const ctx = rc.getContext("2d");
+  for (let x = 0; x < 120; x++) { const i = Math.round(x / 119 * 255) * 3; ctx.fillStyle = `rgb(${lut[i]},${lut[i + 1]},${lut[i + 2]})`; ctx.fillRect(x, 0, 1, 9); } }
+function drawLegend() {
+  const el = $("hmlegend");
+  if (S.mode === "mean") el.innerHTML = `<span>mean P·G</span><span>0</span><canvas class="ramp" id="rampc" width="120" height="9"></canvas><span>1</span>`;
+  else if (S.mode === "major") el.innerHTML = `<span><i style="background:rgb(${LUT.major.slice(765, 768).join(",")});border-radius:2px"></i>on in more than half of solves (P·G &gt; 0.5)</span><span><i style="background:var(--panel);border:1px solid var(--rule);border-radius:2px"></i>off</span>`;
+  else el.innerHTML = `<span>solves agree</span><span>all</span><canvas class="ramp" id="rampc" width="120" height="9"></canvas><span>${S.D.nk} / ${S.D.nk}</span>`;
+  rampCanvas("rampc", LUT[S.mode]);
+  const v = S.view, D = S.D, zoomed = v.r0 || v.c0 || v.r1 < D.n_types - 1 || v.c1 < D.n_genes - 1;
+  $("ax-right").textContent = `${D.n_types} types × ${D.n_genes} genes` + (zoomed ? ` · showing rows ${v.r0 + 1}–${v.r1 + 1}, genes ${v.c0 + 1}–${v.c1 + 1}` : "");
+}
+
+/* ---------- region statistics (rows = any set of display rows, genes = a contiguous range) ---------- */
+function lowerBound(a, x) { let lo = 0, hi = a.length; while (lo < hi) { const m = (lo + hi) >> 1; if (a[m] < x) lo = m + 1; else hi = m; } return lo; }
+function computeRegion() {
+  const D = S.D, s = S.sel, G = D.n_genes; if (!s) return null;
+  const NF = D.nf, NS = D.ns, NK = D.nk;
+  const colsInFold = new Float64Array(NF);
+  for (let c = s.c0; c <= s.c1; c++) { const m = D.gene_fold_mask[c]; for (let f = 0; f < NF; f++) if (m >> f & 1) colsInFold[f]++; }
+  const rowsBy = Array.from({ length: NF }, () => [0, 0, 0]);
+  for (const r of s.rows) for (let f = 0; f < NF; f++) rowsBy[f][D.split_code[r][f]]++;
+  let sumMean = 0, on = 0, agreeSum = 0, unanimous = 0, cells = 0;
+  const allOn = new Float64Array(s.rows.length * NF), typeProb = new Float64Array(s.rows.length);   // per type: cells every solve calls on, by fold
+  s.rows.forEach((r, q) => { const o = r * G; let tp = 0;
+    for (let c = s.c0; c <= s.c1; c++) { const i = o + c, n = D.nG5[c], k = D.vote[i];
+      sumMean += D.mean[i]; tp += D.mean[i]; if (2 * k > n) on++; agreeSum += Math.max(k, n - k) / n; if (k === 0 || k === n) unanimous++; cells++;
+      if (k === n && n > 0) { const m = D.gene_fold_mask[c]; for (let f = 0; f < NF; f++) if (m >> f & 1) allOn[q * NF + f]++; } }
+    typeProb[q] = tp / (s.c1 - s.c0 + 1) / 255; });
+  const onSolve = new Float64Array(NK * 3);     // (fold*NS+seed)*3 + split: region cells the solve calls on
+  s.rows.forEach((r, q) => { for (let f = 0; f < NF; f++) for (let sd = 0; sd < NS; sd++) onSolve[(f * NS + sd) * 3 + D.split_code[r][f]] += allOn[q * NF + f]; });
+  const mism = new Float64Array(NK * 3); // (fold*NS+seed)*3 + split; only mixed cells can disagree with the majority
+  const rowMism = new Float64Array(s.rows.length * NK); let ri = -1;   // per type x (fold*NS+seed)
+  for (const r of s.rows) { ri++;
+    const a = lowerBound(D.mixIdx, r * G + s.c0), b = lowerBound(D.mixIdx, r * G + s.c1 + 1), sc = D.split_code[r];
+    for (let j = a; j < b; j++) {
+      const i = D.mixIdx[j], c = i - r * G, n = D.nG5[c], maj = 2 * D.vote[i] > n ? 1 : 0, m = D.gene_fold_mask[c];
+      const lo = D.mixBits[2 * j], hi = D.mixBits[2 * j + 1];
+      for (let f = 0; f < NF; f++) { if (!(m >> f & 1)) continue;
+        for (let sd = 0; sd < NS; sd++) { const k = f * NS + sd, bit = k < 32 ? (lo >>> k) & 1 : (hi >>> (k - 32)) & 1;
+          if (bit) onSolve[k * 3 + sc[f]]++;
+          if (bit !== maj) { mism[k * 3 + sc[f]]++; rowMism[ri * NK + k]++; } } }
+    }
+  }
+  const solves = [];
+  for (let f = 0; f < NF; f++) for (let sd = 0; sd < NS; sd++) for (let sp = 0; sp < 3; sp++) {
+    const types = rowsBy[f][sp], tot = types * colsInFold[f]; if (!tot) continue;
+    solves.push({ fold: f, seed: sd, split: sp, name: `f${f} · s${sd} · ${SPLITS[sp]}`, types, cells: tot, match: 1 - mism[(f * NS + sd) * 3 + sp] / tot, onFrac: onSolve[(f * NS + sd) * 3 + sp] / tot });
+  }
+  // Type 1, Type 2, ... = the region's types in matrix order; each has 50 solves (fold x seed)
+  const typeStats = s.rows.map((r, q) => { const m = [];
+    for (let k = 0; k < NK; k++) { const f = Math.floor(k / NS); if (colsInFold[f]) m.push(1 - rowMism[q * NK + k] / colsInFold[f]); }
+    return { num: q + 1, r, matches: m, prob: typeProb[q] }; });
+  const typeNum = new Map(s.rows.map((r, q) => [r, q + 1]));
+  for (const x of solves) x.typeNums = s.rows.filter(r => D.split_code[r][x.fold] === x.split).map(r => typeNum.get(r));
+  const geneStats = [];
+  for (let c = s.c0; c <= s.c1; c++) { let sm = 0, onT = 0, ag = 0; const n = D.nG5[c];
+    for (const r of s.rows) { const i = r * G + c, k = D.vote[i]; sm += D.mean[i]; if (2 * k > n) onT++; ag += Math.max(k, n - k) / n; }
+    geneStats.push({ c, prob: sm / s.rows.length / 255, onT, agree: ag / s.rows.length }); }
+  let nNamed = 0; for (const r of s.rows) nNamed += D.named[r];
+  let nCells = 0; const t = D.cells.type[S.assign];
+  for (let i = 0; i < D.cells.n; i++) { const k = t[D.cells.gm[i]]; if (k < D.n_types && S.rowMask[k]) nCells++; }
+  return { cells, meanPG: sumMean / cells / 255, fracOn: on / cells, agree: agreeSum / cells, unanimous: unanimous / cells,
+    nRows: s.rows.length, nCols: s.c1 - s.c0 + 1, nNamed, solves, typeStats, geneStats, umapCells: nCells };
+}
+function typeLabel(r) {
+  const D = S.D, k = S.sel ? S.sel.rows.indexOf(r) : -1;
+  return `<b>${D.types[r]}</b> · type #${r + 1}` + (k >= 0 ? ` · Type ${k + 1} of selection` : "")
+    + `<br><span style="opacity:.7">${D.named[r] ? "named" : "unnamed"}</span>`;
+}
+const pct = (x, d = 1) => (100 * x).toFixed(d) + "%";
+function renderRegion() {
+  const R = S.region, el = $("region"), D = S.D;
+  if (!R) { el.innerHTML = `<dt>Selection</dt><dd>none. Drag a box on the matrix or on the UMAP.</dd>`; $("typelist").textContent = ""; return; }
+  const s = S.sel, same = R.solves.filter(x => x.match >= S.thr).length;
+  el.innerHTML = `
+    <dt>Types</dt><dd>${R.nRows} (${R.nNamed} named, ${R.nRows - R.nNamed} unnamed)</dd>
+    <dt>Genes</dt><dd>${R.nCols} (${D.genes[s.c0]}${R.nCols > 1 ? " … " + D.genes[s.c1] : ""})</dd>
+    <dt>Matrix cells</dt><dd>${R.cells.toLocaleString()}</dd>
+    <dt>Mean P·G</dt><dd>${R.meanPG.toFixed(3)}</dd>
+    <dt>On by majority</dt><dd>${pct(R.fracOn)}</dd>
+    <dt>Unanimous cells</dt><dd>${pct(R.unanimous)}</dd>
+    <dt>Avg solve agreement</dt><dd>${pct(R.agree)}</dd>
+    <dt>Solves ≥ ${Math.round(S.thr * 100)}% match</dt><dd>${same} of ${R.solves.length}</dd>
+    <dt>UMAP cells lit</dt><dd>${R.umapCells.toLocaleString()} of ${D.cells.n.toLocaleString()} (${S.assign === "avg" ? "average" : "majority"})</dd>`;
+  const names = s.rows.slice(0, 60).map(r => D.types[r]);
+  $("typelist").textContent = (s.rows.length <= 60 ? "Types: " : `First 60 of ${s.rows.length} types: `) + names.join(", ");
+}
+
+/* ---------- popup ---------- */
+const POPHEAD = {
+  pg: [["name", "Solve"], ["types", "Types"], ["cells", "Cells"], ["onFrac", "Predicted on"], ["match", "Match"], ["same", "Same?"]],
+  beta: [["name", "β (fold · seed)"], ["held", "Pairs held"], ["on", "On"], ["jacc", "Jaccard vs majority"], ["match", "Match"], ["same", "Same?"]] };
+function renderPop() {
+  $("pophd").innerHTML = "<tr>" + POPHEAD[S.popKind].map(([k, l]) => `<th data-k="${k}">${l}</th>`).join("") + "</tr>";
+  if (S.popKind === "beta") return renderBetaPop();
+  const R = S.region; if (!R) return;
+  $("pop-title").textContent = "Solves for this region";
+  const same = R.solves.filter(x => x.match >= S.thr);
+  $("pop-sub").textContent = `${R.nRows} types × ${R.nCols} genes (${R.cells.toLocaleString()} matrix cells) in ${label(S.stage)}`;
+  $("pop-big").innerHTML = `<b>${same.length} of ${R.solves.length}</b><span>solves match the consensus on ≥ ${Math.round(S.thr * 100)}% of their cells in this region</span>`;
+  $("pop-splits").innerHTML = SPLITS.map((sp, k) => { const all = R.solves.filter(x => x.split === k), ok = all.filter(x => x.match >= S.thr);
+    return `<div>${sp}<b>${ok.length} / ${all.length}</b></div>`; }).join("");
+  drawHist(R.solves);
+  const rows = [...R.solves].sort((a, b) => { const k = S.sortK; const va = k === "same" ? +(a.match >= S.thr) : a[k], vb = k === "same" ? +(b.match >= S.thr) : b[k];
+    return (va < vb ? -1 : va > vb ? 1 : 0) * S.sortDir || a.fold - b.fold || a.seed - b.seed; });
+  $("pop-rows").innerHTML = rows.map(x => `<tr><td>${x.name}</td><td class="m" title="Types ${x.typeNums.slice(0, 60).join(", ")}${x.typeNums.length > 60 ? " …" : ""}">${x.types}</td><td class="m">${x.cells.toLocaleString()}</td>
+    <td class="m">${pct(x.onFrac, 1)}</td><td class="m">${pct(x.match, 2)}</td><td>${x.match >= S.thr ? '<span class="pill ok">same</span>' : '<span class="pill no">differs</span>'}</td></tr>`).join("");
+  $("pop-rows").insertAdjacentHTML("beforeend", `<tr><td colspan="6" style="text-align:left;color:var(--ink-3);white-space:normal">Predicted on = share of the solve's
+    region cells with P·G &gt; 0.5 (consensus: ${pct(R.fracOn, 1)} on; mean probability ${R.meanPG.toFixed(3)}).</td></tr>`);
+  renderPopTypes(R); renderPopGenes(R);
+}
+function renderPopGenes(R) {
+  const D = S.D, max = 500, gs = [...R.geneStats].sort((a, b) => b.prob - a.prob), nT = R.nRows;
+  const body = gs.slice(0, max).map((g, q) => `<tr><td>${q + 1}</td><td style="text-align:left;font-family:var(--font-body)">${D.genes[g.c]}</td>
+    <td class="m">${g.prob.toFixed(3)}</td><td class="m">${g.onT} / ${nT}</td><td class="m">${pct(g.agree, 1)}</td></tr>`).join("");
+  $("pop-genes").innerHTML = `<h3 style="margin:4px 0 6px;font-size:13px;font-weight:600">Genes in this region (${gs.length}), most probable first</h3>
+    <div class="tbl-wrap"><table><thead><tr><th>#</th><th style="text-align:left">Gene</th><th>Probability</th><th>Types on</th><th>Solve agreement</th></tr></thead><tbody>${body}
+      ${gs.length > max ? `<tr><td colspan="5" style="text-align:left;color:var(--ink-3)">showing the top ${max} of ${gs.length} genes</td></tr>` : ""}</tbody></table></div>
+    <p class="note" style="margin-top:6px">Probability = mean P·G of the gene over the selected types (P·G is each type's predicted chance the gene is on,
+      averaged over that type's ${S.D.nk} solve${S.D.nk > 1 ? "s" : ""}). Types on = selected types where the gene is on in more than half of the solves.
+      Solve agreement = how often the solves agree on the gene's on/off call, averaged over the selected types.</p>`;
+}
+function renderPopTypes(R) {
+  const D = S.D, T = R.typeStats, max = 400;
+  const body = T.slice(0, max).map(t => { const same = t.matches.filter(v => v >= S.thr).length, n = t.matches.length;
+    const mean = t.matches.reduce((a, b) => a + b, 0) / n, min = Math.min(...t.matches);
+    return `<tr><td>Type ${t.num}</td><td style="text-align:left;font-family:var(--font-body)">${D.types[t.r]}</td><td>${D.named[t.r] ? "named" : "unnamed"}</td>
+      <td class="m">${t.r + 1}</td><td class="m">${t.prob.toFixed(3)}</td><td class="m">${same} / ${n}</td><td class="m">${pct(mean, 1)}</td><td class="m">${pct(min, 1)}</td></tr>`; }).join("");
+  $("pop-types").innerHTML = `<h3 style="margin:4px 0 6px;font-size:13px;font-weight:600">Types in this region (${T.length})</h3>
+    <div class="tbl-wrap"><table><thead><tr><th>#</th><th style="text-align:left">Type</th><th>Kind</th><th>Matrix row</th><th>Probability</th>
+      <th>Solves ≥ ${Math.round(S.thr * 100)}%</th><th>Mean match</th><th>Lowest</th></tr></thead><tbody>${body}
+      ${T.length > max ? `<tr><td colspan="8" style="text-align:left;color:var(--ink-3)">showing the first ${max} of ${T.length} types</td></tr>` : ""}</tbody></table></div>
+    <p class="note" style="margin-top:6px">Type 1, Type 2, … number the selected types in matrix order (named first). Each type has ${S.D.nk} solve${S.D.nk > 1 ? "s" : ""}
+      (${S.D.nf} fold${S.D.nf > 1 ? "s" : ""} × ${S.D.ns} seed${S.D.ns > 1 ? "s" : ""}; in each fold it is in train, val or test). Hover a solve's Types count above to see which type numbers it covers.</p>`;
+}
+function drawHist(list) {
+  const cv = $("hist"), dpr = sizeCanvas(cv), ctx = cv.getContext("2d"), W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+  const lo = Math.min(0.5, ...list.map(x => x.match)), bins = 40, cnt = new Array(bins).fill(0);
+  list.forEach(x => cnt[Math.min(bins - 1, Math.floor((x.match - lo) / (1 - lo + 1e-12) * bins))]++);
+  const max = Math.max(...cnt, 1), padL = 30 * dpr, top = 6 * dpr, padB = 18 * dpr, pw = W - padL - 6 * dpr, ph = H - padB - top;
+  ctx.font = `${10 * dpr}px ${css("--font-mono") || "monospace"}`; ctx.fillStyle = css("--ink-3"); ctx.textBaseline = "middle"; ctx.textAlign = "right";
+  ctx.fillText(String(max), padL - 4 * dpr, top + 4 * dpr); ctx.fillText("0", padL - 4 * dpr, top + ph);
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  [lo, (lo + 1) / 2, 1].forEach(t => ctx.fillText(pct(t, 0), padL + (t - lo) / (1 - lo) * pw, top + ph + 4 * dpr));
+  ctx.strokeStyle = css("--rule"); ctx.lineWidth = dpr; ctx.beginPath(); ctx.moveTo(padL, top + ph); ctx.lineTo(padL + pw, top + ph); ctx.stroke();
+  const bw = pw / bins;
+  for (let b = 0; b < bins; b++) { if (!cnt[b]) continue; const x = padL + b * bw, h = cnt[b] / max * ph, mid = lo + (b + 0.5) / bins * (1 - lo);
+    ctx.fillStyle = mid >= S.thr ? css("--accent") : css("--sel"); ctx.fillRect(x + dpr, top + ph - h, Math.max(dpr, bw - 2 * dpr), h); }
+  const tx = padL + (S.thr - lo) / (1 - lo) * pw; ctx.strokeStyle = css("--ink-2"); ctx.setLineDash([3 * dpr, 3 * dpr]);
+  ctx.beginPath(); ctx.moveTo(tx, top); ctx.lineTo(tx, top + ph); ctx.stroke(); ctx.setLineDash([]);
+}
+function closePop() { $("pop").hidden = true; }
+function openPop(x, y) {
+  const p = $("pop"); p.hidden = false; renderPop();
+  const w = p.offsetWidth, h = p.offsetHeight, vw = innerWidth, vh = innerHeight;
+  const left = x == null ? (vw - w) / 2 : Math.min(vw - w - 16, Math.max(16, x + 16));
+  const top = y == null ? 80 : Math.min(vh - h - 16, Math.max(16, y - 40));
+  p.style.left = Math.max(16, left) + "px"; p.style.top = Math.max(16, top) + "px";
+}
+
+/* ---------- cell UMAP ---------- */
+let umLayer = null, lastLasso = null;   // last lasso, in data space
+// UMAP view = a window [x0,x1] x [y0,y1] in data space (0..1); screen <-> data through it
+function umXY(i, W, H, pad) { const c = S.D.cells, v = S.umv;
+  return [pad + (c.xy[2 * i] / 65535 - v.x0) / (v.x1 - v.x0) * (W - 2 * pad), pad + (1 - (c.xy[2 * i + 1] / 65535 - v.y0) / (v.y1 - v.y0)) * (H - 2 * pad)]; }
+function umData(sx, sy, W, H, pad) { const v = S.umv;
+  return [v.x0 + (sx - pad) / (W - 2 * pad) * (v.x1 - v.x0), v.y0 + (1 - (sy - pad) / (H - 2 * pad)) * (v.y1 - v.y0)]; }
+function umFull() { return { x0: 0, x1: 1, y0: 0, y1: 1 }; }
+function isFull(v) { return v.x0 <= 0 && v.y0 <= 0 && v.x1 >= 1 && v.y1 >= 1; }
+function quantile(a, q) { const s = Float64Array.from(a).sort(); return s[Math.min(s.length - 1, Math.max(0, Math.round(q * (s.length - 1))))]; }
+function zoomUmapToSelection() {
+  const D = S.D, C = D.cells, t = C.type[S.assign], xs = [], ys = [];
+  if (S.rowMask) for (let i = 0; i < C.n; i++) { const k = t[C.gm[i]]; if (k < D.n_types && S.rowMask[k]) { xs.push(C.xy[2 * i] / 65535); ys.push(C.xy[2 * i + 1] / 65535); } }
+  if (!xs.length) { S.umv = umFull(); return; }
+  // 1st-99th percentile box (a few stray cells should not defeat the zoom), squared up, 12% margin, at least 4% of the map
+  const lo = xs.length > 50 ? 0.01 : 0, hi = 1 - lo;
+  let x0 = quantile(xs, lo), x1 = quantile(xs, hi), y0 = quantile(ys, lo), y1 = quantile(ys, hi);
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, half = Math.max(0.02, Math.max(x1 - x0, y1 - y0) / 2 * 1.12);
+  S.umv = half >= 0.5 ? umFull() : { x0: cx - half, x1: cx + half, y0: cy - half, y1: cy + half };
+}
+function drawUmap() {
+  const cv = $("um"), dpr = sizeCanvas(cv), W = cv.width, H = cv.height, D = S.D, C = D.cells, pad = Math.round(10 * dpr);
+  const ctx = cv.getContext("2d"), im = ctx.createImageData(W, H), px = im.data;
+  const bg = hex(css("--panel")), dot = hex(css("--dot")), hi = hex(css("--sel")), nm = hex(css("--named")), un = hex(css("--unnamed"));
+  for (let i = 0; i < px.length; i += 4) { px[i] = bg[0]; px[i + 1] = bg[1]; px[i + 2] = bg[2]; px[i + 3] = 255; }
+  const t = C.type[S.assign], conf = C.conf[S.assign], mask = S.rowMask, r = Math.max(1, Math.round(dpr * Math.min(7, 1.1 / Math.pow(S.umv.x1 - S.umv.x0, 0.6))));
+  const put = (x, y, col) => { const x0 = Math.round(x), y0 = Math.round(y);
+    for (let dy = -r + 1; dy < r; dy++) for (let dx = -r + 1; dx < r; dx++) { const xx = x0 + dx, yy = y0 + dy;
+      if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue; const o = (yy * W + xx) * 4; px[o] = col[0]; px[o + 1] = col[1]; px[o + 2] = col[2]; } };
+  const lut = LUT.mean, sel = [];
+  for (let i = 0; i < C.n; i++) {
+    const k = t[C.gm[i]], [x, y] = umXY(i, W, H, pad);
+    if (S.umcol === "sel") { if (mask && k < D.n_types && mask[k]) sel.push(i); else put(x, y, dot); }
+    else if (S.umcol === "named") { if (k < D.n_types && D.named[k]) sel.push(i); else put(x, y, un); }
+    else { const v = conf[C.gm[i]] * 3; put(x, y, [lut[v], lut[v + 1], lut[v + 2]]); }
+  }
+  const top = S.umcol === "named" ? nm : hi;          // highlighted cells drawn last, on top
+  for (const i of sel) { const [x, y] = umXY(i, W, H, pad); put(x, y, top); }
+  let nMatch = 0, nMatchOn = 0;
+  if (typeof SR !== "undefined" && SR.types.length) {      // search picks: drawn on top, a size larger
+    const pick = new Int8Array(D.n_types).fill(-1);
+    for (const r of SR.types) pick[r] = SR.genes.length ? (SR.genes.every(c => matchOn(r, c)) ? 1 : 0) : 2;
+    const cOn = hex(css("--good")), cOff = hex(css("--bad")), cAny = hex(css("--accent")), rr = r + 1;
+    const put2 = (x, y, col) => { const x0 = Math.round(x), y0 = Math.round(y);
+      for (let dy = -rr + 1; dy < rr; dy++) for (let dx = -rr + 1; dx < rr; dx++) { const xx = x0 + dx, yy = y0 + dy;
+        if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue; const o = (yy * W + xx) * 4; px[o] = col[0]; px[o + 1] = col[1]; px[o + 2] = col[2]; } };
+    for (let i = 0; i < C.n; i++) { const k = t[C.gm[i]]; if (k >= D.n_types || pick[k] < 0) continue;
+      const [x, y] = umXY(i, W, H, pad); put2(x, y, pick[k] === 2 ? cAny : pick[k] ? cOn : cOff); nMatch++; if (pick[k] === 1) nMatchOn++; }
+  }
+  ctx.putImageData(im, 0, 0);
+  const L = $("umlegend");
+  const mLeg = nMatch ? (SR.genes.length
+    ? `<span><i style="background:var(--good)"></i>search types with all ${SR.genes.length} picked gene${SR.genes.length > 1 ? "s" : ""} present (${nMatchOn.toLocaleString()} cells)</span><span><i style="background:var(--bad)"></i>search types missing one (${(nMatch - nMatchOn).toLocaleString()} cells)</span>`
+    : `<span><i style="background:var(--accent)"></i>cells of the ${SR.types.length} searched type${SR.types.length > 1 ? "s" : ""} (${nMatch.toLocaleString()})</span>`) : "";
+  if (S.umcol === "sel") L.innerHTML = S.sel ? `<span><i style="background:var(--sel)"></i>cells assigned to the ${S.sel.rows.length} selected types (${sel.length.toLocaleString()})</span><span><i style="background:var(--dot)"></i>other cells</span>`
+    : `<span>${C.n.toLocaleString()} cells. Select types to light up their cells.</span>`;
+  else if (S.umcol === "named") L.innerHTML = `<span><i style="background:var(--named)"></i>assigned to a named type (${sel.length.toLocaleString()})</span><span><i style="background:var(--unnamed)"></i>unnamed type</span>`;
+  else L.innerHTML = `<span>${S.assign === "avg" ? "share of summed P held by the winning type" : `share of the ${S.D.nk} runs won by the majority type`}</span><span>0</span><canvas class="ramp" id="umramp" width="120" height="9"></canvas><span>1</span>`;
+  rampCanvas("umramp", LUT.mean);
+  if (mLeg) L.innerHTML += mLeg;
+  drawLasso();
+  $("umtitle").textContent = `Cell UMAP, ${label(S.stage)} (${C.n.toLocaleString()} cells)` + (isFull(S.umv) ? "" : ` · zoomed ${(1 / (S.umv.x1 - S.umv.x0)).toFixed(1)}×`);
+  $("umfull").disabled = isFull(S.umv);
+}
+function nearestCell(ev) {
+  const cv = $("umo"), b = cv.getBoundingClientRect(), D = S.D, C = D.cells, g = D.grid, pad = 10;
+  const [fx, fy] = umData(ev.clientX - b.left, ev.clientY - b.top, b.width, b.height, pad);
+  const bx = Math.floor(fx * g.G), by = Math.floor(fy * g.G); let best = -1, bd = (8 / b.width * (S.umv.x1 - S.umv.x0)) ** 2;
+  for (let yy = by - 1; yy <= by + 1; yy++) for (let xx = bx - 1; xx <= bx + 1; xx++) {
+    if (xx < 0 || yy < 0 || xx >= g.G || yy >= g.G) continue;
+    for (let i = g.head[yy * g.G + xx]; i >= 0; i = g.next[i]) { const d = (C.xy[2 * i] / 65535 - fx) ** 2 + (C.xy[2 * i + 1] / 65535 - fy) ** 2; if (d < bd) { bd = d; best = i; } } }
+  return best;
+}
+function inPoly(x, y, P) { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+  const [xi, yi] = P[i], [xj, yj] = P[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
+
+/* ---------- selection lifecycle ---------- */
+function setSelection(sel, popAt, umBox) {
+  const D = S.D;
+  if (sel && !sel.rows) { sel.rows = []; for (let r = sel.r0; r <= sel.r1; r++) sel.rows.push(r); sel.rect = true; }
+  if (sel) { sel.r0 = sel.rows[0]; sel.r1 = sel.rows[sel.rows.length - 1]; }
+  S.sel = sel;
+  S.rowMask = sel ? new Uint8Array(D.n_types) : null; if (sel) for (const r of sel.rows) S.rowMask[r] = 1;
+  S.region = computeRegion();
+  for (const id of ["zoomin", "openpop", "clear"]) $(id).disabled = !sel;
+  if (umBox) S.umv = umBox;
+  else if (S.umFollow) { if (sel) zoomUmapToSelection(); else S.umv = umFull(); }
+  drawOverlay(); drawRowLabels(); renderRegion(); drawUmap();
+  if (!sel) { if (S.popKind === "pg") closePop(); } else if (popAt) { S.popKind = "pg"; openPop(popAt[0], popAt[1]); } else if (!$("pop").hidden && S.popKind === "pg") renderPop();
+}
+function fullView() { return { r0: 0, r1: S.D.n_types - 1, c0: 0, c1: S.D.n_genes - 1 }; }
+
+async function switchStage(stage) {
+  S.stage = stage; $("status").textContent = `Loading ${label(stage)}…`; closePop();
+  try { S.D = await load(stage); } catch (e) { $("status").textContent = `Could not load ${label(stage)}: ${e.message}`; return; }
+  const D = S.D;
+  S.view = fullView(); S.umv = umFull(); $("zoomout").disabled = true;
+  $("hmtitle").textContent = `P·G matrix, ${label(stage)}`;
+  resetSearch();
+  $("tlist").innerHTML = D.types.map((t, r) => `<option value="${t}">#${r + 1} · ${D.named[r] ? "named" : "unnamed"}</option>`).join("");
+  buildImage(); drawMatrix(); drawLegend();
+  setSelection({ r0: 0, r1: D.n_named - 1, c0: 0, c1: Math.min(299, D.n_genes - 1) });
+  S.bv = bFull(); S.bsel = null; setBetaSel(bFull(), null, true);
+  if (S.tab === "beta") drawBeta();
+  $("status").textContent = D.nk === 1 ? `${D.n_types} types × ${D.n_genes} genes · single experiment: one solve per split (train / val / test), so every cell is one call`
+    : `${D.n_types} types × ${D.n_genes.toLocaleString()} genes${D.in_solver ? ` (${D.n_solver.toLocaleString()} fitted, ${(D.n_genes - D.n_solver).toLocaleString()} read-out: P projected onto genes that did not shape it; β covers only the fitted ones)` : ""} · solves disagree on ${pct(D.n_mixed / (D.n_types * D.n_genes))} of matrix cells`;
+}
+
+/* ---------- events ---------- */
+function bindSeg(id, key, after) { $(id).addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return;
+  for (const x of $(id).querySelectorAll("button")) x.setAttribute("aria-pressed", String(x === b)); S[key] = b.dataset.v; after(); }); }
+bindSeg("mode", "mode", () => { buildImage(); drawMatrix(); drawLegend(); });
+bindSeg("assign", "assign", () => { S.region = computeRegion(); renderRegion(); drawUmap(); });
+$("umcol").addEventListener("change", (e) => { S.umcol = e.target.value; drawUmap(); });
+$("umfollow").addEventListener("change", (e) => { S.umFollow = e.target.checked; if (S.umFollow && S.sel) { zoomUmapToSelection(); drawUmap(); } });
+$("umzoom").addEventListener("click", () => { if (!S.D) return; zoomUmapToSelection(); drawUmap(); });
+$("umfull").addEventListener("click", () => { S.umv = umFull(); drawUmap(); });
+$("umo").addEventListener("wheel", (e) => { if (!S.D) return; e.preventDefault();
+  const b = $("umo").getBoundingClientRect(), [fx, fy] = umData(e.clientX - b.left, e.clientY - b.top, b.width, b.height, 10), v = S.umv;
+  const k = Math.exp(e.deltaY * 0.0015), span = Math.min(1.2, Math.max(0.01, (v.x1 - v.x0) * k)), f = span / (v.x1 - v.x0);
+  S.umv = span >= 1 ? umFull() : { x0: fx - (fx - v.x0) * f, x1: fx + (v.x1 - fx) * f, y0: fy - (fy - v.y0) * f, y1: fy + (v.y1 - fy) * f };
+  drawUmap(); }, { passive: false });
+$("ds").innerHTML = `<optgroup label="Visual">${STAGES.slice(0, 14).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</optgroup>
+  <optgroup label="Motor">${STAGES.slice(14, 18).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</optgroup>
+  <optgroup label="Central complex">${STAGES.slice(18, 21).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</optgroup>
+  <optgroup label="No gene filter (min_cells 1)">${STAGES.slice(21, -1).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</optgroup>
+  <optgroup label="All genes (P projected onto every atlas gene)">${STAGES.slice(-1).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</optgroup>`;
+$("ds").addEventListener("change", async (e) => { await switchStage(e.target.value); if (S.tab.startsWith("exp-")) setTab("pg"); });
+$("zoomin").addEventListener("click", () => { if (S.tab === "beta") { if (S.bsel) { S.bv = { ...S.bsel }; drawBeta(); } return; } const s = S.sel; if (!s) return; S.view = { r0: s.r0, r1: s.r1, c0: s.c0, c1: s.c1 }; $("zoomout").disabled = false; drawMatrix(); drawLegend(); });
+$("zoomout").addEventListener("click", () => { if (S.tab === "beta") { S.bv = bFull(); drawBeta(); return; } S.view = fullView(); $("zoomout").disabled = true; drawMatrix(); drawLegend(); });
+$("openpop").addEventListener("click", () => { S.popKind = S.tab; openPop(); });
+/* ---------- search: case-insensitive, ranked like a search engine ---------- */
+const SR = { types: [], genes: [], active: -1, opts: [] };
+function scoreName(name, q) {          // higher = better; -1 = no match
+  const n = name.toLowerCase();
+  if (n === q) return 1000;
+  if (n.startsWith(q)) return 800 - (n.length - q.length);
+  const w = n.search(new RegExp("[^a-z0-9]" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  if (w >= 0) return 600 - w;                        // starts a word, e.g. "lnc" in "lncRNA:CR123"
+  const i = n.indexOf(q); if (i >= 0) return 400 - i;
+  let j = 0, gaps = 0, last = -1;                    // all letters in order (typo-tolerant)
+  for (let k = 0; k < n.length && j < q.length; k++) if (n[k] === q[j]) { if (last >= 0) gaps += k - last - 1; last = k; j++; }
+  return j === q.length && gaps <= 6 ? 200 - gaps * 10 - n.length : -1;
+}
+function hl(name, q) { const i = name.toLowerCase().indexOf(q); return i < 0 ? name : name.slice(0, i) + "<mark>" + name.slice(i, i + q.length) + "</mark>" + name.slice(i + q.length); }
+function stem(s) {                     // name family: "Tm4"->"Tm", "LC12"->"LC", "T4a"->"T4", "CG13332"->"CG"
+  const m = /^[A-Za-z]+/.exec(s); if (!m) return s.slice(0, 2);
+  if (m[0].length === 1) { const d = /^[A-Za-z]\d+/.exec(s); return d ? d[0] : m[0]; }
+  return m[0]; }
+function commonTerms(names, k) {        // most frequent name stems, e.g. T4, Tm, LC, CG
+  const c = new Map(); for (const s of names) { const t = stem(s); c.set(t, (c.get(t) || 0) + 1); }
+  return [...c].filter(([t, n]) => n >= 3 && t.length >= 2).sort((a, b) => b[1] - a[1]).slice(0, k);
+}
+function geneMeanAll(c) { const D = S.D; let s = 0; for (let r = 0; r < D.n_types; r++) s += D.mean[r * D.n_genes + c]; return s / D.n_types / 255; }
+function searchMatches(q) {
+  const D = S.D, out = { types: [], genes: [] };
+  D.types.forEach((t, r) => { const s = scoreName(t, q); if (s >= 0) out.types.push([s, r]); });
+  D.genes.forEach((g, c) => { const s = scoreName(g, q); if (s >= 0) out.genes.push([s, c]); });
+  out.types.sort((a, b) => b[0] - a[0]); out.genes.sort((a, b) => b[0] - a[0]);
+  return out;
+}
+function renderTerms() {
+  const D = S.D;
+  for (const [k, names] of [["t", D.types], ["g", D.genes]])
+    $("sterms-" + k).innerHTML = `<span>Common (click to add all):</span>` + commonTerms(names, 10).map(([s, n]) => `<button class="term" data-q="${s}" title="Add all ${n} ${s}…">${s} <b>${n}</b></button>`).join("");
+}
+function renderDrop(kind) {
+  const D = S.D, inp = $("sq-" + kind), dd = $("sdrop-" + kind), q = inp.value.trim().toLowerCase();
+  if (!q) { dd.hidden = true; inp.setAttribute("aria-expanded", "false"); return; }
+  const names = kind === "t" ? D.types : D.genes, picked = kind === "t" ? SR.types : SR.genes, list = [];
+  names.forEach((nm, i) => { const s = scoreName(nm, q); if (s >= 0) list.push([s, i]); });
+  list.sort((x, y) => y[0] - x[0]); SR["last" + kind] = list;
+  const LIM = 15;
+  const rows = list.slice(0, LIM).map(([s, i]) => {
+    const meta = kind === "t" ? `#${i + 1} · ${D.named[i] ? "named" : "unnamed"}` : `mean P·G ${geneMeanAll(i).toFixed(2)}`;
+    return `<div class="sopt${picked.includes(i) ? " on" : ""}" role="option" data-k="${kind}" data-i="${i}" data-o="1"><span>${hl(names[i], q)}</span><span class="n">${meta}</span></div>`; }).join("");
+  dd.innerHTML = `<div class="col"><h4><span>${list.length} match${list.length === 1 ? "" : "es"}</span>${list.length > 1 ? `<button data-all="${kind}">Add all ${Math.min(list.length, 200)}</button>` : ""}</h4>
+    ${rows || `<div class="sopt" style="cursor:default;color:var(--ink-3)">no ${kind === "t" ? "cell type" : "gene"} matches "${q}"</div>`}
+    ${list.length > LIM ? `<div class="sopt" style="cursor:default;color:var(--ink-3)">+ ${list.length - LIM} more — keep typing to narrow</div>` : ""}</div>`;
+  SR.active = -1; dd.hidden = false; inp.setAttribute("aria-expanded", "true");
+}
+function addPick(kind, i) { const arr = kind === "t" ? SR.types : SR.genes; if (!arr.includes(i)) arr.push(i); renderPicks(); }
+function renderPicks() {
+  const D = S.D;
+  $("schips").innerHTML = SR.types.map(r => `<span class="chip t">${D.types[r]} <span class="n" style="color:var(--ink-3)">#${r + 1}</span><button data-rm="t" data-i="${r}" aria-label="Remove ${D.types[r]}">×</button></span>`).join("")
+    + SR.genes.map(c => `<span class="chip g">${D.genes[c]}<button data-rm="g" data-i="${c}" aria-label="Remove ${D.genes[c]}">×</button></span>`).join("")
+    + (SR.types.length || SR.genes.length ? `<button class="term" id="sclear">Clear all</button>` : "");
+  renderMatch();
+  if (S.D) { drawOverlay();
+    if (S.umFollow && SR.types.length) { const keep = S.rowMask; S.rowMask = new Uint8Array(S.D.n_types); for (const r of SR.types) S.rowMask[r] = 1;
+      zoomUmapToSelection(); S.rowMask = keep; }
+    drawUmap(); }
+}
+function cellTxt(r, c) { const D = S.D, i = r * D.n_genes + c, p = D.mean[i] / 255, on = 2 * D.vote[i] > D.nG5[c];
+  return `<td class="m ${on ? "y" : "no"}" title="${D.types[r]} × ${D.genes[c]}: on in ${D.vote[i]} of ${D.nG5[c]} solves">${on ? "✓" : "✗"} ${p.toFixed(2)}</td>`; }
+function renderMatch() {
+  const D = S.D, T = SR.types, G = SR.genes, el = $("sres");
+  if (!T.length && !G.length) { el.innerHTML = `<p class="note">Pick types and genes from the dropdown to see whether each type has each gene: ✓ present / ✗ absent (on in more than half of the type's solves), with its probability (mean P·G).</p>`; return; }
+  const btn = T.length ? `<button class="btn" id="sshow">Show ${T.length} type${T.length > 1 ? "s" : ""} in the matrix</button>` : "";
+  if (T.length && G.length) {
+    const Ts = T.slice(0, 60), Gs = G.slice(0, 40);
+    el.innerHTML = `<div class="mres"><table><thead><tr><th style="text-align:left">type \\ gene</th>${Gs.map(c => `<th class="rot">${D.genes[c]}</th>`).join("")}</tr></thead><tbody>
+      ${Ts.map(r => `<tr><td style="text-align:left">#${r + 1} ${D.types[r]}</td>${Gs.map(c => cellTxt(r, c)).join("")}</tr>`).join("")}
+      <tr><td style="text-align:left;color:var(--ink-3)">present in</td>${Gs.map(c => `<td class="m">${Ts.filter(r => 2 * D.vote[r * D.n_genes + c] > D.nG5[c]).length} / ${Ts.length}</td>`).join("")}</tr>
+      </tbody></table></div><div style="margin-top:8px">${btn}</div>`;
+  } else if (G.length) {   // genes only: which types have them
+    el.innerHTML = G.slice(0, 20).map(c => { const tops = [];
+      for (let r = 0; r < D.n_types; r++) tops.push([D.mean[r * D.n_genes + c], r]);
+      tops.sort((a, b) => b[0] - a[0]); const nOn = tops.filter(([, r]) => 2 * D.vote[r * D.n_genes + c] > D.nG5[c]).length;
+      return `<p style="margin:4px 0"><b>${D.genes[c]}</b>: present in <b>${nOn}</b> of ${D.n_types} types. Highest:
+        ${tops.slice(0, 10).map(([v, r]) => `<button class="linky" data-addt="${r}">${D.types[r]}</button> ${(v / 255).toFixed(2)}`).join(" · ")}</p>`; }).join("");
+  } else {                  // types only: their top genes
+    el.innerHTML = T.slice(0, 20).map(r => { const tops = [];
+      for (let c = 0; c < D.n_genes; c++) tops.push([D.mean[r * D.n_genes + c], c]);
+      tops.sort((a, b) => b[0] - a[0]); const nOn = tops.filter(([, c]) => 2 * D.vote[r * D.n_genes + c] > D.nG5[c]).length;
+      return `<p style="margin:4px 0"><b>#${r + 1} ${D.types[r]}</b>: ${nOn} genes present. Most probable:
+        ${tops.slice(0, 12).map(([v, c]) => `<button class="linky" data-addg="${c}">${D.genes[c]}</button> ${(v / 255).toFixed(2)}`).join(" · ")}</p>`; }).join("") + `<div style="margin-top:8px">${btn}</div>`;
+  }
+}
+for (const kind of ["t", "g"]) {
+  const inp = $("sq-" + kind), dd = $("sdrop-" + kind);
+  inp.addEventListener("input", () => renderDrop(kind));
+  inp.addEventListener("focus", () => renderDrop(kind));
+  inp.addEventListener("blur", () => setTimeout(() => { dd.hidden = true; }, 120));
+  inp.addEventListener("keydown", (e) => {
+    const opts = [...dd.querySelectorAll(".sopt[data-o]")];
+    if (e.key === "Escape") { dd.hidden = true; return; } if (!opts.length) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault();
+      SR.active = (SR.active + (e.key === "ArrowDown" ? 1 : -1) + opts.length) % opts.length;
+      opts.forEach((o, k) => o.setAttribute("aria-selected", String(k === SR.active))); opts[SR.active].scrollIntoView({ block: "nearest" }); }
+    else if (e.key === "Enter") { e.preventDefault(); const o = opts[Math.max(0, SR.active)]; addPick(kind, +o.dataset.i); inp.value = ""; renderDrop(kind); }
+  });
+  dd.addEventListener("mousedown", (e) => { e.preventDefault();       // keep focus in the box
+    if (e.target.closest("[data-all]")) { (SR["last" + kind] || []).slice(0, 200).forEach(([, i]) => addPick(kind, i)); inp.value = ""; renderDrop(kind); return; }
+    const o = e.target.closest(".sopt[data-o]"); if (!o) return; addPick(kind, +o.dataset.i); renderDrop(kind); });
+  $("sterms-" + kind).addEventListener("click", (e) => { const b = e.target.closest("[data-q]"); if (!b) return;
+    const names = kind === "t" ? S.D.types : S.D.genes, fam = b.dataset.q; let n = 0;
+    names.forEach((nm, i) => { if (n < 200 && stem(nm) === fam) { addPick(kind, i); n++; } });
+    $("status").textContent = `Added ${n} ${kind === "t" ? "types" : "genes"} in the ${fam} family${n === 200 ? " (first 200)" : ""}.`; });
+}
+$("schips").addEventListener("click", (e) => {
+  if (e.target.id === "sclear") { SR.types = []; SR.genes = []; renderPicks(); return; }
+  const b = e.target.closest("[data-rm]"); if (!b) return; const arr = b.dataset.rm === "t" ? SR.types : SR.genes, i = arr.indexOf(+b.dataset.i);
+  if (i >= 0) arr.splice(i, 1); renderPicks(); });
+$("sres").addEventListener("click", (e) => {
+  const t = e.target.closest("[data-addt]"), g = e.target.closest("[data-addg]");
+  if (t) return addPick("t", +t.dataset.addt); if (g) return addPick("g", +g.dataset.addg);
+  if (e.target.id === "sshow" && SR.types.length) { const rows = [...SR.types].sort((a, b) => a - b);
+    setSelection({ rows, c0: 0, c1: S.D.n_genes - 1, rect: false }, [e.clientX, e.clientY]); }
+});
+function resetSearch() { SR.types = []; SR.genes = []; for (const k of ["t", "g"]) { $("sq-" + k).value = ""; $("sdrop-" + k).hidden = true; } renderTerms(); renderPicks(); }
+
+function findType() { const D = S.D; if (!D) return; const q = $("tfind").value.trim(); if (!q) return;
+  let r = D.types.indexOf(q); if (r < 0) r = D.types.findIndex(t => t.toLowerCase() === q.toLowerCase());
+  if (r < 0) { const m = /^#?(\d+)$/.exec(q); if (m && +m[1] >= 1 && +m[1] <= D.n_types) r = +m[1] - 1; }
+  if (r < 0) { $("status").textContent = `No type called "${q}" in ${label(S.stage)}.`; return; }
+  const b = $("hmo").getBoundingClientRect(); selectType(r, [b.left + b.width / 2, b.top + 40]); }
+$("tfind").addEventListener("change", findType);
+$("tfind").addEventListener("keydown", (e) => { if (e.key === "Enter") findType(); });
+$("clear").addEventListener("click", () => { if (S.tab === "beta") { setBetaSel(bFull()); closePop(); } else setSelection(null); });
+$("popx").addEventListener("click", (e) => { e.stopPropagation(); closePop(); });
+addEventListener("keydown", (e) => { if (e.key === "Escape") closePop(); });
+function setThr(v) { S.thr = v / 100;
+  for (const el of document.querySelectorAll(".thr-in")) el.value = v;
+  for (const el of document.querySelectorAll(".thr-out")) el.textContent = v + "%";
+  if (!$("pop").hidden) renderPop(); renderRegion(); if (S.D) renderBetaRegion(); }
+for (const el of document.querySelectorAll(".thr-in")) el.addEventListener("input", (e) => setThr(+e.target.value));
+document.querySelector("#pop thead").addEventListener("click", (e) => { const th = e.target.closest("th"); if (!th) return;
+  const k = th.dataset.k; S.sortDir = S.sortK === k ? -S.sortDir : 1; S.sortK = k; renderPop(); });
+// drag the popup by its header
+(() => { let d = null; const p = $("pop");
+  $("pophead").addEventListener("pointerdown", (e) => { if (e.target.closest("button")) return; d = [e.clientX - p.offsetLeft, e.clientY - p.offsetTop]; $("pophead").setPointerCapture(e.pointerId); });
+  $("pophead").addEventListener("pointermove", (e) => { if (!d) return; p.style.left = Math.max(0, Math.min(innerWidth - 60, e.clientX - d[0])) + "px"; p.style.top = Math.max(0, Math.min(innerHeight - 40, e.clientY - d[1])) + "px"; });
+  $("pophead").addEventListener("pointerup", () => { d = null; }); })();
+
+const tip = $("tip");
+function showTip(e, html) { tip.innerHTML = html; tip.hidden = false; tip.style.left = Math.min(innerWidth - 310, e.clientX + 14) + "px"; tip.style.top = (e.clientY + 14) + "px"; }
+
+const hmo = $("hmo"); let drag = null;
+hmo.addEventListener("pointerdown", (e) => { if (!S.D) return; hmo.setPointerCapture(e.pointerId);
+  const b = hmo.getBoundingClientRect(); drag = { a: pxToCell(e.clientX - b.left, e.clientY - b.top) }; });
+hmo.addEventListener("pointermove", (e) => { if (!S.D) return; const b = hmo.getBoundingClientRect(), [r, c] = pxToCell(e.clientX - b.left, e.clientY - b.top);
+  if (drag) { drag.b = [r, c]; drawOverlay({ r0: Math.min(drag.a[0], r), r1: Math.max(drag.a[0], r), c0: Math.min(drag.a[1], c), c1: Math.max(drag.a[1], c) }); tip.hidden = true; return; }
+  const D = S.D, i = r * D.n_genes + c, n = D.nG5[c], k = D.vote[i];
+  showTip(e, `${typeLabel(r)}<br>gene ${D.genes[c]}${D.in_solver ? ` <span style="opacity:.75">(${D.in_solver[c] ? "fitted gene" : "read-out gene"})</span>` : ""}<br>mean P·G ${(D.mean[i] / 255).toFixed(3)}<br>on in ${k} of ${n} solves<br>${D.cellsPerType[S.assign][r].toLocaleString()} cells on the UMAP`); });
+hmo.addEventListener("pointerleave", () => { tip.hidden = true; });
+// wheel zooms the P.G matrix around the cursor (rows and genes together); double-click shows the full matrix
+hmo.addEventListener("wheel", (e) => { if (!S.D) return; e.preventDefault();
+  const b = hmo.getBoundingClientRect(), [r, c] = pxToCell(e.clientX - b.left, e.clientY - b.top), v = S.view, D = S.D;
+  const k = Math.exp(e.deltaY * 0.0015);
+  const nr = Math.max(4, Math.min(D.n_types, Math.round((v.r1 - v.r0 + 1) * k))), nc = Math.max(8, Math.min(D.n_genes, Math.round((v.c1 - v.c0 + 1) * k)));
+  const fr = (r - v.r0) / (v.r1 - v.r0 + 1), fc = (c - v.c0) / (v.c1 - v.c0 + 1);
+  const r0 = Math.max(0, Math.min(D.n_types - nr, Math.round(r - fr * nr))), c0 = Math.max(0, Math.min(D.n_genes - nc, Math.round(c - fc * nc)));
+  S.view = { r0, r1: r0 + nr - 1, c0, c1: c0 + nc - 1 };
+  $("zoomout").disabled = nr === D.n_types && nc === D.n_genes; drawMatrix(); drawLegend(); }, { passive: false });
+$("hmfull").addEventListener("click", () => { S.view = fullView(); drawMatrix(); drawLegend(); });
+hmo.addEventListener("dblclick", () => { if (!S.D) return; S.view = fullView(); $("zoomout").disabled = true; drawMatrix(); drawLegend(); });
+$("umo").addEventListener("dblclick", () => { if (!S.D) return; S.umv = umFull(); drawUmap(); });
+hmo.addEventListener("pointerup", (e) => { if (!drag) return; const a = drag.a, b = drag.b || drag.a; drag = null;
+  if (a[0] === b[0] && a[1] === b[1]) { selectType(a[0], [e.clientX, e.clientY]); return; }   // a click = that type's whole row
+  setSelection({ r0: Math.min(a[0], b[0]), r1: Math.max(a[0], b[0]), c0: Math.min(a[1], b[1]), c1: Math.max(a[1], b[1]) }, [e.clientX, e.clientY]); });
+function selectType(r, at) { setSelection({ rows: [r], c0: 0, c1: S.D.n_genes - 1, rect: false }, at); }
+
+// UMAP: drag a box to select the types of the cells inside it (and zoom there); a click selects the clicked cell's type
+const umo = $("umo"); let lasso = null;   // box select: [start corner, current corner] in CSS px
+const corners = ([[x0, y0], [x1, y1]]) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+function drawLasso() { const dpr = sizeCanvas(umo), ctx = umo.getContext("2d"); ctx.clearRect(0, 0, umo.width, umo.height);
+  if (!lasso && lastLasso && S.sel && !S.sel.rect) {   // outline of the box that made the current selection
+    const b = umo.getBoundingClientRect(), v = S.umv, pad = 10;
+    ctx.strokeStyle = css("--ink-3"); ctx.lineWidth = 1.2 * dpr; ctx.setLineDash([4 * dpr, 4 * dpr]); ctx.beginPath();
+    lastLasso.forEach(([fx, fy], k) => { const x = (pad + (fx - v.x0) / (v.x1 - v.x0) * (b.width - 2 * pad)) * dpr, y = (pad + (1 - (fy - v.y0) / (v.y1 - v.y0)) * (b.height - 2 * pad)) * dpr;
+      k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.closePath(); ctx.stroke(); ctx.setLineDash([]); return; }
+  if (!lasso || lasso.length < 2) return; ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.5 * dpr; ctx.setLineDash([5 * dpr, 4 * dpr]);
+  ctx.fillStyle = "rgba(235,104,52,0.08)"; ctx.beginPath(); corners(lasso).forEach(([x, y], k) => k ? ctx.lineTo(x * dpr, y * dpr) : ctx.moveTo(x * dpr, y * dpr));
+  ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.setLineDash([]); }
+umo.addEventListener("pointerdown", (e) => { if (!S.D) return; umo.setPointerCapture(e.pointerId); const b = umo.getBoundingClientRect(); lasso = [[e.clientX - b.left, e.clientY - b.top]]; tip.hidden = true; });
+umo.addEventListener("pointermove", (e) => { if (!S.D) return; const b = umo.getBoundingClientRect();
+  if (lasso) { lasso = [lasso[0], [e.clientX - b.left, e.clientY - b.top]]; drawLasso(); return; }
+  const i = nearestCell(e); if (i < 0) { tip.hidden = true; return; }
+  const D = S.D, C = D.cells, k = C.type[S.assign][C.gm[i]], cf = C.conf[S.assign][C.gm[i]] / 255;
+  showTip(e, k < D.n_types ? `${typeLabel(k)}<br>metacell ${C.gm[i]} · ${S.assign === "avg" ? "share" : "runs won"} ${pct(cf, 0)}` : `metacell ${C.gm[i]}: not in any solve`); });
+umo.addEventListener("pointerleave", () => { if (!lasso) tip.hidden = true; });
+umo.addEventListener("pointerup", (e) => {
+  if (!lasso) return; const pts = lasso.length > 1 ? corners(lasso) : lasso; lasso = null; drawLasso();
+  const D = S.D, C = D.cells, t = C.type[S.assign], cols = S.sel ? [S.sel.c0, S.sel.c1] : [0, D.n_genes - 1];
+  const span = pts.reduce((m, p) => Math.max(m, Math.abs(p[0] - pts[0][0]) + Math.abs(p[1] - pts[0][1])), 0);
+  const hit = new Uint8Array(D.n_types);
+  if (span < 6) { const i = nearestCell(e); if (i < 0) return; const k = t[C.gm[i]]; if (k < D.n_types) selectType(k, [e.clientX, e.clientY]); return; }
+  else { const b = umo.getBoundingClientRect(), pad = 10, W = b.width, H = b.height;
+    for (let i = 0; i < C.n; i++) { const [x, y] = umXY(i, W, H, pad);
+      if (inPoly(x, y, pts)) { const k = t[C.gm[i]]; if (k < D.n_types) hit[k] = 1; } } }
+  const rows = []; for (let r = 0; r < D.n_types; r++) if (hit[r]) rows.push(r);
+  if (!rows.length) { $("status").textContent = "No cells inside the box."; return; }
+  let box = null; lastLasso = null;
+  if (span >= 6) { const b = umo.getBoundingClientRect(), d = pts.map(([x, y]) => umData(x, y, b.width, b.height, 10));
+    const xs = d.map(p => p[0]), ys = d.map(p => p[1]), cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    const half = Math.max(0.004, Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) / 2 * 1.1);
+    box = { x0: cx - half, x1: cx + half, y0: cy - half, y1: cy + half }; lastLasso = d; }
+  setSelection({ rows, c0: cols[0], c1: cols[1], rect: false }, [e.clientX, e.clientY], box);
+});
+
+let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (S.D) { drawMatrix(); drawUmap(); drawLasso(); if (!$("pop").hidden) renderPop(); if (S.tab === "beta") drawBeta(); } }, 120); });
+const reTheme = () => { buildLuts(); if (S.D) { buildImage(); drawMatrix(); drawLegend(); drawUmap(); if (S.tab === "beta") drawBeta(); if (!$("pop").hidden) renderPop(); } };
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", reTheme);
+new MutationObserver(reTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+/* ---------- beta view ---------- */
+function decodeBeta(B, ns = 5) {
+  const i = new Uint16Array(dec64(B.i)), j = new Uint16Array(dec64(B.j)), vote = new Uint8Array(dec64(B.vote)),
+    meanq = new Uint8Array(dec64(B.mean_q)), bits = new Uint32Array(dec64(B.bits)), np = B.n_pairs, nA = B.n_axis;
+  const pc = (x) => { let k = 0; while (x) { k += x & 1; x >>= 1; } return k; };
+  const n = new Uint8Array(np), key = new Map();
+  for (let p = 0; p < np; p++) { n[p] = ns * pc(B.fold_mask[i[p]] & B.fold_mask[j[p]]); key.set(i[p] * nA + j[p], p); }
+  const posAct = new Int32Array(nA); B.activity_order.forEach((a, r) => { posAct[a] = r; });
+  const posPg = new Int32Array(nA); for (let a = 0; a < nA; a++) posPg[a] = a;
+  return { nA, axis: B.axis, mask: B.fold_mask, np, i, j, vote, meanq, bits, n, key, nMajor: B.n_major,
+    pos: { pg: posPg, act: posAct }, at: { pg: posPg, act: Int32Array.from(B.activity_order) } };
+}
+function bFull() { const n = S.D.beta.nA; return { r0: 0, r1: n - 1, c0: 0, c1: n - 1 }; }
+function bValue(B, p) {           // 0..255 for the colour ramp, by the colour mode
+  if (S.bcol === "vote") return Math.round(B.vote[p] / B.n[p] * 255);
+  if (S.bcol === "mean") return B.meanq[p];
+  return 2 * B.vote[p] > B.n[p] ? 255 : 0;
+}
+function bToPx(r, c) { const cv = $("bmo"), v = S.bv; return [(c - v.c0) / (v.c1 - v.c0 + 1) * cv.width, (r - v.r0) / (v.r1 - v.r0 + 1) * cv.height]; }
+function bFromPx(x, y) { const cv = $("bmo"), v = S.bv, dpr = window.devicePixelRatio || 1;
+  const c = v.c0 + Math.floor(x * dpr / cv.width * (v.c1 - v.c0 + 1)), r = v.r0 + Math.floor(y * dpr / cv.height * (v.r1 - v.r0 + 1));
+  return [Math.min(v.r1, Math.max(v.r0, r)), Math.min(v.c1, Math.max(v.c0, c))]; }
+function drawBeta() {
+  const D = S.D, B = D.beta, cv = $("bm"), dpr = sizeCanvas(cv), ctx = cv.getContext("2d"), v = S.bv, W = cv.width, H = cv.height;
+  ctx.fillStyle = css("--panel"); ctx.fillRect(0, 0, W, H);
+  const cw = W / (v.c1 - v.c0 + 1), ch = H / (v.r1 - v.r0 + 1), sz = Math.max(2 * dpr, cw), szh = Math.max(2 * dpr, ch);
+  // faint diagonal (gene with itself) for orientation
+  ctx.strokeStyle = css("--rule"); ctx.lineWidth = dpr; ctx.beginPath();
+  const d0 = Math.max(v.r0, v.c0), d1 = Math.min(v.r1, v.c1);
+  if (d1 >= d0) { const [x0, y0] = bToPx(d0, d0), [x1, y1] = bToPx(d1 + 1, d1 + 1); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); }
+  const pos = B.pos[S.bord], lut = LUT.mean, dot = css("--dot"), idx = [];
+  for (let p = 0; p < B.np; p++) { const r = pos[B.i[p]], c = pos[B.j[p]]; if (r >= v.r0 && r <= v.r1 && c >= v.c0 && c <= v.c1) idx.push(p); }
+  const val = new Uint8Array(B.np); for (const p of idx) val[p] = bValue(B, p);
+  idx.sort((a, b) => val[a] - val[b]);                                 // strongest pairs drawn last, on top
+  for (const p of idx) { const [x, y] = bToPx(pos[B.i[p]], pos[B.j[p]]), q = val[p];
+    if (S.bcol === "major" && q === 0) ctx.fillStyle = dot;
+    else { const k = Math.max(60, q) * 3; ctx.fillStyle = `rgb(${lut[k]},${lut[k + 1]},${lut[k + 2]})`; }
+    ctx.fillRect(x, y, sz, szh); }
+  drawBetaOverlay();
+  { const at = B.at[S.bord], bs = S.bsel, full = bs && bs.r0 === 0 && bs.c0 === 0 && bs.r1 === B.nA - 1 && bs.c1 === B.nA - 1;
+    drawYLabels($("bmy"), $("bm").getBoundingClientRect().height, v.r0, v.r1, (r) => B.axis[at[r]], (r) => bs && !full && r >= bs.r0 && r <= bs.r1);
+    drawXLabels($("bmx"), v.c0, v.c1, (c) => B.axis[at[c]], (c) => bs && !full && c >= bs.c0 && c <= bs.c1); }
+  const L = $("blegend");
+  if (S.bcol === "vote") L.innerHTML = `<span>share of the pair's β with it on</span><span>0</span><canvas class="ramp" id="bramp" width="120" height="9"></canvas><span>all</span>`;
+  else if (S.bcol === "mean") L.innerHTML = `<span>mean β</span><span>0.1</span><canvas class="ramp" id="bramp" width="120" height="9"></canvas><span>10⁴</span>`;
+  else L.innerHTML = `<span><i style="background:rgb(${lut.slice(765, 768).join(",")});border-radius:2px"></i>on in more than half of the β (${B.nMajor})</span><span><i style="background:var(--dot);border-radius:2px"></i>on in fewer</span>`;
+  rampCanvas("bramp", LUT.mean);
+  const zoomed = v.r0 || v.c0 || v.r1 < B.nA - 1 || v.c1 < B.nA - 1;
+  $("btitle").textContent = `β matrix, ${label(S.stage)}`;
+  $("bax").textContent = `${B.nA} genes${S.stage.startsWith("motor") ? " (the second half are the 1 − G complements, marked ~)" : ""} · ${B.np.toLocaleString()} pairs on in ≥ 1 β`
+    + (zoomed ? ` · showing rows ${v.r0 + 1}–${v.r1 + 1}, columns ${v.c0 + 1}–${v.c1 + 1}` : "");
+  $("zoomout").disabled = !zoomed;
+}
+function drawBetaOverlay(drag) {
+  const cv = $("bmo"), dpr = sizeCanvas(cv), ctx = cv.getContext("2d"); ctx.clearRect(0, 0, cv.width, cv.height);
+  const s = drag || S.bsel; if (!s) return; const B = S.D.beta;
+  if (!drag && s.r0 === 0 && s.c0 === 0 && s.r1 === B.nA - 1 && s.c1 === B.nA - 1) return;   // whole matrix: no box
+  const [x0, y0] = bToPx(s.r0, s.c0), [x1, y1] = bToPx(s.r1 + 1, s.c1 + 1);
+  ctx.fillStyle = "rgba(235,104,52,0.08)"; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+  ctx.strokeStyle = css("--sel"); ctx.lineWidth = 2 * dpr; ctx.strokeRect(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0));
+}
+function computeBetaRegion() {
+  const D = S.D, B = D.beta, s = S.bsel, pos = B.pos[S.bord], NF = D.nf, NS = D.ns, NK = D.nk;
+  const held = new Float64Array(NK), on = new Float64Array(NK), ov = new Float64Array(NK), majHeld = new Float64Array(NK), match = new Float64Array(NK);
+  const pairs = []; let nMaj = 0, nAll = 0, voteSum = 0;
+  for (let p = 0; p < B.np; p++) {
+    const r = pos[B.i[p]], c = pos[B.j[p]]; if (r < s.r0 || r > s.r1 || c < s.c0 || c > s.c1) continue;
+    pairs.push(p); const maj = 2 * B.vote[p] > B.n[p] ? 1 : 0; nMaj += maj; if (B.vote[p] === B.n[p]) nAll++; voteSum += B.vote[p] / B.n[p];
+    const m = B.mask[B.i[p]] & B.mask[B.j[p]], lo = B.bits[2 * p], hi = B.bits[2 * p + 1];
+    for (let f = 0; f < NF; f++) { if (!(m >> f & 1)) continue;
+      for (let sd = 0; sd < NS; sd++) { const k = f * NS + sd, bit = k < 32 ? (lo >>> k) & 1 : (hi >>> (k - 32)) & 1;
+        held[k]++; on[k] += bit; majHeld[k] += maj; ov[k] += bit & maj; match[k] += bit === maj ? 1 : 0; } } }
+  const solves = [];
+  for (let k = 0; k < NK; k++) { if (!held[k]) continue; const f = Math.floor(k / NS), sd = k % NS, uni = on[k] + majHeld[k] - ov[k];
+    solves.push({ fold: f, seed: sd, name: `f${f} · s${sd}`, held: held[k], on: on[k], jacc: uni ? ov[k] / uni : 1, match: match[k] / held[k] }); }
+  pairs.sort((a, b) => B.vote[b] / B.n[b] - B.vote[a] / B.n[a] || B.meanq[b] - B.meanq[a]);
+  return { pairs, nMaj, nAll, meanVote: pairs.length ? voteSum / pairs.length : 0, solves };
+}
+function setBetaSel(sel, popAt, quiet) {
+  S.bsel = sel; S.bregion = computeBetaRegion();
+  if (!quiet) { drawBetaOverlay(); }
+  renderBetaRegion();
+  if (popAt) { S.popKind = "beta"; openPop(popAt[0], popAt[1]); } else if (!$("pop").hidden && S.popKind === "beta") renderPop();
+}
+const fmtB = (q) => { const v = Math.pow(10, q / 255 * 5 - 1); return v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(2); };
+function renderBetaRegion() {
+  const D = S.D; if (!D || !S.bregion) return; const B = D.beta, R = S.bregion, s = S.bsel, at = B.at[S.bord];
+  const same = R.solves.filter(x => x.match >= S.thr).length, nr = s.r1 - s.r0 + 1, nc = s.c1 - s.c0 + 1;
+  $("bregion").innerHTML = `
+    <dt>Genes i (rows)</dt><dd>${nr} (${B.axis[at[s.r0]]}${nr > 1 ? " … " + B.axis[at[s.r1]] : ""})</dd>
+    <dt>Genes j (columns)</dt><dd>${nc} (${B.axis[at[s.c0]]}${nc > 1 ? " … " + B.axis[at[s.c1]] : ""})</dd>
+    <dt>Pairs on in ≥ 1 β</dt><dd>${R.pairs.length.toLocaleString()}</dd>
+    <dt>Pairs on by majority</dt><dd>${R.nMaj.toLocaleString()}</dd>
+    <dt>Pairs on in every β</dt><dd>${R.nAll.toLocaleString()}</dd>
+    <dt>Avg share of β on</dt><dd>${pct(R.meanVote)}</dd>
+    <dt>β ≥ ${Math.round(S.thr * 100)}% match</dt><dd>${same} of ${R.solves.length}</dd>`;
+  $("bpairs").innerHTML = R.pairs.slice(0, 200).map(p => `<tr><td>${B.axis[B.i[p]]}</td><td>${B.axis[B.j[p]]}</td>
+    <td class="m">${B.vote[p]} / ${B.n[p]}</td><td class="m">${fmtB(B.meanq[p])}</td></tr>`).join("")
+    + (R.pairs.length > 200 ? `<tr><td colspan="4" style="text-align:left;color:var(--ink-3)">showing the top 200 of ${R.pairs.length.toLocaleString()} pairs</td></tr>` : "");
+}
+function renderBetaPop() {
+  const R = S.bregion; if (!R) return; const s = S.bsel;
+  const same = R.solves.filter(x => x.match >= S.thr);
+  $("pop-title").textContent = "β for this region"; $("pop-types").innerHTML = ""; $("pop-genes").innerHTML = "";
+  $("pop-sub").textContent = `${s.r1 - s.r0 + 1} × ${s.c1 - s.c0 + 1} genes, ${R.pairs.length.toLocaleString()} active pairs (${R.nMaj} by majority) in ${label(S.stage)}`;
+  $("pop-big").innerHTML = `<b>${same.length} of ${R.solves.length}</b><span>β match the majority on ≥ ${Math.round(S.thr * 100)}% of the active pairs they hold in this region</span>`;
+  const med = (a) => { const t = [...a].sort((x, y) => x - y); return t.length ? t[Math.floor(t.length / 2)] : 0; };
+  $("pop-splits").innerHTML = `<div>median pairs on<b>${med(R.solves.map(x => x.on)).toLocaleString()}</b></div>
+    <div>median Jaccard<b>${med(R.solves.map(x => x.jacc)).toFixed(2)}</b></div><div>val / test<b style="font-size:12px;font-weight:400">train β × one scalar</b></div>`;
+  drawHist(R.solves);
+  const rows = [...R.solves].sort((a, b) => { const k = S.sortK; const va = k === "same" ? +(a.match >= S.thr) : a[k], vb = k === "same" ? +(b.match >= S.thr) : b[k];
+    return (va < vb ? -1 : va > vb ? 1 : 0) * S.sortDir || a.fold - b.fold || a.seed - b.seed; });
+  $("pop-rows").innerHTML = rows.map(x => `<tr><td>${x.name}</td><td class="m">${x.held.toLocaleString()}</td><td class="m">${x.on.toLocaleString()}</td>
+    <td class="m">${x.jacc.toFixed(2)}</td><td class="m">${pct(x.match, 1)}</td><td>${x.match >= S.thr ? '<span class="pill ok">same</span>' : '<span class="pill no">differs</span>'}</td></tr>`).join("");
+}
+function setTab(t) {
+  S.tab = t; $("pgview").hidden = t !== "pg"; $("betaview").hidden = t !== "beta"; $("filterview").hidden = t !== "filter";
+  $("expview").hidden = !t.startsWith("exp-"); $("anatview").hidden = t !== "anat";
+  for (const el of document.querySelectorAll(".pgonly, .pgonly-block")) el.hidden = t !== "pg";
+  for (const x of $("tab").querySelectorAll("button")) x.setAttribute("aria-pressed", String(x.dataset.v === t));
+  closePop();
+  if (t === "anat") { for (const id of ["zoomin", "zoomout", "openpop", "clear"]) $(id).disabled = true; Anat.show(); return; }
+  if (t === "filter" || t.startsWith("exp-")) { for (const id of ["zoomin", "zoomout", "openpop", "clear"]) $(id).disabled = true;
+    if (t.startsWith("exp-")) Exp.show(t.slice(4)); return; }
+  if (t === "beta") { drawBeta(); for (const id of ["zoomin", "openpop", "clear"]) $(id).disabled = false; }
+  else { drawMatrix(); drawLegend(); drawUmap(); for (const id of ["zoomin", "openpop", "clear"]) $(id).disabled = !S.sel; $("zoomout").disabled = S.view.r0 === 0 && S.view.c0 === 0 && S.view.r1 === S.D.n_types - 1 && S.view.c1 === S.D.n_genes - 1; }
+}
+$("tab").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b && (S.D || b.dataset.v.startsWith("exp-") || b.dataset.v === "anat")) setTab(b.dataset.v); });
+$("filterview").addEventListener("click", async (e) => { const b = e.target.closest("[data-ds]"); if (!b) return;
+  $("ds").value = b.dataset.ds; await switchStage(b.dataset.ds); setTab("pg"); });
+$("bcol").addEventListener("change", (e) => { S.bcol = e.target.value; drawBeta(); });
+$("bord").addEventListener("change", (e) => { S.bord = e.target.value; S.bv = bFull(); setBetaSel(bFull()); drawBeta(); });
+$("buse").addEventListener("click", (e) => {
+  if (!S.sel) { $("status").textContent = "Select genes in the P·G view first."; return; }
+  S.bord = "pg"; $("bord").value = "pg";
+  if (!S.D.in_solver) { const r = { r0: S.sel.c0, r1: S.sel.c1, c0: S.sel.c0, c1: S.sel.c1 };
+    S.bv = { ...r }; setBetaSel(r, [e.clientX, e.clientY]); drawBeta(); return; }
+  // all-gene set: the P·G columns are not β's axis, so map the selected genes to β by name
+  const B = S.D.beta, ax = new Map(B.axis.map((g, k) => [g, k])), hit = [];
+  for (let c = S.sel.c0; c <= S.sel.c1; c++) { const k = ax.get(S.D.genes[c]); if (k !== undefined) hit.push(B.pos.pg[k]); }
+  if (!hit.length) { $("status").textContent = "None of the selected genes were fitted, so they have no β."; return; }
+  const lo = Math.min(...hit), hi = Math.max(...hit), r = { r0: lo, r1: hi, c0: lo, c1: hi };
+  S.bv = { ...r }; setBetaSel(r, [e.clientX, e.clientY]); drawBeta();
+  $("status").textContent = `${hit.length} of the ${S.sel.c1 - S.sel.c0 + 1} selected genes were fitted; β shows the span they cover.`; });
+const bmo = $("bmo"); let bdrag = null;
+bmo.addEventListener("pointerdown", (e) => { if (!S.D) return; bmo.setPointerCapture(e.pointerId); const b = bmo.getBoundingClientRect(); bdrag = { a: bFromPx(e.clientX - b.left, e.clientY - b.top) }; tip.hidden = true; });
+bmo.addEventListener("pointermove", (e) => { if (!S.D) return; const b = bmo.getBoundingClientRect(), [r, c] = bFromPx(e.clientX - b.left, e.clientY - b.top);
+  if (bdrag) { bdrag.b = [r, c]; drawBetaOverlay({ r0: Math.min(bdrag.a[0], r), r1: Math.max(bdrag.a[0], r), c0: Math.min(bdrag.a[1], c), c1: Math.max(bdrag.a[1], c) }); return; }
+  const B = S.D.beta, at = B.at[S.bord], v = S.bv, dpr = window.devicePixelRatio || 1;
+  // nearest drawn pair within ~3 px
+  const rad = Math.max(0, Math.ceil(3 * (v.r1 - v.r0 + 1) / (b.height))); let best = -1, bd = 1e9;
+  for (let dr = -rad; dr <= rad; dr++) for (let dc = -rad; dc <= rad; dc++) { const rr = r + dr, cc = c + dc;
+    if (rr < 0 || cc < 0 || rr >= B.nA || cc >= B.nA) continue; const p = B.key.get(at[rr] * B.nA + at[cc]);
+    if (p !== undefined && dr * dr + dc * dc < bd) { bd = dr * dr + dc * dc; best = p; } }
+  if (best < 0) { showTip(e, `${B.axis[at[r]]} × ${B.axis[at[c]]}<br>off in every β`); return; }
+  showTip(e, `${B.axis[B.i[best]]} × ${B.axis[B.j[best]]}<br>on in ${B.vote[best]} of ${B.n[best]} β<br>mean β ${fmtB(B.meanq[best])}`); });
+bmo.addEventListener("pointerleave", () => { tip.hidden = true; });
+bmo.addEventListener("dblclick", () => { if (!S.D) return; S.bv = bFull(); drawBeta(); });
+bmo.addEventListener("pointerup", (e) => { if (!bdrag) return; const a = bdrag.a, b = bdrag.b || bdrag.a; bdrag = null;
+  setBetaSel({ r0: Math.min(a[0], b[0]), r1: Math.max(a[0], b[0]), c0: Math.min(a[1], b[1]), c1: Math.max(a[1], b[1]) }, [e.clientX, e.clientY]); });
+bmo.addEventListener("wheel", (e) => { if (!S.D) return; e.preventDefault(); const b = bmo.getBoundingClientRect(), [r, c] = bFromPx(e.clientX - b.left, e.clientY - b.top), v = S.bv, n = S.D.beta.nA;
+  const k = Math.exp(e.deltaY * 0.0015), span = Math.max(8, Math.min(n, Math.round((v.r1 - v.r0 + 1) * k)));
+  if (span >= n) { S.bv = bFull(); drawBeta(); return; }
+  const fr = (r - v.r0) / (v.r1 - v.r0 + 1), fc = (c - v.c0) / (v.c1 - v.c0 + 1);
+  const r0 = Math.max(0, Math.min(n - span, Math.round(r - fr * span))), c0 = Math.max(0, Math.min(n - span, Math.round(c - fc * span)));
+  S.bv = { r0, r1: r0 + span - 1, c0, c1: c0 + span - 1 }; drawBeta(); }, { passive: false });
+
+/* ---------- experiments tabs: tables of single-solve experiments; each row opens a full dataset (pbnull/exp_full_export.py) ---------- */
+const Exp = (() => {
+  const X = { sys: null, idx: {}, sortK: "val", sortDir: -1, filt: {} };
+  const TITLES = { motor: "Motor experiments (fold 0, seed 0)", cx: "Central complex experiments (grid, one split)" };
+  async function getIndex(sys) {
+    if (X.idx[sys]) return X.idx[sys];
+    let I;
+    if (OFFLINE) { await new Promise((res, rej) => { const el = document.createElement("script"); el.src = `data/_exp/${sys}/index.js`; el.onload = res;
+      el.onerror = () => rej(new Error(`data/_exp/${sys}/index.js is missing`)); document.head.appendChild(el); }); I = window.__EXPI[sys]; }
+    else { const r = await fetch(`data/_exp/${sys}/index.json`); if (!r.ok) throw new Error(`index.json: HTTP ${r.status}`); I = await r.json(); }
+    for (const e of I.experiments) if (!STAGES.some(x => x[0] === e.dataset))
+      STAGES.push([e.dataset, (sys === "motor" ? "Motor exp · " : "CX grid · ") + e.label]);
+    return (X.idx[sys] = I);
+  }
+  async function menu() {   // Dataset menu: one optgroup per system, every experiment a dataset
+    for (const sys of ["motor", "cx"]) {
+      let I; try { I = await getIndex(sys); } catch (e) { continue; }
+      const g = document.createElement("optgroup"); g.label = TITLES[sys];
+      const ex = sys === "cx" ? [...I.experiments].sort((a, b) => b.r.val - a.r.val) : I.experiments;
+      g.innerHTML = ex.map(e => `<option value="${e.dataset}">${e.label} · val ${e.r.val.toFixed(3)}</option>`).join("");
+      $("ds").appendChild(g);
+    }
+  }
+  async function show(sys) {
+    X.sys = sys;
+    $("x-rows").innerHTML = `<tr><td colspan="8" class="note">Loading…</td></tr>`;
+    let I; try { I = await getIndex(sys); } catch (e) { $("x-rows").innerHTML = `<tr><td colspan="8">Could not load the experiment list (${e.message}).</td></tr>`; return; }
+    $("x-title").textContent = TITLES[sys];
+    $("x-proto").textContent = `${I.title}: ${I.protocol}. ${I.experiments.length} experiments. r = Pearson r between predicted and observed C on each split's own types.`;
+    $("x-th-train").textContent = I.split_names[0] === "fit" ? "Fit r" : "Train r";
+    filters(I); rows();
+  }
+  function filters(I) {
+    const dims = I.system === "cx" ? [["gene", "Gene set"], ["hvg", "Genes"], ["bn", "Batch-norm"], ["metacell", "Metacells"]] : [["group", "Group"]];
+    const F = X.filt[I.system] = X.filt[I.system] || {};
+    $("x-filters").innerHTML = dims.map(([k, lab]) => { const vals = [...new Set(I.experiments.map(e => e[k]))];
+      return `<label>${lab} <select data-k="${k}"><option value="">all</option>${vals.map(v => `<option value="${v}"${String(F[k]) === String(v) ? " selected" : ""}>${k === "bn" ? (v ? "on" : "off") : v}</option>`).join("")}</select></label>`; }).join("")
+      + `<span class="note" id="x-count"></span>`;
+    $("x-filters").querySelectorAll("select").forEach(el => el.onchange = () => { F[el.dataset.k] = el.value; rows(); });
+  }
+  function rows() {
+    const I = X.idx[X.sys], F = X.filt[X.sys] || {};
+    const ex = I.experiments.filter(e => Object.entries(F).every(([k, v]) => !v || String(e[k]) === v));
+    const k = X.sortK, val = (e) => k === "label" ? e.label : k in e.r ? e.r[k] : e[k];
+    ex.sort((a, b) => { const va = val(a), vb = val(b); return (va < vb ? -1 : va > vb ? 1 : 0) * X.sortDir; });
+    const mx = {}; for (const s of ["train", "val", "test"]) mx[s] = Math.max(...I.experiments.map(e => e.r[s]));
+    const cell = (e, s) => `<td class="m">${e.r[s].toFixed(3)}<span class="xbar" style="width:${Math.max(0, e.r[s]) / mx[s] * 34}px"></span></td>`;
+    $("x-rows").innerHTML = ex.map(e => `<tr class="click${S.stage === e.dataset ? " on" : ""}" data-d="${e.dataset}"><td>${e.label}</td><td class="m">${e.n_genes.toLocaleString()}</td>`
+      + `${cell(e, "train")}${cell(e, "val")}${cell(e, "test")}<td class="m">${(e.beta_pairs ?? 0).toLocaleString()}</td><td class="m">${(e.on_frac * 100).toFixed(1)}%</td>`
+      + `<td><button class="linky" type="button">open</button></td></tr>`).join("")
+      || `<tr><td colspan="8" class="note">No experiment matches these filters.</td></tr>`;
+    $("x-rows").querySelectorAll("tr[data-d]").forEach(tr => tr.onclick = () => open(tr.dataset.d));
+    const c = $("x-count"); if (c) c.textContent = `${ex.length} of ${I.experiments.length}`;
+    document.querySelectorAll("#expview thead th[data-k]").forEach(th => th.textContent = th.textContent.replace(/ [▲▼]$/, "") + (th.dataset.k === X.sortK ? (X.sortDir > 0 ? " ▲" : " ▼") : ""));
+  }
+  async function open(dataset) { $("ds").value = dataset; await switchStage(dataset); setTab("pg"); }
+  document.querySelectorAll("#expview thead th[data-k]").forEach(th => th.onclick = () => { const k = th.dataset.k;
+    if (X.sortK === k) X.sortDir *= -1; else { X.sortK = k; X.sortDir = k === "label" ? 1 : -1; } rows(); });
+  menu();
+  return { show, getIndex };
+})();
+
+/* ---------- anatomy tab: held-out fit on skeletons + voxels (pbnull/morph_scores.py, pbnull/morph_geom.py) ---------- */
+const Anat = (() => {
+  const A = { idx: null, geom: {}, sc: {}, label: null, show: "both", col: "r", thr: 1, op: 0.6, focus: null, npOn: null, npSort: { k: "r", dir: 1 },
+    three: null, built: null, spin: false };
+  const SYS_NAME = { visual: "Visual", cx: "Central complex", motor: "Motor (FANC skeletons)" };
+  const dec = (s) => dec64(s);
+  async function json(path, offKey, offVar) {
+    if (OFFLINE) { window[offVar] = window[offVar] || {};
+      if (!window[offVar][offKey]) await new Promise((res, rej) => { const el = document.createElement("script"); el.src = path.replace(/\.json$/, ".js"); el.onload = res;
+        el.onerror = () => rej(new Error(`${path.replace(/\.json$/, ".js")} is missing`)); document.head.appendChild(el); });
+      return window[offVar][offKey]; }
+    const r = await fetch(path); if (!r.ok) throw new Error(`${path}: HTTP ${r.status}`); return r.json();
+  }
+  function loadThree() {
+    if (window.THREE) return Promise.resolve();
+    return new Promise((res, rej) => { const el = document.createElement("script"); el.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
+      el.onload = res; el.onerror = () => rej(new Error("three.js could not load")); document.head.appendChild(el); });
+  }
+  const pickLabel = () => { const want = S.stage === "Adult" || S.stage === "Adult_nofilt_all" ? "Adult_nofilt" : S.stage.replace(/^(motor_tp\d)_nofilt$/, "$1"); return A.idx.datasets.some(d => d.label === want) ? want : A.idx.default; };
+  async function show() {
+    try { if (!A.idx) A.idx = await json("data/_morph/index.json", "index", "__MI"); await loadThree(); }
+    catch (e) { $("a-title").textContent = "Anatomy: could not load (" + e.message + ")"; return; }
+    if (!A.three) initThree();
+    const sel = $("a-ds");
+    if (!sel.options.length) {
+      const lab = (k) => (STAGES.find(x => x[0] === k) || [k, k])[1] + (k === A.idx.default ? " (default)" : "");
+      sel.innerHTML = ["visual", "cx", "motor"].map(sys => `<optgroup label="${SYS_NAME[sys]}">` + A.idx.datasets.filter(d => d.system === sys)
+        .map(d => `<option value="${d.label}">${lab(d.label)} · median r ${d.median_r.toFixed(2)}</option>`).join("") + "</optgroup>").join("");
+      sel.onchange = () => setDataset(sel.value);
+    }
+    const want = A.label || pickLabel(); sel.value = want; await setDataset(want);
+  }
+  async function setDataset(label) {
+    $("a-title").textContent = "Anatomy: loading…";
+    const meta = A.idx.datasets.find(d => d.label === label), sys = meta.system;
+    let G, SC;
+    try { [G, SC] = await Promise.all([A.geom[sys] || json(`data/_morph/${sys}/geom.json`, sys, "__MG"), A.sc[label] || json(`data/_morph/scores/${label}.json`, label, "__MS")]); }
+    catch (e) { $("a-title").textContent = "Anatomy: could not load (" + e.message + ")"; return; }
+    A.geom[sys] = G; A.sc[label] = SC; A.label = label; A.focus = null; A.npOn = null; $("a-pick").hidden = true;
+    if (!A.built || A.built.sys !== sys) build(G);
+    A.cur = { sys, G, SC };
+    const rs = SC.r.filter(x => x !== null).sort((a, b) => a - b), ls = SC.loss.filter(x => x !== null).sort((a, b) => a - b);
+    const q = (a, p) => a[Math.min(a.length - 1, Math.floor(p * a.length))];
+    A.rLo = q(rs, 0.05); A.rHi = q(rs, 0.95); A.lHi = q(ls, 0.95) || 1;
+    voxValues();
+    $("a-title").textContent = `Anatomy: ${(STAGES.find(x => x[0] === label) || [label, label])[1]} · ${SYS_NAME[sys]}`;
+    $("a-tl").innerHTML = SC.types.map(t => `<option value="${t}"></option>`).join("");
+    side(); recolour();
+  }
+  // ---------- three.js scene ----------
+  function initThree() {
+    const cv = $("a-cv"), renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+    renderer.setClearColor(0xfbf6ea, 1); renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+    const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(40, 1, 0.01, 50);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.62)); const dl = new THREE.DirectionalLight(0xffffff, 0.55); dl.position.set(0.6, 1, 0.8); scene.add(dl);
+    const dl2 = new THREE.DirectionalLight(0xffffff, 0.25); dl2.position.set(-0.7, -0.4, -0.6); scene.add(dl2);
+    A.three = { cv, renderer, scene, cam, dist: 2.6, yaw: 0, pitch: -0.1, tgt: new THREE.Vector3() };
+    const T = A.three, place = () => { T.cam.position.set(T.tgt.x + T.dist * Math.cos(T.pitch) * Math.sin(T.yaw), T.tgt.y + T.dist * Math.sin(T.pitch), T.tgt.z + T.dist * Math.cos(T.pitch) * Math.cos(T.yaw)); T.cam.lookAt(T.tgt); };
+    T.place = place; place();
+    const resize = () => { const r = cv.getBoundingClientRect(); if (!r.width) return; renderer.setSize(r.width, r.height, false); cam.aspect = r.width / r.height; cam.updateProjectionMatrix(); };
+    new ResizeObserver(resize).observe(cv); resize();
+    let drag = null;
+    cv.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY, pan: e.shiftKey, moved: false }; cv.setPointerCapture(e.pointerId); cv.style.cursor = "grabbing"; });
+    cv.addEventListener("pointermove", (e) => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 2) drag.moved = true;
+      drag.x = e.clientX; drag.y = e.clientY;
+      if (drag.pan) { const right = new THREE.Vector3().crossVectors(cam.getWorldDirection(new THREE.Vector3()), cam.up).normalize();
+        T.tgt.addScaledVector(right, -dx * T.dist * 0.0012).addScaledVector(cam.up, dy * T.dist * 0.0012); }
+      else { T.yaw -= dx * 0.006; T.pitch = Math.max(-1.5, Math.min(1.5, T.pitch + dy * 0.006)); }
+      place(); });
+    cv.addEventListener("pointerup", (e) => { const d = drag; drag = null; cv.style.cursor = "grab"; if (d && !d.moved) pick(e); });
+    cv.addEventListener("wheel", (e) => { e.preventDefault(); T.dist = Math.max(0.25, Math.min(8, T.dist * (1 + Math.sign(e.deltaY) * 0.1))); place(); }, { passive: false });
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const loop = () => { if (!$("anatview").hidden) { if (A.spin && !reduce && !drag) { T.yaw += 0.004; place(); } renderer.render(scene, cam); } requestAnimationFrame(loop); };
+    loop();
+    wireControls();
+  }
+  function build(G) {
+    const T = A.three, QS = 1 / 32767;
+    if (A.built) { T.scene.remove(A.built.lines); T.scene.remove(A.built.vox); A.built.lines.geometry.dispose(); A.built.vox.geometry.dispose(); }
+    let nE = 0; const sk = G.skel.map(s => { const p = new Int16Array(dec(s.p)), e = new Uint16Array(dec(s.e)); nE += e.length / 2; return { p, e }; });
+    const skType = new Uint16Array(G.skel.length); G.per_type.forEach((l, t) => l.forEach(k => { skType[k] = t; }));
+    const pos = new Float32Array(nE * 6), col = new Float32Array(nE * 6), segType = new Uint16Array(nE), segSk = new Uint32Array(nE);
+    let o = 0;
+    sk.forEach(({ p, e }, k) => { for (let i = 0; i < e.length; i += 2) { const a = e[i] * 3, b = e[i + 1] * 3;
+      pos.set([p[a] * QS, -p[a + 1] * QS, p[a + 2] * QS, p[b] * QS, -p[b + 1] * QS, p[b + 2] * QS], o * 6); segType[o] = skType[k]; segSk[o] = k; o++; } });
+    const lg = new THREE.BufferGeometry(); lg.setAttribute("position", new THREE.BufferAttribute(pos, 3)); lg.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    const lines = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.92 }));
+    // voxels: one lit cube per voxel (crisp, not blurred points)
+    const V = G.vox, vc = new Int16Array(dec(V.c)), n = V.n, sz = V.size * 0.94;
+    const box = new THREE.BoxGeometry(sz, sz, sz), mat = new THREE.MeshLambertMaterial({ transparent: true, opacity: A.op, depthWrite: A.op > 0.95 });
+    const vox = new THREE.InstancedMesh(box, mat, n); vox.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    vox.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(n * 3), 3);
+    const vpos = new Float32Array(n * 3); for (let i = 0; i < n; i++) { vpos[i * 3] = vc[i * 3] * QS; vpos[i * 3 + 1] = -vc[i * 3 + 1] * QS; vpos[i * 3 + 2] = vc[i * 3 + 2] * QS; }
+    const ptr = new Uint32Array(dec(V.ptr)), vv = V.v_bits === 32 ? new Uint32Array(dec(V.v)) : new Uint16Array(dec(V.v)), w = new Uint8Array(dec(V.w));
+    T.scene.add(vox); T.scene.add(lines);
+    A.built = { sys: G.system, lines, vox, pos, col, segType, segSk, vpos, ptr, vv, w, n, nTypes: new Uint16Array(n) };
+    for (let t = 0; t + 1 < ptr.length; t++) for (let j = ptr[t]; j < ptr[t + 1]; j++) A.built.nTypes[vv[j]]++;
+    T.dist = 2.6; T.yaw = 0; T.pitch = -0.1; T.tgt.set(0, 0, 0); T.place();
+  }
+  function voxValues() {   // per dataset: weighted mean r / loss of the types covering each voxel
+    const B = A.built, SC = A.cur.SC, n = B.n, nr = new Float64Array(n), dr = new Float64Array(n), nl = new Float64Array(n), dl = new Float64Array(n);
+    for (let t = 0; t + 1 < B.ptr.length; t++) { const r = SC.r[t], l = SC.loss[t];
+      for (let j = B.ptr[t]; j < B.ptr[t + 1]; j++) { const v = B.vv[j], ww = (B.w[j] / 255) ** 2;
+        if (r !== null) { nr[v] += ww * r; dr[v] += ww; } if (l !== null) { nl[v] += ww * l; dl[v] += ww; } } }
+    B.vr = new Float32Array(n); B.vl = new Float32Array(n); B.vw = new Float32Array(n);
+    for (let v = 0; v < n; v++) { B.vr[v] = dr[v] ? nr[v] / dr[v] : NaN; B.vl[v] = dl[v] ? nl[v] / dl[v] : NaN; B.vw[v] = dl[v]; }
+  }
+  // ---------- colour ----------
+  function hx(h) { return [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255]; }
+  function mk(stops) { const c = stops.map(hx); return (x) => { x = Math.max(0, Math.min(1, x)); const t = x * (c.length - 1), k = Math.min(c.length - 2, Math.floor(t)), f = t - k; return [0, 1, 2].map(i => c[k][i] + (c[k + 1][i] - c[k][i]) * f); }; }
+  const RR = mk(["#b8370f", "#e8834f", "#e6dccb", "#6ea1de", "#123f7a"]), RL = mk(["#e6dccb", "#f0b48a", "#de6a33", "#8f2a0b"]);
+  const colR = (r) => r === null || Number.isNaN(r) ? [0.72, 0.69, 0.63] : RR((r - A.rLo) / ((A.rHi - A.rLo) || 1));
+  const colL = (l) => l === null || Number.isNaN(l) ? [0.72, 0.69, 0.63] : RL(l / A.lHi);
+  function recolour() {
+    const B = A.built, SC = A.cur.SC, foc = A.focus, m4 = new THREE.Matrix4(), zero = new THREE.Matrix4().makeScale(0, 0, 0);
+    for (let s = 0; s < B.segType.length; s++) { const t = B.segType[s];
+      let c = foc && !foc.has(t) ? [0.87, 0.84, 0.78] : A.col === "r" ? colR(SC.r[t]) : colL(SC.loss[t]);
+      B.col.set(c, s * 6); B.col.set(c, s * 6 + 3); }
+    B.lines.geometry.attributes.color.needsUpdate = true;
+    let inFocus = null;
+    if (foc) { inFocus = new Uint8Array(B.n); for (const t of foc) for (let j = B.ptr[t]; j < B.ptr[t + 1]; j++) inFocus[B.vv[j]] = 1; }
+    // threshold = the worst A.thr share of voxels (low r, or high loss), recomputed for the current dataset and colour
+    let cut = null;
+    if (A.thr < 1) { const vals = [...(A.col === "r" ? B.vr : B.vl)].filter(x => !Number.isNaN(x)).sort((a, b) => a - b);
+      cut = A.col === "r" ? vals[Math.floor(A.thr * (vals.length - 1))] : vals[Math.floor((1 - A.thr) * (vals.length - 1))];
+      $("a-thr-out").textContent = `${A.col === "r" ? cut.toFixed(2) : cut.toFixed(3)} (worst ${Math.round(A.thr * 100)}%)`; }
+    else $("a-thr-out").textContent = "all";
+    for (let v = 0; v < B.n; v++) { const r = B.vr[v], l = B.vl[v];
+      let on = !Number.isNaN(A.col === "r" ? r : l);
+      if (on && cut !== null) on = A.col === "r" ? r <= cut : l >= cut;
+      if (on && inFocus && !inFocus[v]) on = false;
+      if (on) { m4.makeTranslation(B.vpos[v * 3], B.vpos[v * 3 + 1], B.vpos[v * 3 + 2]); B.vox.setMatrixAt(v, m4); B.vox.instanceColor.setXYZ(v, ...(A.col === "r" ? colR(r) : colL(l))); }
+      else B.vox.setMatrixAt(v, zero); }
+    B.vox.instanceMatrix.needsUpdate = true; B.vox.instanceColor.needsUpdate = true;
+    B.vox.material.opacity = A.op; B.vox.material.depthWrite = A.op > 0.95; B.vox.material.needsUpdate = true;
+    B.lines.visible = A.show !== "voxels"; B.vox.visible = A.show !== "neurons";
+    legend();
+  }
+  function legend() {
+    const c = document.createElement("canvas"); c.width = 160; c.height = 1; const x = c.getContext("2d");
+    for (let i = 0; i < 160; i++) { const v = (A.col === "r" ? RR : RL)(i / 159).map(u => Math.round(u * 255)); x.fillStyle = `rgb(${v})`; x.fillRect(i, 0, 1, 1); }
+    const img = `<img src="${c.toDataURL()}" alt="" style="width:160px;height:10px;border:1px solid var(--rule);border-radius:2px">`;
+    $("a-legend").innerHTML = A.col === "r" ? `<span>held-out r</span><span class="m">${A.rLo.toFixed(2)} poor</span>${img}<span class="m">${A.rHi.toFixed(2)} good</span><span style="color:var(--ink-3)">grey = r undefined (no edge in the type's test block)</span>`
+      : `<span>loss</span><span class="m">0</span>${img}<span class="m">${A.lHi.toFixed(3)}+</span>`;
+    $("a-thr-lab").textContent = A.col === "r" ? "Show the worst voxels (lowest r)" : "Show the worst voxels (highest loss)";
+  }
+  // ---------- picking ----------
+  function pick(e) {
+    const T = A.three, B = A.built, SC = A.cur.SC, r = T.cv.getBoundingClientRect();
+    const m = new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1), ray = new THREE.Raycaster();
+    ray.params.Line.threshold = 0.006; ray.setFromCamera(m, T.cam);
+    const hits = ray.intersectObjects([B.lines, B.vox].filter(o => o.visible));
+    const h = hits.find(x => x.object === B.lines || (x.object === B.vox && x.instanceId !== undefined));
+    if (!h) { $("a-pick").hidden = true; return; }
+    if (h.object === B.lines) { const s = Math.floor(h.index / 2); typeInfo(B.segType[s], A.cur.G.skel[B.segSk[s]].id); return; }
+    const v = h.instanceId;
+    $("a-pick").innerHTML = `<b>Voxel</b> · ${B.nTypes[v]} types pass through<br><span class="m">r ${Number.isNaN(B.vr[v]) ? "–" : B.vr[v].toFixed(3)} · loss ${Number.isNaN(B.vl[v]) ? "–" : B.vl[v].toFixed(4)}</span>`;
+    $("a-pick").hidden = false;
+  }
+  function typeInfo(t, id) {
+    const SC = A.cur.SC, r = SC.r[t];
+    $("a-pick").innerHTML = `<b>${SC.types[t]}</b>${SC.named[t] ? "" : " (unnamed)"} · ${SC.family[t]}<br><span class="m">held-out r ${r === null ? "undefined" : r.toFixed(3)} · loss ${SC.loss[t] === null ? "–" : SC.loss[t].toFixed(4)}</span>`
+      + `<br>test in fold ${SC.fold[t]} · ${SC.n_entries[t]} entries · ${A.cur.G.n_neurons[t]} neurons sampled${id ? `<br><span class="m" style="opacity:.75">${id}</span>` : ""}`;
+    $("a-pick").hidden = false;
+  }
+  // ---------- side panels ----------
+  function side() {
+    const SC = A.cur.SC, s = SC.summary, f = (x) => x === null ? "–" : x.toFixed(3);
+    $("a-kpis").innerHTML = `<div><b>${f(s.median_r)}</b><span>median r, ${s.n_types} types</span></div><div><b>${f(s.named_r)}</b><span>median r, named</span></div><div><b>${f(s.unnamed_r)}</b><span>median r, unnamed</span></div>`;
+    $("a-sumnote").textContent = `${SC.n_pairs.toLocaleString()} held-out type pairs. ${s.n_undefined} types have no connection inside their test block, so their r is undefined (grey); their loss still counts.`;
+    npTable();
+    const idx = SC.r.map((r, t) => [r, t]).filter(x => x[0] !== null).sort((a, b) => a[0] - b[0]);
+    const chip = ([r, t]) => `<button class="achip" type="button" data-t="${t}">${SC.types[t]} <b>${r.toFixed(2)}</b></button>`;
+    $("a-worst").innerHTML = idx.slice(0, 24).map(chip).join(""); $("a-best").innerHTML = idx.slice(-24).reverse().map(chip).join("");
+    document.querySelectorAll("#anatview .achip").forEach(b => b.onclick = () => focusTypes(new Set([+b.dataset.t]), +b.dataset.t));
+    $("a-nan").textContent = A.cur.sys === "motor" ? "Motor skeletons are FANC reconstructions (one neuron per type); 23 types have none." : "";
+  }
+  function npTable() {
+    const SC = A.cur.SC, rows = SC.neuropils.filter(x => x.n_pairs >= 200 && x.r !== null);
+    if (!rows.length) { $("a-np").innerHTML = `<tr><td colspan="6" class="note">No neuropil table for this dataset: the FANC skeletons come without a synapse / neuropil table.</td></tr>`; return; }
+    const k = A.npSort.k; rows.sort((a, b) => { const va = a[k] ?? -1, vb = b[k] ?? -1; return (va < vb ? -1 : va > vb ? 1 : 0) * A.npSort.dir; });
+    const rmax = Math.max(...rows.map(x => x.r)), f = (x, d) => x === null ? "–" : x.toFixed(d);
+    $("a-np").innerHTML = rows.map(x => `<tr class="click${A.npOn === x.neuropil ? " aon" : ""}" data-n="${x.neuropil}"><td>${x.neuropil}</td><td class="m">${x.r.toFixed(3)}<span class="xbar" style="width:${Math.max(0, x.r) / rmax * 30}px;background:rgb(${colR(x.r).map(v => Math.round(v * 255))})"></span></td>`
+      + `<td class="m">${f(x.loss, 3)}</td><td class="m">${f(x.miss, 2)}</td><td class="m">${f(x.false_alarm, 3)}</td><td class="m">${x.n_pairs.toLocaleString()}</td></tr>`).join("");
+    $("a-np").querySelectorAll("tr[data-n]").forEach(tr => tr.onclick = () => { const n = tr.dataset.n, top = A.cur.G.np_top[n];
+      if (A.npOn === n || !top) { A.npOn = null; A.focus = null; } else { A.npOn = n; A.focus = new Set(top); }
+      npTable(); recolour(); });
+  }
+  function focusTypes(set, t) { A.focus = set; A.npOn = null; npTable(); recolour(); if (t !== undefined) typeInfo(t); }
+  function wireControls() {
+    const seg = (id, key) => $(id).querySelectorAll("button").forEach(b => b.onclick = () => { $(id).querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); A[key] = b.dataset.v; recolour(); });
+    seg("a-show", "show"); seg("a-col", "col");
+    $("a-thr").oninput = () => { A.thr = +$("a-thr").value; recolour(); };
+    $("a-op").oninput = () => { A.op = +$("a-op").value; recolour(); };
+    $("a-tq").onchange = () => { const SC = A.cur.SC, v = $("a-tq").value.trim().toLowerCase(), t = SC.types.findIndex(x => x.toLowerCase() === v); if (t >= 0) focusTypes(new Set([t]), t); };
+    $("a-clear").onclick = () => { A.focus = null; A.npOn = null; $("a-pick").hidden = true; npTable(); recolour(); };
+    $("a-spin").onclick = () => { A.spin = !A.spin; $("a-spin").textContent = A.spin ? "Stop" : "Spin"; };
+    document.querySelectorAll("#anatview thead th[data-k]").forEach(th => th.onclick = () => { const k = th.dataset.k; if (A.npSort.k === k) A.npSort.dir *= -1; else A.npSort = { k, dir: k === "neuropil" ? 1 : -1 }; npTable(); });
+  }
+  return { show };
+})();
+
+buildLuts();
+$("ds").value = "Adult_nofilt";      // the adult default is now the no-gene-filter build (3000 genes)
+switchStage("Adult_nofilt");
+</script>
+</body>
+</html>
