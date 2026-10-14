@@ -480,7 +480,15 @@ const STAGES = [
   ["motor_tp0","Motor tp0"],["motor_tp1","Motor tp1"],["motor_tp2","Motor tp2"],["motor_tp3","Motor tp3"],
   ["CX","Central complex (T2)"],["CXbest","Central complex, best grid config"],["CXbestmc1","Central complex, best config, no gene filter"],
   ["Adult_nofilt","Adult, no gene filter"],["Adult_prio_s103_nofilt","Adult 103 (own 103-named folds), no gene filter"],["Zipursky_P84update_nofilt","Zip P84, no gene filter"],["Zipursky_Earlyupdate_nofilt","Zip Early, no gene filter"],["Zipursky_P60update_nofilt","Zip P60, no gene filter"],["Zipursky_P36update_nofilt","Zip P36, no gene filter"],["Zipursky_P96update_nofilt","Zip P96, no gene filter"],["P50_nofilt","P50, no gene filter"],["motor_tp0_nofilt","Motor tp0, no gene filter (= filtered: no gene removed)"],["motor_tp1_nofilt","Motor tp1, no gene filter (= filtered: no gene removed)"],["motor_tp2_nofilt","Motor tp2, no gene filter (= filtered: no gene removed)"],["motor_tp3_nofilt","Motor tp3, no gene filter (= filtered: no gene removed)"],
-  ["Adult_nofilt_all","Adult, no gene filter · all 12,028 genes (3,000 fitted + 9,028 read-out)"]];   // pbnull/pg_allgenes.py + dash2_export.py
+  // all-gene sets: each solve's P projected onto every atlas gene (pbnull/pg_allgenes*.py + dash2_export.py)
+  ["Adult_nofilt_all","Adult, no gene filter · all 12,028 genes (3,000 fitted + 9,028 read-out)"],
+  ["motor_tp0_all","Motor tp0 · all 11,547 genes (1,000 fitted)"],   // vercel-only
+  ["motor_tp1_all","Motor tp1 · all 11,547 genes (1,000 fitted)"],   // vercel-only
+  ["motor_tp2_all","Motor tp2 · all 11,547 genes (1,000 fitted)"],   // vercel-only
+  ["motor_tp3_all","Motor tp3 · all 11,547 genes (1,000 fitted)"],
+  ["CX_all","Central complex (T2) · all 21,771 genes (3,000 fitted)"],   // vercel-only
+  ["CXbest_all","Central complex, best grid config · all 21,771 genes (2,000 fitted)"],   // vercel-only
+  ["CXbestmc1_all","Central complex, best config, no gene filter · all 21,771 genes (2,000 fitted)"]];
 const SPLITS = ["train", "val", "test"];
 const $ = (id) => document.getElementById(id);
 const label = (s) => STAGES.find(x => x[0] === s)[1];
@@ -965,8 +973,8 @@ $("umo").addEventListener("wheel", (e) => { if (!S.D) return; e.preventDefault()
 $("ds").innerHTML = `<optgroup label="Visual">${STAGES.slice(0, 14).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</optgroup>
   <optgroup label="Motor">${STAGES.slice(14, 18).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</optgroup>
   <optgroup label="Central complex">${STAGES.slice(18, 21).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</optgroup>
-  <optgroup label="No gene filter (min_cells 1)">${STAGES.slice(21, -1).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</optgroup>
-  <optgroup label="All genes (P projected onto every atlas gene)">${STAGES.slice(-1).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</optgroup>`;
+  <optgroup label="No gene filter (min_cells 1)">${STAGES.slice(21).filter(([k]) => !k.endsWith("_all")).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</optgroup>
+  <optgroup label="All genes (P projected onto every atlas gene)">${STAGES.filter(([k]) => k.endsWith("_all")).map(([k, l]) => `<option value="${k}">${l}</option>`).join("")}</optgroup>`;
 $("ds").addEventListener("change", async (e) => { await switchStage(e.target.value); if (S.tab.startsWith("exp-")) setTab("pg"); });
 $("zoomin").addEventListener("click", () => { if (S.tab === "beta") { if (S.bsel) { S.bv = { ...S.bsel }; drawBeta(); } return; } const s = S.sel; if (!s) return; S.view = { r0: s.r0, r1: s.r1, c0: s.c0, c1: s.c1 }; $("zoomout").disabled = false; drawMatrix(); drawLegend(); });
 $("zoomout").addEventListener("click", () => { if (S.tab === "beta") { S.bv = bFull(); drawBeta(); return; } S.view = fullView(); $("zoomout").disabled = true; drawMatrix(); drawLegend(); });
@@ -1326,11 +1334,14 @@ $("buse").addEventListener("click", (e) => {
     S.bv = { ...r }; setBetaSel(r, [e.clientX, e.clientY]); drawBeta(); return; }
   // all-gene set: the P·G columns are not β's axis, so map the selected genes to β by name
   const B = S.D.beta, ax = new Map(B.axis.map((g, k) => [g, k])), hit = [];
-  for (let c = S.sel.c0; c <= S.sel.c1; c++) { const k = ax.get(S.D.genes[c]); if (k !== undefined) hit.push(B.pos.pg[k]); }
+  let nFit = 0;
+  for (let c = S.sel.c0; c <= S.sel.c1; c++) { let f = false;
+    for (const g of [S.D.genes[c], "~" + S.D.genes[c]]) { const k = ax.get(g); if (k !== undefined) { hit.push(B.pos.pg[k]); f = true; } }   // "~g": motor's complement half
+    nFit += f; }
   if (!hit.length) { $("status").textContent = "None of the selected genes were fitted, so they have no β."; return; }
   const lo = Math.min(...hit), hi = Math.max(...hit), r = { r0: lo, r1: hi, c0: lo, c1: hi };
   S.bv = { ...r }; setBetaSel(r, [e.clientX, e.clientY]); drawBeta();
-  $("status").textContent = `${hit.length} of the ${S.sel.c1 - S.sel.c0 + 1} selected genes were fitted; β shows the span they cover.`; });
+  $("status").textContent = `${nFit} of the ${S.sel.c1 - S.sel.c0 + 1} selected genes were fitted; β shows the span they cover.`; });
 const bmo = $("bmo"); let bdrag = null;
 bmo.addEventListener("pointerdown", (e) => { if (!S.D) return; bmo.setPointerCapture(e.pointerId); const b = bmo.getBoundingClientRect(); bdrag = { a: bFromPx(e.clientX - b.left, e.clientY - b.top) }; tip.hidden = true; });
 bmo.addEventListener("pointermove", (e) => { if (!S.D) return; const b = bmo.getBoundingClientRect(), [r, c] = bFromPx(e.clientX - b.left, e.clientY - b.top);
@@ -1434,7 +1445,7 @@ const Anat = (() => {
     return new Promise((res, rej) => { const el = document.createElement("script"); el.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
       el.onload = res; el.onerror = () => rej(new Error("three.js could not load")); document.head.appendChild(el); });
   }
-  const pickLabel = () => { const want = S.stage === "Adult" || S.stage === "Adult_nofilt_all" ? "Adult_nofilt" : S.stage.replace(/^(motor_tp\d)_nofilt$/, "$1"); return A.idx.datasets.some(d => d.label === want) ? want : A.idx.default; };
+  const pickLabel = () => { const want = S.stage === "Adult" || S.stage === "Adult_nofilt_all" ? "Adult_nofilt" : S.stage.replace(/^(motor_tp\d)_nofilt$/, "$1").replace(/_all$/, ""); return A.idx.datasets.some(d => d.label === want) ? want : A.idx.default; };
   async function show() {
     try { if (!A.idx) A.idx = await json("data/_morph/index.json", "index", "__MI"); await loadThree(); }
     catch (e) { $("a-title").textContent = "Anatomy: could not load (" + e.message + ")"; return; }

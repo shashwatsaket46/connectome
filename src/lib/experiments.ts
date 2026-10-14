@@ -85,7 +85,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     id: "pg-solve-explorer",
     title: "P·G Solve Explorer",
     description:
-      "The type × gene matrix P·G (solved P times metacell detection rate) over the real solves, 10 folds × 5 seeds per type, for 34 datasets: adult and developing visual (Özel P15–P70, Zipursky Early–P96), motor tp0–tp3 and the central complex, with and without the gene filter, plus Adult with P projected onto all 12,028 atlas genes (3,000 fitted, 9,028 read-out). Drag a box or click a type; the matrix, cell UMAP and per-solve calls stay linked. Tabs add the consensus β, the gene-filter test, anatomy fitted on neurons, and the motor and central-complex gene-set experiments.",
+      "The type × gene matrix P·G (solved P times metacell detection rate) over the real solves, 10 folds × 5 seeds per type, for 41 datasets: adult and developing visual (Özel P15–P70, Zipursky Early–P96), motor tp0–tp3 and the central complex, with and without the gene filter, plus all-gene versions where each solve's P is projected onto every atlas gene: Adult (12,028), motor tp0\u2013tp3 (11,547) and the three central-complex configs (21,771). Drag a box or click a type; the matrix, cell UMAP and per-solve calls stay linked. Tabs add the consensus β, the gene-filter test, anatomy fitted on neurons, and the motor and central-complex gene-set experiments.",
     url: "/expt-add/pg-explorer/index.html",
     category: "Gene Pairs",
     enabled: true,
