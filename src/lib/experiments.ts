@@ -71,6 +71,17 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     builtBy: "cm_central_complex/scripts/build_cx_morphology_viewer.py",
   },
   {
+    id: "connectivity-gene-pairs",
+    title: "Connectivity Gene Pairs",
+    description:
+      "Which gene pairs carry the predicted connection between two cell types. Ĉ[pre, post] is split exactly into Σ E[pre, g] · β[g, h] · E[post, h] over each of the 50 train solves (10 folds × 5 seeds) for Visual, Central complex, Motor and Motor seurat 2000. Pick a type pair to see its ranked gene pairs, how often each lands in a solve's top 10, and the pre- and post-side genes; or pick a gene to see the type pairs it drives. For the visual and motor datasets, each gene's P·G in the chosen types is plotted over development (Özel P15–Adult, Zipursky Early–Adult, motor tp0–tp3) on a log axis, with genes outside a stage's fitted set projected from that stage's solved P.",
+    url: "/expt-add/pairgenes/index.html",
+    category: "Gene Pairs",
+    enabled: true,
+    isNew: true,
+    builtBy: "pairgenes/export_pairgenes.py, pairgenes/gene_figures.py, pairgenes/time_export.py",
+  },
+  {
     id: "umap-vs-confusion",
     title: "UMAP + Confusion Matrix — per Family",
     description:

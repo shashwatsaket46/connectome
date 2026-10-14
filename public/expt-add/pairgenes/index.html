@@ -1,0 +1,539 @@
+<title>Connectivity Gene Pairs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* avoid-ai-design-ignore: SD1 -- the cream ground is the owner's standing choice for every page; accents are the data colours (pre teal, post plum), not terracotta.
+   Layout: one working column -- pickers, a readout strip, the ranked gene-pair table, then pre/post gene bars.
+   Single cream look by request (no dark variant); pre side = teal, post side = plum, everywhere. */
+:root {
+  color-scheme: light;
+  --bg: #fbf8ef;
+  --panel: #fffdf7;
+  --ink: #1d2422;
+  --muted: #5d6763;
+  --rule: #e4ddca;
+  --pre: #256870;          /* teal #42949E darkened to AA (5.3:1 on its own tint) */
+  --pre-bar: #42949E;
+  --pre-soft: #d9edef;
+  --post: #8a4380;          /* skill palette violet #9A4D8E */
+  --post-bar: #9A4D8E;
+  --post-soft: #f0dfec;
+  --accent: #0F4D92;
+  --warn: #9a5b00;
+  --display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+html, body { background: var(--bg); color: var(--ink); }
+body { font: 15px/1.5 var(--body); padding-inline: 16px; padding-block: 28px 56px; }
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 28px; }
+h1 { font: 700 clamp(26px, 4vw, 36px)/1.1 var(--display); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h2 { font: 700 18px/1.25 var(--display); margin: 0; text-wrap: balance; }
+.lede { color: var(--muted); max-width: 68ch; margin: 8px 0 0; }
+.formula { font: 400 17px/1.4 var(--body); margin-top: 10px; overflow-x: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.formula .p { color: var(--pre); font-weight: 500; } .formula .q { color: var(--post); font-weight: 500; }
+i.g, .g { font-style: italic; }
+
+.pick { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: end; }
+.pick label { display: grid; gap: 4px; font: 500 14px var(--body); color: var(--ink); }
+.pick input { font: 500 17px var(--body); padding: 10px 12px; border-radius: 6px; border: 1.5px solid var(--rule);
+  background: var(--panel); color: var(--ink); width: 100%; box-sizing: border-box; min-width: 0; }
+#pre { border-color: var(--pre); } #post { border-color: var(--post); }
+.pick input:focus-visible, button:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent); outline-offset: 1px; }
+button { font: 500 14px var(--body); cursor: pointer; border-radius: 6px; border: 1px solid var(--rule);
+  background: var(--panel); color: var(--ink); padding: 10px 12px; }
+button:hover { border-color: var(--muted); }
+.partners { display: grid; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 13.5px var(--body); padding: 3px 8px; border-radius: 3px; background: var(--post-soft); color: var(--post); border: 0; }
+.chip:hover { box-shadow: inset 0 -2px 0 currentColor; }
+.chip small { font-variant-numeric: tabular-nums; opacity: .75; margin-left: 5px; }
+.chip.pre { background: var(--pre-soft); color: var(--pre); }
+.sub { font-size: 12.5px; color: var(--muted); }
+
+.strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-block: 1px solid var(--rule); }
+.stat { padding: 14px 16px; display: grid; gap: 2px; }
+.stat + .stat { border-left: 1px solid var(--rule); }
+.stat .k { font-size: 13.5px; color: var(--muted); }
+.stat .v { font: 700 28px/1.15 var(--display); font-variant-numeric: tabular-nums; }
+.stat .n { font-size: 12.5px; color: var(--muted); }
+
+.head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px; }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th { text-align: left; font: 600 13.5px var(--body); color: var(--ink);
+  padding: 8px 10px; border-bottom: 1.5px solid var(--ink); white-space: nowrap; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+td.rk { font-family: var(--mono); color: var(--muted); width: 2.5em; }
+td.pair { white-space: nowrap; font-size: 15.5px; }
+td.pair .a { color: var(--pre); font-weight: 500; } td.pair .b { color: var(--post); font-weight: 500; }
+td.pair .arr { color: var(--muted); margin: 0 6px; }
+.self { font: italic 400 13px var(--body); color: var(--muted); margin-left: 8px; }
+.bar { position: relative; height: 14px; background: color-mix(in srgb, var(--rule) 55%, transparent); border-radius: 3px; min-width: 120px; }
+.bar > span { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--accent); }
+td.num { font-family: var(--mono); text-align: right; white-space: nowrap; width: 5.5em; }
+.stab { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: 14px; }
+.dots { display: inline-flex; gap: 2px; }
+.dots i { width: 6px; height: 12px; border-radius: 1.5px; background: var(--rule); display: inline-block; }
+.dots i.on { background: var(--ink); }
+.pill { font: 500 13px var(--body); white-space: nowrap; }
+.pill.hi { color: #2c6b26; } .pill.mid { color: var(--warn); } .pill.lo { color: #9b3a24; }
+tr.rest td { color: var(--muted); font-style: normal; }
+
+.sides { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.side { display: grid; gap: 10px; min-width: 0; }
+.side h2 span { font-weight: 500; }
+.hb { display: grid; grid-template-columns: minmax(70px, 9em) 1fr 3.6em; gap: 10px; align-items: center; font-size: 14.5px; }
+.hb .lab { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: italic; }
+.hb .track { height: 12px; background: color-mix(in srgb, var(--rule) 55%, transparent); border-radius: 3px; position: relative; }
+.hb .track span { position: absolute; inset: 0 auto 0 0; border-radius: 3px; }
+.pre .hb .track span { background: var(--pre-bar); } .post .hb .track span { background: var(--post-bar); }
+.dsets { display: flex; flex-wrap: wrap; gap: 6px; }
+.dsets { gap: 0 !important; }
+.ds { border-radius: 0; padding: 8px 16px; font: 500 14px var(--body); margin-left: -1px; }
+.ds:first-child { border-radius: 4px 0 0 4px; margin-left: 0; } .ds:last-child { border-radius: 0 4px 4px 0; }
+.ds[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); position: relative; }
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--rule); }
+.tab { border: 0; border-radius: 0; background: transparent; color: var(--muted); font: 600 16px var(--body); padding: 10px 2px; margin-right: 22px; box-shadow: none; }
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 -3px 0 var(--ink); }
+.view { display: grid; gap: 24px; }
+.gpick { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.gpick label { display: grid; gap: 4px; font: 500 14px var(--body); color: var(--ink); flex: 1 1 260px; }
+.gpick input { font: italic 500 17px var(--body); padding: 10px 12px; border-radius: 6px; border: 1.5px solid var(--accent);
+  background: var(--panel); color: var(--ink); width: 100%; box-sizing: border-box; }
+.figbox { background: #fff; padding: 8px 0; overflow-x: auto; }
+.figbox img { display: block; width: 100%; min-width: 640px; height: auto; }
+.chip.post { background: var(--post-soft); color: var(--post); }
+.chip .x { opacity: .55; font-weight: 400; margin-left: 4px; }
+.hb .val { font-family: var(--mono); font-size: 13px; text-align: right; }
+
+.note { font-size: 13.5px; color: var(--muted); display: grid; gap: 8px; max-width: 78ch; }
+.note b { color: var(--ink); font-weight: 600; }
+.status { font-size: 13px; color: var(--warn); min-height: 1.2em; }
+.empty { padding: 18px; border: 1px dashed var(--rule); border-radius: 6px; color: var(--muted); }
+
+.tl { display: grid; gap: 10px; }
+.tl .row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.tl input { font: 500 14px var(--body); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); width: 14em; }
+.tl .ser { border-radius: 3px; padding: 5px 12px; font-size: 13.5px; }
+.tl .ser[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.tl svg { width: 100%; height: auto; background: #fff; }
+.tl svg text { font: 12px var(--body); fill: var(--muted); }
+.tl .tchip { font: italic 500 13.5px var(--body); padding: 2px 8px; border-radius: 3px; border: 1.5px solid; background: var(--panel); }
+td.pair .g, .hb .lab { cursor: pointer; } td.pair .g:hover, .hb .lab:hover { text-decoration: underline; }
+
+@media (max-width: 720px) {
+  .pick { grid-template-columns: 1fr; } #swap { justify-self: start; }
+  .strip { grid-template-columns: 1fr 1fr; } .stat:nth-child(3) { border-left: 0; }
+  .stat:nth-child(n+3) { border-top: 1px solid var(--rule); }
+  .sides { grid-template-columns: 1fr; }
+  td.pair { white-space: normal; }
+}
+@media (prefers-reduced-motion: no-preference) { .bar > span, .hb .track span { transition: width .25s ease; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Connectivity Gene Pairs</h1>
+    <div class="formula">Ĉ[<span class="p">pre</span>, <span class="q">post</span>] = Σ<sub>g,h</sub>
+      E[<span class="p">pre</span>, <span class="p">g</span>] · β[<span class="p">g</span>, <span class="q">h</span>] · E[<span class="q">post</span>, <span class="q">h</span>]
+</div>
+  </header>
+
+  <div class="dsets" id="dsets" role="group" aria-label="Dataset">
+    <button type="button" class="ds" data-ds="Adult" aria-pressed="true">Visual</button>
+    <button type="button" class="ds" data-ds="CXbestmc1" aria-pressed="false">Central complex</button>
+    <button type="button" class="ds" data-ds="motor_tp3" aria-pressed="false">Motor</button>
+    <button type="button" class="ds" data-ds="motor_tp3_seurat2000" aria-pressed="false">Motor · seurat 2000</button>
+  </div>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tabPair" aria-selected="true" type="button">By type pair</button>
+    <button class="tab" role="tab" id="tabGene" aria-selected="false" type="button">By gene</button>
+  </nav>
+
+  <div class="view" id="viewGene" hidden>
+    <section class="gpick">
+      <label for="gene">Gene <input id="gene" list="geneList" autocomplete="off" spellcheck="false"></label>
+      <datalist id="geneList"></datalist>
+    </section>
+    <div class="chips" id="gPairs"></div>
+    <div class="status" id="gStatus" role="status"></div>
+    <div class="figbox"><img id="gFig" alt=""></div>
+    <section class="tl" id="tl" hidden>
+      <h2>Over development <span class="sub" id="tlGene"></span></h2>
+      <div class="row"><span id="tlSer"></span>
+        <input id="tlType" list="tlTypes" placeholder="add cell type" autocomplete="off" spellcheck="false"><datalist id="tlTypes"></datalist>
+        <button type="button" id="tlClear">Clear</button></div>
+      <div class="row" id="tlChips"></div>
+      <div id="tlPlot"></div>
+      <div class="sub" id="tlNote"></div>
+    </section>
+  </div>
+
+  <div class="view" id="viewPair">
+
+  <section class="pick" aria-label="Choose the type pair">
+    <label for="pre">Presynaptic type <input id="pre" list="types" autocomplete="off" spellcheck="false"></label>
+    <button id="swap" type="button" title="Swap pre and post">Swap</button>
+    <label for="post">Postsynaptic type <input id="post" list="types" autocomplete="off" spellcheck="false"></label>
+    <datalist id="types"></datalist>
+  </section>
+  <div class="partners">
+    <div class="sub">Connected partners of <b id="preName"></b>:</div>
+    <div class="chips" id="partners"></div>
+    <div class="status" id="status" role="status"></div>
+  </div>
+
+  <section class="strip" aria-label="Pair summary">
+    <div class="stat"><span class="k">Connectome C</span><span class="v" id="sC">–</span></div>
+    <div class="stat"><span class="k">Predicted Ĉ</span><span class="v" id="sChat">–</span></div>
+    <div class="stat"><span class="k">Solves</span><span class="v" id="sN">–</span><span class="n">of <span id="sNtot"></span></span></div>
+    <div class="stat"><span class="k">Top-10 coverage</span><span class="v" id="sCov">–</span></div>
+  </section>
+
+  <section style="display:grid;gap:12px">
+    <div class="head">
+      <h2>Gene pairs behind <span id="hPair"></span></h2>
+    </div>
+    <div class="tablewrap" id="tablewrap"></div>
+  </section>
+
+  <section class="sides">
+    <div class="side pre"><h2>Pre-side genes <span class="sub">in <span id="hPre"></span></span></h2><div id="preBars"></div></div>
+    <div class="side post"><h2>Post-side genes <span class="sub">in <span id="hPost"></span></span></h2><div id="postBars"></div></div>
+  </section>
+  <section class="tl" id="pt" hidden>
+    <div class="head"><h2>Over development</h2><span id="ptSer"></span></div>
+    <div class="sides">
+      <div class="side pre"><h2><span id="ptPreH" style="color:var(--pre)"></span> <span class="sub">pre-side genes</span></h2><div class="row" id="ptPreChips"></div><div id="ptPrePlot"></div></div>
+      <div class="side post"><h2><span id="ptPostH" style="color:var(--post)"></span> <span class="sub">post-side genes</span></h2><div class="row" id="ptPostChips"></div><div id="ptPostPlot"></div></div>
+    </div>
+    <div class="sub">Click a table row or a gene to plot it. Mean P·G over solves per stage, log axis; dashed line = 0.5, filled = on (&gt; 0.5); dotted ring = read-out (gene not fitted at that stage, P projected onto it); × = gene absent from that stage's atlas.</div>
+  </section>
+  </div>
+
+  <section class="note" id="note"></section>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const GV = { idx: null, unused: new Set(), packs: new Map(), gene: null };
+const S = { base: "Adult", idx: null, chunks: new Map(), pre: 0, post: 0 };
+
+function dec(b64, T) {
+  const s = atob(b64), u = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i);
+  return new T(u.buffer);
+}
+const fmt = (x, d = 3) => (x === 0 ? "0" : Math.abs(x) >= 100 ? x.toFixed(0) : Math.abs(x) >= 0.01 ? x.toFixed(d) : x.toExponential(1));
+const pct = x => (x * 100 >= 10 ? (x * 100).toFixed(0) : (x * 100).toFixed(1)) + "%";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function loadChunk(k) {
+  if (S.chunks.has(k)) return S.chunks.get(k);
+  const I = S.idx, nT = I.types.length, nA = Math.min(I.CHUNK, nT - k * I.CHUNK), R = nA * nT, K = I.K, M = I.M;
+  // chunks ship as base64 of gzip (artifacts serve text, not raw binary)
+  const base = S.base;
+  const res = await fetch(`${base}/c${k}.gz.txt`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const gz = dec((await res.text()).trim(), Uint8Array);
+  const buf = await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+  let o = 0;
+  const take = (T, n) => { const a = new T(buf, o, n); o += n * T.BYTES_PER_ELEMENT; return a; };
+  const c = {
+    chat: take(Float32Array, R),
+    pid: take(I.pid_bytes === 2 ? Uint16Array : Uint32Array, R * K),
+    preG: take(Uint16Array, R * M), postG: take(Uint16Array, R * M),
+    n: take(Uint8Array, R), share: take(Uint8Array, R * K), top: take(Uint8Array, R * K),
+    preS: take(Uint8Array, R * M), postS: take(Uint8Array, R * M),
+  };
+  if (o !== buf.byteLength) throw new Error(`chunk ${k}: read ${o} of ${buf.byteLength} bytes`);
+  if (S.base === base) S.chunks.set(k, c);
+  return c;
+}
+
+function trueC(a, b) { return S.Cmap.get(a * S.idx.types.length + b) || 0; }
+
+function partners(a, c) {
+  // C is binary, so rank the connected partners by the model's mean C_hat instead
+  const I = S.idx, nT = I.types.length, out = [];
+  for (const key of S.Cmap.keys()) if (Math.floor(key / nT) === a) {
+    const b = key % nT, r = (a % I.CHUNK) * nT + b;
+    if (c.n[r]) out.push([b, c.chat[r]]);
+  }
+  out.sort((x, y) => y[1] - x[1]);
+  $("preName").textContent = I.types[a];
+  $("partners").innerHTML = out.slice(0, 12).map(([b, v]) =>
+    `<button class="chip" data-b="${b}">${esc(I.types[b])}<small>${fmt(v, 2)}</small></button>`).join("")
+    || `<span class="sub">no connected partner was solved together with this type</span>`;
+}
+
+async function render() {
+  const base = S.base;
+  const I = S.idx, nT = I.types.length, a = S.pre, b = S.post, K = I.K, M = I.M;
+  $("pre").value = I.types[a]; $("post").value = I.types[b];
+  $("hPair").innerHTML = `<span style="color:var(--pre)">${esc(I.types[a])}</span> → <span style="color:var(--post)">${esc(I.types[b])}</span>`;
+  $("hPre").textContent = I.types[a]; $("hPost").textContent = I.types[b];
+  $("status").textContent = "Loading…";
+  let c;
+  try { c = await loadChunk(Math.floor(a / I.CHUNK)); }
+  catch (e) { $("status").textContent = `Could not load the data for ${I.types[a]} (${e.message}). Reload the page to retry.`; return; }
+  if (S.base !== base || S.pre !== a || S.post !== b) return;   // a newer selection superseded this one
+  $("status").textContent = "";
+  partners(a, c);
+  const r = (a % I.CHUNK) * nT + b, n = c.n[r], chat = c.chat[r], tc = trueC(a, b);
+
+  $("sC").textContent = tc > 0 ? "Yes" : "No";
+  $("sChat").textContent = n ? fmt(chat) : "–";
+  $("sN").textContent = n;
+  $("sNtot").textContent = I.n_solves;
+
+  const rows = [];
+  let cov = 0;
+  for (let k = 0; k < K; k++) {
+    const sh = c.share[r * K + k] / 255;
+    if (!n || sh === 0) break;
+    const p = c.pid[r * K + k];
+    rows.push({ g: I.genes[S.pairPre[p]], h: I.genes[S.pairPost[p]], sh, top: c.top[r * K + k] });
+    cov += sh;
+  }
+  $("sCov").textContent = n ? pct(Math.min(cov, 1)) : "–";
+
+  if (!n) {
+    $("tablewrap").innerHTML = `<div class="empty">Never solved together.</div>`;
+    $("preBars").innerHTML = $("postBars").innerHTML = "";
+    $("pt").hidden = true; PT.key = "";
+    return;
+  }
+  const max = rows.length ? rows[0].sh : 1;
+  const dots = t => { let s = ""; const on = Math.round(t / n * 10); for (let i = 0; i < 10; i++) s += `<i class="${i < on ? "on" : ""}"></i>`; return s; };
+  const pill = f => f >= 0.5 ? `<span class="pill hi">stable</span>` : f >= 0.2 ? `<span class="pill mid">variable</span>` : `<span class="pill lo">rare</span>`;
+  $("tablewrap").innerHTML = `<table><thead><tr><th>#</th><th>Pre gene → post gene</th><th>Share of Ĉ</th><th></th><th>In top 10 of solves</th></tr></thead><tbody>` +
+    rows.map((x, i) => `<tr data-g="${esc(x.g)}" data-h="${esc(x.h)}" style="cursor:pointer"><td class="rk">${i + 1}</td>
+      <td class="pair"><span class="a g">${esc(x.g)}</span><span class="arr">→</span><span class="b g">${esc(x.h)}</span>${x.g === x.h ? '<span class="self">same gene</span>' : ""}</td>
+      <td><div class="bar"><span style="width:${(x.sh / max * 100).toFixed(1)}%"></span></div></td>
+      <td class="num">${pct(x.sh)}</td>
+      <td><div class="stab"><span class="dots" aria-hidden="true">${dots(x.top)}</span>${x.top}/${n} ${pill(x.top / n)}</div></td></tr>`).join("") +
+    (cov < 0.995 ? `<tr class="rest"><td class="rk"></td><td>other pairs</td><td></td><td class="num">${pct(Math.max(0, 1 - cov))}</td><td></td></tr>` : "") +
+    `</tbody></table>`;
+
+  const bars = (G, Sh) => {
+    const items = [];
+    for (let k = 0; k < M; k++) { const s = Sh[r * M + k] / 255; if (s > 0) items.push([I.genes[G[r * M + k]], s]); }
+    const mx = items.length ? items[0][1] : 1;
+    return `<div style="display:grid;gap:7px">` + items.map(([g, s]) =>
+      `<div class="hb"><span class="lab" title="${esc(g)}">${esc(g)}</span><span class="track"><span style="width:${(s / mx * 100).toFixed(1)}%"></span></span><span class="val">${pct(s)}</span></div>`).join("") + `</div>`;
+  };
+  $("preBars").innerHTML = bars(c.preG, c.preS);
+  $("postBars").innerHTML = bars(c.postG, c.postS);
+  const top = (G, Sh) => { const o = []; for (let k = 0; k < M; k++) if (Sh[r * M + k] > 0) o.push(I.genes[G[r * M + k]]); return o; };
+  ptShow(top(c.preG, c.preS), top(c.postG, c.postS));
+}
+
+function pickByName(input, which) {
+  const k = S.tpos.get(input.value.trim());
+  if (k === undefined) return;
+  S[which] = k;
+  render();
+}
+
+async function boot(base) {
+  S.base = base; S.idx = null; S.tpos = null; S.chunks = new Map();
+  GV.idx = null; GV.packs = new Map(); GV.gene = null;
+  document.querySelectorAll(".ds").forEach(b => b.setAttribute("aria-pressed", b.dataset.ds === base));
+  $("status").textContent = "Loading…";
+  let I;
+  try { I = await (await fetch(`${base}/index.json`)).json(); }
+  catch (e) { $("status").textContent = `Could not load index.json (${e.message}).`; return; }
+  if (S.base !== base) return;   // switched again while loading
+  S.idx = I;
+  const nT = I.types.length;
+  S.tpos = new Map(I.types.map((t, i) => [t, i]));
+  S.pairPre = dec(I.pair_pre, Uint16Array); S.pairPost = dec(I.pair_post, Uint16Array);
+  const Ci = dec(I.C_i, Uint16Array), Cj = dec(I.C_j, Uint16Array), Cv = dec(I.C_v, Float32Array);
+  S.Cmap = new Map();
+  let best = [0, 0, -1];
+  for (let k = 0; k < Cv.length; k++) {
+    S.Cmap.set(Ci[k] * nT + Cj[k], Cv[k]);
+    if (I.named[Ci[k]] && I.named[Cj[k]] && Ci[k] !== Cj[k] && Cv[k] > best[2]) best = [Ci[k], Cj[k], Cv[k]];
+  }
+  const order = I.types.map((t, i) => i).sort((x, y) => (I.named[y] - I.named[x]) || I.types[x].localeCompare(I.types[y], undefined, { numeric: true }));
+  $("types").innerHTML = order.map(i => `<option value="${esc(I.types[i])}">${I.named[i] ? "named" : esc(I.family[i] || "unnamed")}</option>`).join("");
+
+  const h = location.hash.slice(1).split("~");
+  const fromHash = h.length === 2 && S.tpos.has(decodeURIComponent(h[0])) && S.tpos.has(decodeURIComponent(h[1]));
+  [S.pre, S.post] = fromHash ? [S.tpos.get(decodeURIComponent(h[0])), S.tpos.get(decodeURIComponent(h[1]))] : [best[0], best[1]];
+
+  const ch = I.checks;
+  const comp = I.genes.some(g => g.startsWith("~"));
+  $("note").innerHTML = `<div>Exact split of Ĉ over ${I.n_solves} train solve${I.n_solves === 1 ? "" : "s"} (${esc(I.stage)}). Model attribution, not causation.${comp ? " <i>~gene</i> = gene not detected." : ""}</div>`;
+  render();
+  if (!$("viewGene").hidden) bootGene();
+}
+$("pre").addEventListener("change", e => pickByName(e.target, "pre"));
+$("post").addEventListener("change", e => pickByName(e.target, "post"));
+$("swap").addEventListener("click", () => { [S.pre, S.post] = [S.post, S.pre]; render(); });
+$("partners").addEventListener("click", e => { const btn = e.target.closest("[data-b]"); if (btn) { S.post = +btn.dataset.b; render(); } });
+$("dsets").addEventListener("click", e => { const b = e.target.closest("[data-ds]"); if (b && b.dataset.ds !== S.base) boot(b.dataset.ds); });
+
+function setTab(gene) {
+  $("tabPair").setAttribute("aria-selected", !gene); $("tabGene").setAttribute("aria-selected", gene);
+  $("viewPair").hidden = gene; $("viewGene").hidden = !gene;
+  if (gene && !GV.idx) bootGene();
+}
+async function bootGene() {
+  const base = S.base;
+  let gi;
+  try { gi = await (await fetch(`${base}/genes_index.json`)).json(); }
+  catch (e) { $("gStatus").textContent = `Could not load genes (${e.message}).`; return; }
+  if (S.base !== base) return;
+  GV.idx = gi.genes; GV.unused = new Set(gi.unused || []);
+  const names = Object.keys(GV.idx).sort((a, b) => GV.idx[a].rank - GV.idx[b].rank);
+  $("geneList").innerHTML = names.map(g => `<option value="${esc(g)}">#${GV.idx[g].rank}</option>`).join("") +
+    [...GV.unused].map(g => `<option value="${esc(g)}">not used</option>`).join("");
+  const w = GV.want; GV.want = null;
+  showGene(w || names[0]);
+}
+async function showGene(g) {
+  const rec = GV.idx[g];
+  if (!rec) {
+    GV.gene = g; $("gene").value = g; $("gPairs").innerHTML = ""; $("gFig").hidden = true;
+    tlShow(g, null, TL.pick); TL.pick = null;
+    $("gStatus").textContent = GV.unused.has(g) ? `${g}: in the model, but β never uses it (0 of ${S.idx.n_solves} solves).`
+                                                 : `${g}: not in this dataset's gene set.`;
+    return;
+  }
+  $("gFig").hidden = false;
+  GV.gene = g; $("gene").value = g; $("gStatus").textContent = "Loading…";
+  if (!TL.pick) TL.auto = true;
+  tlShow(g, rec, TL.pick); TL.pick = null;
+  $("gPairs").innerHTML = rec.pairs.slice(0, 8).map(([a, b, side, v, conn]) =>
+    `<button class="chip ${side === "r" ? "pre" : "post"}" data-a="${esc(a)}" data-b="${esc(b)}">${esc(a)} → ${esc(b)}${conn ? "" : '<span class="x" title="not connected in C">∅</span>'}</button>`).join("");
+  let pack = GV.packs.get(rec.pack);
+  try {
+    if (!pack) { pack = await (await fetch(`${S.base}/g${rec.pack}.json`)).json(); GV.packs.set(rec.pack, pack); }
+  } catch (e) { $("gStatus").textContent = `Could not load the figure (${e.message}).`; return; }
+  if (GV.gene !== g) return;
+  $("gFig").src = "data:image/png;base64," + pack[g];
+  $("gFig").alt = `Type pairs, cell types and partner genes for ${g}`;
+  $("gStatus").textContent = "";
+}
+$("tabPair").addEventListener("click", () => setTab(false));
+$("tabGene").addEventListener("click", () => setTab(true));
+$("gene").addEventListener("change", e => { TL.pick = null; showGene(e.target.value.trim()); });
+$("gPairs").addEventListener("click", e => {
+  const b = e.target.closest("[data-a]"); if (!b || !S.tpos) return;
+  S.pre = S.tpos.get(b.dataset.a); S.post = S.tpos.get(b.dataset.b); setTab(false); render();
+});
+
+// ---- presence over development (Stage Timeline consensus, mean P·G over solves; time.json per dataset)
+const TL = { base: null, d: null, ser: 0, types: [], auto: true };
+const TLC = ["#0F4D92", "#c0392b", "#2c8a3e", "#9A4D8E", "#d48a00", "#42949E", "#6b4f2a", "#5d6763"];
+async function tlLoad() {
+  const base = S.base;
+  if (TL.base === base) return TL.d;
+  TL.base = base; TL.d = null; TL.ser = 0;
+  try { const r = await fetch(`${base}/time.json`); if (r.ok) TL.d = await r.json(); } catch (e) {}
+  if (TL.d) for (const s of TL.d.series) {
+    const gz = dec(s.data, Uint8Array);
+    s.q = new Uint8Array(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
+    s.gpos = new Map(s.genes.map((g, i) => [g, i])); s.tpos = new Map(s.types.map((t, i) => [t, i]));
+    s.ro = s.readout ? dec(s.readout, Uint8Array) : new Uint8Array(s.genes.length * s.stages.length);
+  }
+  return TL.d;
+}
+async function tlShow(g, rec, pick) {
+  const d = await tlLoad();
+  if (GV.gene !== g) return;
+  $("tl").hidden = !d;
+  if (!d) return;
+  if (pick) { TL.types = [pick]; TL.auto = false; }
+  else if (TL.auto || !TL.types.length) {
+    const seen = [];
+    for (const [a, b, side] of (rec ? rec.pairs : [])) { const t = side === "r" ? a : b; if (!seen.includes(t)) seen.push(t); if (seen.length === 4) break; }
+    TL.types = seen; TL.auto = true;
+  }
+  $("tlSer").innerHTML = d.series.length > 1 ? d.series.map((s, i) => `<button type="button" class="ser" data-i="${i}" aria-pressed="${i === TL.ser}">${esc(s.name)}</button>`).join(" ") : `<span class="sub">${esc(d.series[0].name)}</span>`;
+  const s = d.series[TL.ser];
+  $("tlTypes").innerHTML = s.types.map((t, i) => [t, i]).sort((x, y) => (s.named[y[1]] - s.named[x[1]]) || x[0].localeCompare(y[0], undefined, { numeric: true }))
+    .map(([t]) => `<option value="${esc(t)}">`).join("");
+  tlDraw(g);
+}
+// lines: [{t: type, g: gene, k: legend label}] -> SVG of mean P·G per stage (filled dot = on), plus what was missing
+function tlSvg(s, lines, W = 760, H = 300) {
+  const nS = s.stages.length, L = 50, R = 12, T = 14, B = 40, lo = s.log_lo, x = i => L + (nS === 1 ? 0 : i * (W - L - R) / (nS - 1)),
+    y = v => T + (Math.log10(Math.max(v, 10 ** lo)) / lo) * (H - T - B);   // log axis: 1 at top, 10^lo (and below) at the bottom
+  let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="P·G over stages">`;
+  for (let e = 0; e >= lo; e--) { const v = 10 ** e; o += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#eee8d8"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${e === lo ? "≤" : ""}${e === 0 ? "1" : "1e" + e}</text>`; }
+  o += `<line x1="${L}" x2="${W - R}" y1="${y(.5)}" y2="${y(.5)}" stroke="#9a5b00" stroke-dasharray="4 4"/>`;
+  s.stages.forEach((lab, i) => o += `<text x="${x(i)}" y="${H - B + 18}" text-anchor="middle">${esc(lab.replace(/_nofilt$/, ""))}</text>`);
+  o += `<text x="12" y="${y(.01)}" transform="rotate(-90 12 ${y(.01)})" text-anchor="middle">P·G (log)</text>`;
+  const miss = [];
+  lines.forEach((ln, k) => {
+    const ti = s.tpos.get(ln.t), gi = s.gpos.get(ln.g.replace(/^~/, "")), c = TLC[k % 8];
+    if (ti === undefined || gi === undefined) { miss.push(ln.k); return; }
+    const base = (gi * s.types.length + ti) * nS, pts = [];
+    for (let i = 0; i < nS; i++) { const q = s.q[base + i]; pts.push(q === 255 ? null : q === 0 ? 0 : 10 ** (lo - lo * (q - 1) / ((s.log_nq || 254) - 1))); }
+    let path = "", pen = false;
+    pts.forEach((v, i) => { if (v === null) { pen = false; return; } path += `${pen ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`; pen = true; });
+    o += `<path d="${path}" fill="none" stroke="${c}" stroke-width="2"/>`;
+    pts.forEach((v, i) => o += v === null ? `<text x="${x(i)}" y="${H - B - 4}" text-anchor="middle" style="fill:${c}">×</text>`
+      : `<circle cx="${x(i)}" cy="${y(v)}" r="5" fill="${v > .5 ? c : "#fff"}" stroke="${c}" stroke-width="2"${s.ro[gi * nS + i] ? ' stroke-dasharray="2 2"' : ""}><title>${esc(ln.k)} · ${esc(s.stages[i])}: ${v >= 0.01 ? v.toFixed(3) : v > 0 ? v.toExponential(1) : "< 1e-4"}${s.ro[gi * nS + i] ? " (read-out: not a fitted gene at this stage)" : ""}</title></circle>`);
+  });
+  return [o + "</svg>", miss];
+}
+const TLNOTE = "Mean P·G over solves per stage, log axis; dashed line = 0.5, filled = on (> 0.5); dotted ring = read-out (gene not fitted at that stage, P projected onto it); × = gene absent from that stage's atlas.";
+const chipsHTML = (keys, attr) => keys.map((t, k) => `<button type="button" class="tchip" ${attr}="${esc(t)}" style="border-color:${TLC[k % 8]};color:${TLC[k % 8]}">${esc(t)} <span class="x">×</span></button>`).join("");
+function tlDraw(g) {
+  const s = TL.d.series[TL.ser], gb = g.replace(/^~/, "");
+  $("tlGene").innerHTML = `<i>${esc(gb)}</i>`;
+  $("tlChips").innerHTML = chipsHTML(TL.types, "data-t");
+  if (!s.gpos.has(gb)) { $("tlPlot").innerHTML = `<div class="empty"><i>${esc(gb)}</i> is not in this series' gene set.</div>`; $("tlNote").textContent = ""; return; }
+  const [svg, miss] = tlSvg(s, TL.types.map(t => ({ t, g: gb, k: t })));
+  $("tlPlot").innerHTML = svg;
+  $("tlNote").textContent = TLNOTE + (miss.length ? " Not in this series: " + miss.join(", ") + "." : "");
+}
+
+// ---- pair view: the selected pre type's pre-side genes and post type's post-side genes over development
+const PT = { pre: [], post: [], key: "" };
+async function ptShow(topPre, topPost) {
+  const key = `${S.base}|${S.pre}|${S.post}`;
+  if (topPre && PT.key !== key) { PT.key = key; PT.pre = topPre.slice(0, 3); PT.post = topPost.slice(0, 3); }
+  const d = await tlLoad();
+  if (`${S.base}|${S.pre}|${S.post}` !== key) return;
+  $("pt").hidden = !d;
+  if (!d) return;
+  $("ptSer").innerHTML = d.series.length > 1 ? d.series.map((s, i) => `<button type="button" class="ser" data-i="${i}" aria-pressed="${i === TL.ser}">${esc(s.name)}</button>`).join(" ") : `<span class="sub">${esc(d.series[0].name)}</span>`;
+  const s = d.series[TL.ser], I = S.idx;
+  for (const [side, type] of [["pre", I.types[S.pre]], ["post", I.types[S.post]]]) {
+    const cap = side === "pre" ? "Pre" : "Post";
+    $(`pt${cap}H`).textContent = type;
+    $(`pt${cap}Chips`).innerHTML = chipsHTML(PT[side], `data-${side}`);
+    if (!PT[side].length) { $(`pt${cap}Plot`).innerHTML = `<div class="empty">Click a gene above to plot it.</div>`; continue; }
+    const [svg, miss] = tlSvg(s, PT[side].map(g => ({ t: type, g, k: g })), 520, 280);
+    $(`pt${cap}Plot`).innerHTML = svg + (miss.length ? `<div class="sub">Not in this series: ${miss.map(esc).join(", ")}</div>` : "");
+  }
+}
+function ptToggle(side, g) { const L = PT[side], i = L.indexOf(g); if (i >= 0) L.splice(i, 1); else L.push(g); ptShow(); }
+$("ptSer").addEventListener("click", e => { const b = e.target.closest("[data-i]"); if (b) { TL.ser = +b.dataset.i; ptShow(); } });
+$("ptPreChips").addEventListener("click", e => { const b = e.target.closest("[data-pre]"); if (b) ptToggle("pre", b.dataset.pre); });
+$("ptPostChips").addEventListener("click", e => { const b = e.target.closest("[data-post]"); if (b) ptToggle("post", b.dataset.post); });
+$("tablewrap").addEventListener("click", e => {
+  const el = e.target.closest(".g");
+  if (el) { ptToggle(el.classList.contains("a") ? "pre" : "post", el.textContent); return; }
+  const tr = e.target.closest("tr[data-g]");
+  if (tr) { PT.pre = [tr.dataset.g]; PT.post = [tr.dataset.h]; ptShow(); }
+});
+$("preBars").addEventListener("click", e => { const el = e.target.closest(".lab"); if (el) ptToggle("pre", el.textContent); });
+$("postBars").addEventListener("click", e => { const el = e.target.closest(".lab"); if (el) ptToggle("post", el.textContent); });
+$("tlSer").addEventListener("click", e => { const b = e.target.closest("[data-i]"); if (b) { TL.ser = +b.dataset.i; TL.auto = false; tlShow(GV.gene, null); } });
+$("tlChips").addEventListener("click", e => { const b = e.target.closest("[data-t]"); if (b) { TL.types = TL.types.filter(t => t !== b.dataset.t); TL.auto = false; tlDraw(GV.gene); } });
+$("tlType").addEventListener("change", e => { const t = e.target.value.trim(), s = TL.d && TL.d.series[TL.ser]; e.target.value = "";
+  if (s && s.tpos.has(t) && !TL.types.includes(t)) { TL.types.push(t); TL.auto = false; tlDraw(GV.gene); } });
+$("tlClear").addEventListener("click", () => { TL.types = []; TL.auto = false; tlDraw(GV.gene); });
+boot("Adult");
+})();
+</script>
