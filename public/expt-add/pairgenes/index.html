@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Connectivity Gene Pairs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -24,6 +29,7 @@
   --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
 }
+[hidden] { display: none !important; }   /* .view / .tl set display: grid, which would otherwise beat the hidden attribute */
 html, body { background: var(--bg); color: var(--ink); }
 body { font: 15px/1.5 var(--body); padding-inline: 16px; padding-block: 28px 56px; }
 .wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 28px; }
@@ -132,6 +138,8 @@ td.pair .g, .hb .lab { cursor: pointer; } td.pair .g:hover, .hb .lab:hover { tex
 }
 @media (prefers-reduced-motion: no-preference) { .bar > span, .hb .track span { transition: width .25s ease; } }
 </style>
+</head>
+<body>
 
 <div class="wrap">
   <header>
@@ -537,3 +545,5 @@ $("tlClear").addEventListener("click", () => { TL.types = []; TL.auto = false; t
 boot("Adult");
 })();
 </script>
+</body>
+</html>
