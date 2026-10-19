@@ -82,6 +82,17 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     builtBy: "pairgenes/export_pairgenes.py, pairgenes/gene_figures.py, pairgenes/time_export.py",
   },
   {
+    id: "synaptic-gene-partners",
+    title: "Synaptic Gene Partners",
+    description:
+      "Pick any set of cell types in the adult visual (no filter), motor (tp3) or central-complex (best) connectome and see their strongest partners, with each real edge drawn as its top 1–6 synaptic gene pairs (pre-type gene → post-type gene). Genes are each type's most type-specific cell-surface/synaptic genes (dpr/DIP, beat/side, kek, klg, hig, Net, Sema/Plex, Ten, Dscam, Nrx/Nlg and others) by P·G, the mean over the 50 train solves of the best model projected onto every atlas gene; pairs are ranked by the product of the two types' P·G. This is a read-out of the solved cell→type assignment, not fitted β pairs. Choose genes per type, partners per type and edge direction; click nodes to add or remove them, drag to arrange.",
+    url: "/expt-add/synnet/index.html",
+    category: "Gene Pairs",
+    enabled: true,
+    isNew: true,
+    builtBy: "synnet/build_synnet.py",
+  },
+  {
     id: "pg-solve-explorer",
     title: "P·G Solve Explorer",
     description:
