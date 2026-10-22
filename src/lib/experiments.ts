@@ -45,7 +45,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     url: "/expt-add/morphology_motor.html",
     category: "Morphology",
     enabled: true,
-    isNew: true,
+    isNew: false,
     builtBy: "cm_motor/scripts/build_morphology_viewer.py",
   },
   {
