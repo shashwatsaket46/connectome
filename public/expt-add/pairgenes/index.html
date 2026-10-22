@@ -914,10 +914,17 @@ $("viewNeuron").addEventListener("click", e => {
 });
 // ---- Excel export: every table downloads as .xlsx of the current selection (full precision, not the rounded view),
 // with an "About" sheet saying what it is. SheetJS loads on the first click; the file goes through the viewer's
-// downloads capability (a confirmation the viewer may decline); without that capability the buttons stay hidden.
+// downloads capability (a confirmation the viewer may decline), or on the website as a normal browser download;
+// inside claude.ai without that capability the buttons stay hidden.
 const XL = { dl: null, lib: null };
+// outside claude.ai (the website) there is no viewer capability: save through a plain browser download instead
+const browserDl = { save: async ({ filename, data }) => {
+  const url = URL.createObjectURL(data), a = Object.assign(document.createElement("a"), { href: url, download: filename });
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 10000);
+} };
 (async () => {
   try { XL.dl = window.claude && await window.claude.use("downloads"); } catch (e) { XL.dl = null; }
+  if (!XL.dl && !window.claude) XL.dl = browserDl;
   if (XL.dl) document.body.classList.add("can-dl");
 })();
 function xlLib() {
