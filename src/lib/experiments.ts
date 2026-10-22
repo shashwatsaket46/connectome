@@ -100,7 +100,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     url: "/expt-add/pg-explorer/index.html",
     category: "Gene Pairs",
     enabled: true,
-    isNew: true,
+    isNew: false,
     builtBy: "pbnull/pg_consensus.py, pbnull/dash_export.py, pbnull/pg_allgenes.py, pbnull/dash2_export.py",
   },
   {
