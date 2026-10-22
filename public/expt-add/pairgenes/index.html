@@ -9,7 +9,9 @@
 <style>
 /* avoid-ai-design-ignore: SD1 -- the cream ground is the owner's standing choice for every page; accents are the data colours (pre teal, post plum), not terracotta.
    Layout: one working column -- pickers, a readout strip, the ranked gene-pair table, then pre/post gene bars.
-   Single cream look by request (no dark variant); pre side = teal, post side = plum, everywhere. */
+   Single cream look by request (no dark variant); pre side = teal, post side = plum, everywhere.
+   avoid-ai-design-ignore: SD5 -- a type name coloured in a heading is the pre/post data encoding, not a garnish word.
+   avoid-ai-design-ignore: SD4d -- the dots in the header formula are multiplication, not a metadata separator. */
 :root {
   color-scheme: light;
   --bg: #fbf8ef;
@@ -129,18 +131,166 @@ tr.rest td { color: var(--muted); font-style: normal; }
 .tl .tchip { font: italic 500 13.5px var(--body); padding: 2px 8px; border-radius: 3px; border: 1.5px solid; background: var(--panel); }
 td.pair .g, .hb .lab { cursor: pointer; } td.pair .g:hover, .hb .lab:hover { text-decoration: underline; }
 
+.npick { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.npick label { display: grid; gap: 4px; font: 500 14px var(--body); flex: 1 1 260px; }
+.npick input { font: 500 17px var(--body); padding: 10px 12px; border-radius: 6px; border: 1.5px solid var(--ink);
+  background: var(--panel); color: var(--ink); width: 100%; box-sizing: border-box; }
+.npick .npsel { flex: 0 1 300px; }
+.npick select { font: 500 15px var(--body); padding: 9px 10px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--bg); color: var(--ink); min-width: 0; }
+.dir { display: flex; }
+.dir button { border-radius: 0; margin-left: -1px; padding: 9px 14px; }
+.dir button:first-child { border-radius: 6px 0 0 6px; margin-left: 0; } .dir button:last-child { border-radius: 0 6px 6px 0; }
+.dir button span { color: var(--muted); font-weight: 400; font-size: 12.5px; margin-left: 4px; }
+.dir button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.dir button[aria-pressed="true"] span { color: color-mix(in srgb, var(--bg) 75%, transparent); }
+#viewNeuron .own { color: var(--own); font-weight: 600; font-style: italic; }
+#viewNeuron .bar > span { background: var(--own-bar); }
+#viewNeuron td.sub2 { min-width: 12em; }
+#viewNeuron td.sub2 .chips { gap: 4px; }
+#viewNeuron td.sub2 .chip { font-size: 12.5px; padding: 2px 6px; }
+#viewNeuron .chip.g { font-style: italic; cursor: default; }
+#viewNeuron .chip.g:hover { box-shadow: none; }
+#viewNeuron .chip.ty { background: color-mix(in srgb, var(--rule) 60%, transparent); color: var(--ink); }
+#viewNeuron .reach { font-size: 13px; color: var(--muted); white-space: nowrap; }
+#viewNeuron .side .hb .track span { background: var(--oth-bar); }
+#viewNeuron .side .hb .lab { cursor: default; }
+#viewNeuron .side .hb .lab:hover { text-decoration: none; }
+.radial { display: grid; gap: 12px; }
+#nbGeneChips .chip { font-style: italic; background: var(--panel); color: var(--own); border: 1.5px solid var(--own-bar); padding: 3px 9px; }
+#nbGeneChips .chip.all { font-style: normal; color: var(--ink); border-color: var(--rule); }
+#nbGeneChips .chip[aria-pressed="true"] { background: var(--own-bar); color: #fff; }
+#nbGeneChips .chip[aria-pressed="true"] small { opacity: .9; }
+.mapwrap { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 18px; align-items: start; }
+.map { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; min-width: 0; overflow-x: auto; }
+.map svg { display: block; width: 100%; min-width: 600px; height: auto; }   /* below this the labels drop under ~11px: scroll inside the plate instead */
+.map .pn { cursor: pointer; }
+.map .pn:hover .pl, .map .pn:focus-visible .pl { text-decoration: underline; }
+.map .pn:focus-visible { outline: none; }
+.map .pn:focus-visible circle { stroke: var(--accent); stroke-width: 3; }
+.map text { font-family: var(--body); }
+.mside { display: grid; gap: 10px; font-size: 14px; }
+.mside .gname { font: italic 700 22px/1.15 var(--display); color: var(--own); }
+.mside .kv { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--rule); padding-bottom: 4px; font-variant-numeric: tabular-nums; }
+.mside .kv span:first-child { color: var(--muted); }
+.mside .chip { font-style: italic; cursor: default; }
+.mside .chip:hover { box-shadow: none; }
+.mside .hov { min-height: 3.2em; color: var(--ink); background: color-mix(in srgb, var(--rule) 35%, transparent); border-radius: 6px; padding: 8px 10px; }
+.legend-r { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.legend-r .ramp { width: 110px; height: 8px; border-radius: 2px; background: linear-gradient(90deg, var(--rule), var(--own-bar)); }
+details.more { border-top: 1px solid var(--rule); padding-top: 10px; }
+details.more > summary { cursor: pointer; font: 600 15px var(--body); color: var(--ink); padding: 6px 0; }
+details.more[open] { display: grid; gap: 22px; }
+
+/* ---- soft surfaces ------------------------------------------------------------------------------------------
+   Modern depth instead of bevels: each view is a floating card on the cream ground, switches are segmented
+   controls (the chosen option a raised white thumb in a tinted track), fields are filled wells with a focus ring,
+   tags and bars are soft tinted pills, figures sit on white plates. Shadows are warm (umber), never grey. */
+:root {
+  --ground: #f6f1e5;
+  --card: #fffdf9;
+  --umber: 74, 60, 30;
+  --tint: rgba(var(--umber), .065);
+  --tint-2: rgba(var(--umber), .11);
+  --hair: rgba(var(--umber), .12);
+  --lift: 0 1px 2px rgba(var(--umber), .06), 0 14px 36px -14px rgba(var(--umber), .22);
+  --thumb: 0 1px 2px rgba(var(--umber), .16), 0 2px 8px -2px rgba(var(--umber), .14), 0 0 0 .5px rgba(var(--umber), .10);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+html, body { background: var(--ground); }
+.wrap { gap: 22px; }
+
+button { background: var(--card); border: 0; border-radius: 10px; box-shadow: var(--thumb); color: var(--ink);
+  transition: background-color .15s, box-shadow .15s, color .15s, transform .1s; }
+button:hover { background: #fff; box-shadow: 0 1px 2px rgba(var(--umber), .18), 0 6px 14px -4px rgba(var(--umber), .2), 0 0 0 .5px rgba(var(--umber), .12); }
+button:active { transform: scale(.98); }
+button:focus-visible, .pick input:focus-visible { outline: none; box-shadow: var(--thumb), var(--ring); }
+
+/* segmented controls: dataset, view tabs, direction, timeline series */
+.dsets, .tabs, .dir, #ptSer, #tlSer { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 4px; border-radius: 13px; background: var(--tint);
+  border: 0; width: fit-content; max-width: 100%; box-sizing: border-box; }
+.ds, .tab, .dir button, .tl .ser { margin: 0 !important; border-radius: 9px !important; padding: 7px 14px; background: transparent; box-shadow: none;
+  color: var(--muted); font: 500 14px var(--body); }
+.tab { font-size: 15px; padding: 8px 18px; }
+.ds:hover, .tab:hover, .dir button:hover, .tl .ser:hover { background: rgba(255, 255, 255, .55); box-shadow: none; color: var(--ink); }
+.ds[aria-pressed="true"], .tab[aria-selected="true"], .dir button[aria-pressed="true"], .tl .ser[aria-pressed="true"] {
+  background: #fff; color: var(--ink); box-shadow: var(--thumb); font-weight: 600; }
+.dir button span, .dir button[aria-pressed="true"] span { color: var(--muted); }
+
+/* each view is a floating card */
+.view { background: var(--card); border-radius: 18px; box-shadow: var(--lift); padding: 28px clamp(16px, 3vw, 32px) 32px; min-width: 0; }
+
+/* filled fields */
+.pick input, .gpick input, .npick input, .npick select, .tl input { border: 0; background: var(--tint); border-radius: 11px; box-shadow: none; transition: background-color .15s, box-shadow .15s; }
+.pick input:hover, .gpick input:hover, .npick input:hover, .npick select:hover, .tl input:hover { background: var(--tint-2); }
+.pick input:focus, .gpick input:focus, .npick input:focus, .npick select:focus, .tl input:focus { outline: none; background: #fff; box-shadow: 0 0 0 1px var(--hair), var(--ring); }
+#pre { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--pre-bar) 55%, transparent); }
+#post { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--post-bar) 55%, transparent); }
+#pre:focus { box-shadow: inset 0 0 0 1.5px var(--pre-bar), 0 0 0 3px color-mix(in srgb, var(--pre-bar) 22%, transparent); }
+#post:focus { box-shadow: inset 0 0 0 1.5px var(--post-bar), 0 0 0 3px color-mix(in srgb, var(--post-bar) 22%, transparent); }
+.pick label, .gpick label, .npick label { color: var(--muted); font-weight: 500; font-size: 13.5px; }
+
+/* soft pills */
+.chip { border: 0; border-radius: 999px; padding: 4px 11px; box-shadow: none; transition: background-color .15s, color .15s; }
+.chip:hover { box-shadow: none; background: color-mix(in srgb, currentColor 18%, #fff); }
+.chip.pre:hover { background: color-mix(in srgb, var(--pre) 20%, #fff); }
+#viewNeuron .chip.ty { background: var(--tint); }
+.chip.g:hover, .mside .chip:hover { background: inherit; }
+#viewNeuron .chip.g.pre, .mside .chip.pre { background: var(--pre-soft); } #viewNeuron .chip.g.post, .mside .chip.post { background: var(--post-soft); }
+#nbGeneChips .chip { background: color-mix(in srgb, var(--own-bar) 11%, #fff); color: var(--own); border: 0; padding: 5px 12px; }
+#nbGeneChips .chip:hover { background: color-mix(in srgb, var(--own-bar) 20%, #fff); }
+#nbGeneChips .chip.all { background: var(--tint); color: var(--ink); }
+#nbGeneChips .chip[aria-pressed="true"] { background: var(--own-bar); color: #fff; box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--own-bar) 60%, transparent); }
+.tl .tchip { border-radius: 999px; border-width: 1.5px; box-shadow: none; background: #fff; }
+
+/* readout */
+.strip { border: 0; border-radius: 14px; background: var(--tint); }
+.stat + .stat { border-left: 1px solid var(--hair); }
+
+/* rounded bars, quiet table */
+.bar, .hb .track { background: var(--tint-2); border-radius: 999px; box-shadow: none; }
+.bar > span, .hb .track span { border-radius: 999px; }
+th { border-bottom: 1px solid var(--hair); color: var(--muted); font-weight: 500; font-size: 13px; }
+td { border-bottom-color: var(--hair); }
+tbody tr { transition: background-color .12s; }
+tbody tr:hover { background: rgba(var(--umber), .035); }
+
+/* white plates */
+.figbox, .map, .tl svg { background: #fff; border: 0; border-radius: 14px; box-shadow: 0 0 0 1px var(--hair), 0 4px 16px -8px rgba(var(--umber), .2); }
+.figbox { padding: 12px; overflow: hidden; }
+.mside .hov { background: var(--tint); border-radius: 12px; box-shadow: none; }
+.mside .kv { border-bottom-color: var(--hair); }
+details.more { border-top: 1px solid var(--hair); }
+details.more > summary { display: inline-block; padding: 8px 16px; border-radius: 999px; background: var(--tint); font-size: 14px; list-style-position: inside; }
+details.more > summary:hover { background: var(--tint-2); }
+.empty { border: 0; background: var(--tint); border-radius: 12px; }
+.note { padding-inline: 4px; }
+.dots { gap: 3px; } .dots i { width: 5px; height: 12px; border-radius: 999px; background: var(--tint-2); } .dots i.on { background: var(--ink); }
+.xl { display: none; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font: 500 12.5px var(--body); color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, #fff); box-shadow: none; white-space: nowrap; }
+.xl:hover { background: color-mix(in srgb, var(--accent) 15%, #fff); box-shadow: none; }
+.xl::before { content: ""; width: 10px; height: 12px; background: currentColor;   /* a small sheet-with-arrow mark */
+  clip-path: polygon(0 0, 100% 0, 100% 45%, 75% 45%, 75% 70%, 100% 70%, 50% 100%, 0 70%, 25% 70%, 25% 45%, 0 45%); }
+body.can-dl .xl { display: inline-flex; }
+.xl[aria-busy="true"] { opacity: .6; pointer-events: none; }
+.view > .status:empty { min-height: 0; margin-block: -12px; }   /* an idle status line should not open a gap in the card */
+
+/* every grid on the page shrinks to the viewport; wide plates (the map) scroll inside themselves */
+.wrap, .view, .radial, details.more[open], .side, .tl { grid-template-columns: minmax(0, 1fr); }
+.view > *, .radial > *, .mapwrap > * { min-width: 0; }
+@media (prefers-reduced-motion: reduce) { button, .chip, tbody tr { transition: none; } button:active { transform: none; } }
+
 @media (max-width: 720px) {
   .pick { grid-template-columns: 1fr; } #swap { justify-self: start; }
   .strip { grid-template-columns: 1fr 1fr; } .stat:nth-child(3) { border-left: 0; }
   .stat:nth-child(n+3) { border-top: 1px solid var(--rule); }
   .sides { grid-template-columns: 1fr; }
+  .mapwrap { grid-template-columns: 1fr; }
   td.pair { white-space: normal; }
 }
 @media (prefers-reduced-motion: no-preference) { .bar > span, .hb .track span { transition: width .25s ease; } }
 </style>
 </head>
 <body>
-
 <div class="wrap">
   <header>
     <h1>Connectivity Gene Pairs</h1>
@@ -153,12 +303,13 @@ td.pair .g, .hb .lab { cursor: pointer; } td.pair .g:hover, .hb .lab:hover { tex
     <button type="button" class="ds" data-ds="Adult" aria-pressed="true">Visual</button>
     <button type="button" class="ds" data-ds="CXbestmc1" aria-pressed="false">Central complex</button>
     <button type="button" class="ds" data-ds="motor_tp3" aria-pressed="false">Motor</button>
-    <button type="button" class="ds" data-ds="motor_tp3_seurat2000" aria-pressed="false">Motor · seurat 2000</button>
+    <button type="button" class="ds" data-ds="motor_tp3_seurat2000" aria-pressed="false">Motor (seurat 2000)</button>
   </div>
 
   <nav class="tabs" role="tablist">
     <button class="tab" role="tab" id="tabPair" aria-selected="true" type="button">By type pair</button>
     <button class="tab" role="tab" id="tabGene" aria-selected="false" type="button">By gene</button>
+    <button class="tab" role="tab" id="tabNeuron" aria-selected="false" type="button">By neuron</button>
   </nav>
 
   <div class="view" id="viewGene" hidden>
@@ -178,6 +329,43 @@ td.pair .g, .hb .lab { cursor: pointer; } td.pair .g:hover, .hb .lab:hover { tex
       <div id="tlPlot"></div>
       <div class="sub" id="tlNote"></div>
     </section>
+  </div>
+
+  <div class="view" id="viewNeuron" hidden>
+    <section class="npick">
+      <label for="nbType">Cell type <input id="nbType" list="types" autocomplete="off" spellcheck="false"></label>
+      <div class="dir" id="nbDir" role="group" aria-label="Direction">
+        <button type="button" data-d="o" aria-pressed="true">Outputs <span>as presynaptic</span></button>
+        <button type="button" data-d="i" aria-pressed="false">Inputs <span>as postsynaptic</span></button>
+      </div>
+      <label for="nbNp" class="npsel" id="nbNpL" hidden>Neuropil <select id="nbNp"></select></label>
+    </section>
+    <div class="status" id="nbStatus" role="status"></div>
+    <section class="strip" aria-label="Neuron summary">
+      <div class="stat"><span class="k" id="nbKP">Connected partners</span><span class="v" id="nbP">–</span></div>
+      <div class="stat"><span class="k">Synapses</span><span class="v" id="nbW">–</span></div>
+      <div class="stat"><span class="k">Solved with it</span><span class="v" id="nbWS">–</span><span class="n" id="nbWSn"></span></div>
+      <div class="stat"><span class="k">Solves</span><span class="v" id="nbN">–</span><span class="n">of <span id="nbNtot"></span></span></div>
+    </section>
+    <section class="radial">
+      <h2 id="nbGenesH"></h2>
+      <div class="chips" id="nbGeneChips" role="group" aria-label="Gene to map"></div>
+      <div class="mapwrap">
+        <div class="map"><svg id="nbMap" viewBox="0 0 720 640" role="img" aria-label="Partner map"></svg></div>
+        <aside class="mside" id="nbSide"></aside>
+      </div>
+      <div class="head"><div class="sub" id="nbPartH"></div><button type="button" class="xl" data-xl="nbPartners">Download Excel</button></div>
+    </section>
+    <details class="more" open>
+      <summary>Details: gene table, top gene pairs, partner-side genes</summary>
+      <div class="head"><h2>Gene table</h2><button type="button" class="xl" data-xl="nbGenes">Download Excel</button></div>
+      <div class="tablewrap" id="nbGenes"></div>
+      <section class="sides">
+        <div class="side" id="nbPairsSide"><div class="head"><h2>Top gene pairs <span class="sub">across all partners</span></h2><button type="button" class="xl" data-xl="nbPairs">Download Excel</button></div><div class="tablewrap" id="nbPairs"></div></div>
+        <div class="side" id="nbOtherSide"><div class="head"><h2 id="nbOtherH"></h2><button type="button" class="xl" data-xl="nbOther">Download Excel</button></div><div id="nbOther"></div></div>
+      </section>
+    </details>
+    <div class="note" id="nbNote"></div>
   </div>
 
   <div class="view" id="viewPair">
@@ -204,13 +392,14 @@ td.pair .g, .hb .lab { cursor: pointer; } td.pair .g:hover, .hb .lab:hover { tex
   <section style="display:grid;gap:12px">
     <div class="head">
       <h2>Gene pairs behind <span id="hPair"></span></h2>
+      <button type="button" class="xl" data-xl="pairs">Download Excel</button>
     </div>
     <div class="tablewrap" id="tablewrap"></div>
   </section>
 
   <section class="sides">
-    <div class="side pre"><h2>Pre-side genes <span class="sub">in <span id="hPre"></span></span></h2><div id="preBars"></div></div>
-    <div class="side post"><h2>Post-side genes <span class="sub">in <span id="hPost"></span></span></h2><div id="postBars"></div></div>
+    <div class="side pre"><div class="head"><h2>Pre-side genes <span class="sub">in <span id="hPre"></span></span></h2><button type="button" class="xl" data-xl="preSide">Download Excel</button></div><div id="preBars"></div></div>
+    <div class="side post"><div class="head"><h2>Post-side genes <span class="sub">in <span id="hPost"></span></span></h2><button type="button" class="xl" data-xl="postSide">Download Excel</button></div><div id="postBars"></div></div>
   </section>
   <section class="tl" id="pt" hidden>
     <div class="head"><h2>Over development</h2><span id="ptSer"></span></div>
@@ -218,7 +407,7 @@ td.pair .g, .hb .lab { cursor: pointer; } td.pair .g:hover, .hb .lab:hover { tex
       <div class="side pre"><h2><span id="ptPreH" style="color:var(--pre)"></span> <span class="sub">pre-side genes</span></h2><div class="row" id="ptPreChips"></div><div id="ptPrePlot"></div></div>
       <div class="side post"><h2><span id="ptPostH" style="color:var(--post)"></span> <span class="sub">post-side genes</span></h2><div class="row" id="ptPostChips"></div><div id="ptPostPlot"></div></div>
     </div>
-    <div class="sub">Click a table row or a gene to plot it. Mean P·G over solves per stage, log axis; dashed line = 0.5, filled = on (&gt; 0.5); dotted ring = read-out (gene not fitted at that stage, P projected onto it); × = gene absent from that stage's atlas.</div>
+    <div class="sub">Click a table row or a gene to plot it. Mean P·G over solves per stage, linear axis; dashed line = 0.5, filled = on (&gt; 0.5); dotted ring = read-out (gene not fitted at that stage, P projected onto it); × = gene absent from that stage's atlas.</div>
   </section>
   </div>
 
@@ -309,6 +498,7 @@ async function render() {
     cov += sh;
   }
   $("sCov").textContent = n ? pct(Math.min(cov, 1)) : "–";
+  S.last = { a, b, n, chat, tc, cov, rows, pre: [], post: [] };
 
   if (!n) {
     $("tablewrap").innerHTML = `<div class="empty">Never solved together.</div>`;
@@ -337,6 +527,8 @@ async function render() {
   };
   $("preBars").innerHTML = bars(c.preG, c.preS);
   $("postBars").innerHTML = bars(c.postG, c.postS);
+  const items = (G, Sh) => { const o = []; for (let k = 0; k < M; k++) { const s = Sh[r * M + k] / 255; if (s > 0) o.push([I.genes[G[r * M + k]], s]); } return o; };
+  S.last.pre = items(c.preG, c.preS); S.last.post = items(c.postG, c.postS);
   const top = (G, Sh) => { const o = []; for (let k = 0; k < M; k++) if (Sh[r * M + k] > 0) o.push(I.genes[G[r * M + k]]); return o; };
   ptShow(top(c.preG, c.preS), top(c.postG, c.postS));
 }
@@ -351,6 +543,7 @@ function pickByName(input, which) {
 async function boot(base) {
   S.base = base; S.idx = null; S.tpos = null; S.chunks = new Map();
   GV.idx = null; GV.packs = new Map(); GV.gene = null;
+  NB.meta = null; NB.chunks = new Map(); NB.x = null; NB.npm = null; NB.npc = new Map(); NB.np = "all";
   document.querySelectorAll(".ds").forEach(b => b.setAttribute("aria-pressed", b.dataset.ds === base));
   $("status").textContent = "Loading…";
   let I;
@@ -380,6 +573,7 @@ async function boot(base) {
   $("note").innerHTML = `<div>Exact split of Ĉ over ${I.n_solves} train solve${I.n_solves === 1 ? "" : "s"} (${esc(I.stage)}). Model attribution, not causation.${comp ? " <i>~gene</i> = gene not detected." : ""}</div>`;
   render();
   if (!$("viewGene").hidden) bootGene();
+  if (!$("viewNeuron").hidden) { NB.x = S.pre; nbRender(); }
 }
 $("pre").addEventListener("change", e => pickByName(e.target, "pre"));
 $("post").addEventListener("change", e => pickByName(e.target, "post"));
@@ -387,10 +581,12 @@ $("swap").addEventListener("click", () => { [S.pre, S.post] = [S.post, S.pre]; r
 $("partners").addEventListener("click", e => { const btn = e.target.closest("[data-b]"); if (btn) { S.post = +btn.dataset.b; render(); } });
 $("dsets").addEventListener("click", e => { const b = e.target.closest("[data-ds]"); if (b && b.dataset.ds !== S.base) boot(b.dataset.ds); });
 
-function setTab(gene) {
-  $("tabPair").setAttribute("aria-selected", !gene); $("tabGene").setAttribute("aria-selected", gene);
-  $("viewPair").hidden = gene; $("viewGene").hidden = !gene;
-  if (gene && !GV.idx) bootGene();
+function setTab(v) {
+  for (const [k, t, w] of [["pair", "tabPair", "viewPair"], ["gene", "tabGene", "viewGene"], ["neuron", "tabNeuron", "viewNeuron"]]) {
+    $(t).setAttribute("aria-selected", v === k); $(w).hidden = v !== k;
+  }
+  if (v === "gene" && !GV.idx) bootGene();
+  if (v === "neuron") { if (NB.x === null && S.idx) NB.x = S.pre; nbRender(); }
 }
 async function bootGene() {
   const base = S.base;
@@ -425,16 +621,17 @@ async function showGene(g) {
     if (!pack) { pack = await (await fetch(`${S.base}/g${rec.pack}.json`)).json(); GV.packs.set(rec.pack, pack); }
   } catch (e) { $("gStatus").textContent = `Could not load the figure (${e.message}).`; return; }
   if (GV.gene !== g) return;
-  $("gFig").src = "data:image/png;base64," + pack[g];
+  $("gFig").src = `data:image/${pack[g].startsWith("UklGR") ? "webp" : "png"};base64,` + pack[g];   // packs are lossless WebP (RIFF), older ones PNG
   $("gFig").alt = `Type pairs, cell types and partner genes for ${g}`;
   $("gStatus").textContent = "";
 }
-$("tabPair").addEventListener("click", () => setTab(false));
-$("tabGene").addEventListener("click", () => setTab(true));
+$("tabPair").addEventListener("click", () => setTab("pair"));
+$("tabGene").addEventListener("click", () => setTab("gene"));
+$("tabNeuron").addEventListener("click", () => setTab("neuron"));
 $("gene").addEventListener("change", e => { TL.pick = null; showGene(e.target.value.trim()); });
 $("gPairs").addEventListener("click", e => {
   const b = e.target.closest("[data-a]"); if (!b || !S.tpos) return;
-  S.pre = S.tpos.get(b.dataset.a); S.post = S.tpos.get(b.dataset.b); setTab(false); render();
+  S.pre = S.tpos.get(b.dataset.a); S.post = S.tpos.get(b.dataset.b); setTab("pair"); render();
 });
 
 // ---- presence over development (Stage Timeline consensus, mean P·G over solves; time.json per dataset)
@@ -473,12 +670,12 @@ async function tlShow(g, rec, pick) {
 // lines: [{t: type, g: gene, k: legend label}] -> SVG of mean P·G per stage (filled dot = on), plus what was missing
 function tlSvg(s, lines, W = 760, H = 300) {
   const nS = s.stages.length, L = 50, R = 12, T = 14, B = 40, lo = s.log_lo, x = i => L + (nS === 1 ? 0 : i * (W - L - R) / (nS - 1)),
-    y = v => T + (Math.log10(Math.max(v, 10 ** lo)) / lo) * (H - T - B);   // log axis: 1 at top, 10^lo (and below) at the bottom
+    y = v => T + (1 - Math.min(Math.max(v, 0), 1)) * (H - T - B);   // linear axis 0..1: near-zero (noise-level) values sit on the floor
   let o = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="P·G over stages">`;
-  for (let e = 0; e >= lo; e--) { const v = 10 ** e; o += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#eee8d8"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${e === lo ? "≤" : ""}${e === 0 ? "1" : "1e" + e}</text>`; }
+  for (const v of [0, 0.25, 0.5, 0.75, 1]) o += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="#eee8d8"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`;
   o += `<line x1="${L}" x2="${W - R}" y1="${y(.5)}" y2="${y(.5)}" stroke="#9a5b00" stroke-dasharray="4 4"/>`;
   s.stages.forEach((lab, i) => o += `<text x="${x(i)}" y="${H - B + 18}" text-anchor="middle">${esc(lab.replace(/_nofilt$/, ""))}</text>`);
-  o += `<text x="12" y="${y(.01)}" transform="rotate(-90 12 ${y(.01)})" text-anchor="middle">P·G (log)</text>`;
+  o += `<text x="12" y="${y(.5)}" transform="rotate(-90 12 ${y(.5)})" text-anchor="middle">P·G</text>`;
   const miss = [];
   lines.forEach((ln, k) => {
     const ti = s.tpos.get(ln.t), gi = s.gpos.get(ln.g.replace(/^~/, "")), c = TLC[k % 8];
@@ -493,7 +690,7 @@ function tlSvg(s, lines, W = 760, H = 300) {
   });
   return [o + "</svg>", miss];
 }
-const TLNOTE = "Mean P·G over solves per stage, log axis; dashed line = 0.5, filled = on (> 0.5); dotted ring = read-out (gene not fitted at that stage, P projected onto it); × = gene absent from that stage's atlas.";
+const TLNOTE = "Mean P·G over solves per stage, linear axis; dashed line = 0.5, filled = on (> 0.5); dotted ring = read-out (gene not fitted at that stage, P projected onto it); × = gene absent from that stage's atlas.";
 const chipsHTML = (keys, attr) => keys.map((t, k) => `<button type="button" class="tchip" ${attr}="${esc(t)}" style="border-color:${TLC[k % 8]};color:${TLC[k % 8]}">${esc(t)} <span class="x">×</span></button>`).join("");
 function tlDraw(g) {
   const s = TL.d.series[TL.ser], gb = g.replace(/^~/, "");
@@ -542,8 +739,275 @@ $("tlChips").addEventListener("click", e => { const b = e.target.closest("[data-
 $("tlType").addEventListener("change", e => { const t = e.target.value.trim(), s = TL.d && TL.d.series[TL.ser]; e.target.value = "";
   if (s && s.tpos.has(t) && !TL.types.includes(t)) { TL.types.push(t); TL.auto = false; tlDraw(GV.gene); } });
 $("tlClear").addEventListener("click", () => { TL.types = []; TL.auto = false; tlDraw(GV.gene); });
+// ---- neuron view: one type's gene pairs aggregated over all its connected partners, weighted by synapses
+// (pairgenes/neuron_export.py -> nb_meta.json + nb<k>.json, records per type {o: outputs, i: inputs})
+const NB = { meta: null, chunks: new Map(), x: null, d: "o", g: 0, r: null,    // g: mapped gene (index into r.genes, -1 = synapses only)
+             npm: null, npc: new Map(), np: "all" };                           // neuropil filter (neuron_np_export.py -> np_meta.json + np<k>.json); npm false = none
+// per type {neuropil index: {o, i}}, same record fields as nb<k>.json but partners weighted by synapses in that neuropil
+async function nbNpRec(x) {
+  const base = S.base;
+  if (NB.npm === null) { const r = await fetch(`${base}/np_meta.json`); NB.npm = r.ok ? await r.json() : false; }
+  if (!NB.npm || S.base !== base) return null;
+  const k = Math.floor(x / NB.npm.chunk);
+  if (!NB.npc.has(k)) {
+    const r = await fetch(`${base}/np${k}.gz.txt`);                  // base64 of gzipped JSON, like the c<k> chunks
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const gz = dec((await r.text()).trim(), Uint8Array);
+    const c = JSON.parse(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"))).text());
+    if (S.base !== base) return null;
+    NB.npc.set(k, c);
+  }
+  return NB.npc.get(k)[x % NB.npm.chunk];
+}
+async function nbRec(x) {
+  const base = S.base;
+  if (!NB.meta) NB.meta = await (await fetch(`${base}/nb_meta.json`)).json();
+  const k = Math.floor(x / NB.meta.chunk);
+  if (!NB.chunks.has(k)) {
+    const r = await fetch(`${base}/nb${k}.json`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const c = await r.json();
+    if (S.base !== base) return null;
+    NB.chunks.set(k, c);
+  }
+  return NB.chunks.get(k)[x % NB.meta.chunk];
+}
+const syn = w => w >= 1e6 ? (w / 1e6).toFixed(2) + "M" : w >= 1e4 ? (w / 1e3).toFixed(0) + "k" : w >= 1e3 ? (w / 1e3).toFixed(1) + "k" : String(Math.round(w * 10) / 10);
+async function nbRender() {
+  const I = S.idx; if (!I || NB.x === null) return;
+  const x = NB.x, d = NB.d, base = S.base, out = d === "o";
+  $("nbType").value = I.types[x];
+  document.querySelectorAll("#nbDir button").forEach(b => b.setAttribute("aria-pressed", b.dataset.d === d));
+  const own = out ? "pre" : "post", oth = out ? "post" : "pre";
+  const V = $("viewNeuron").style;
+  V.setProperty("--own", `var(--${own})`); V.setProperty("--own-bar", `var(--${own}-bar)`); V.setProperty("--oth-bar", `var(--${oth}-bar)`);
+  $("nbStatus").textContent = "Loading…";
+  let rec;
+  try { rec = await nbRec(x); }
+  catch (e) { $("nbStatus").textContent = `Could not load the neuron view (${e.message}). Reload the page to retry.`; return; }
+  if (!rec || S.base !== base || NB.x !== x || NB.d !== d) return;
+  let nrec = null;
+  try { nrec = await nbNpRec(x); }
+  catch (e) { $("nbStatus").textContent = `Could not load the neuropil split (${e.message}); showing all neuropils.`; }
+  if (S.base !== base || NB.x !== x || NB.d !== d) return;
+  if (nrec !== null || NB.npm === false) $("nbStatus").textContent = "";
+  // neuropils this type has synapses in, for this direction, largest first
+  const opts = nrec ? Object.entries(nrec).filter(([, v]) => v[d]).map(([k, v]) => [k, v[d].w]).sort((a, b) => b[1] - a[1]) : [];
+  if (NB.np !== "all" && !opts.some(o => o[0] === NB.np)) NB.np = "all";
+  $("nbNpL").hidden = !NB.npm;
+  if (NB.npm) {
+    const tot = rec[d].w;
+    $("nbNp").innerHTML = `<option value="all">All neuropils${rec[d].np ? ` · ${syn(tot)}` : ""}</option>` +
+      opts.map(([k, w]) => `<option value="${k}">${esc(NB.npm.neuropils[+k])} · ${syn(w)} (${pct(w / tot)})</option>`).join("");
+    $("nbNp").value = NB.np;
+  }
+  const npName = NB.np === "all" ? "" : NB.npm.neuropils[+NB.np], inNp = npName ? ` in ${esc(npName)}` : "";
+  const r = NB.np === "all" ? rec[d] : nrec[NB.np][d], T = esc(I.types[x]), tc = `<span style="color:var(--${own})">${T}</span>`;
+  if (NB.r !== r) { NB.r = r; NB.g = r.genes ? 0 : -1; }
+  $("nbKP").textContent = out ? "Connected targets" : "Connected inputs";
+  $("nbP").textContent = r.np;
+  $("nbW").textContent = r.np ? syn(r.w) : "–";
+  $("nbWS").textContent = r.np ? pct(r.ws / r.w) : "–";
+  $("nbWSn").textContent = r.np ? `of synapses, ${r.ns} of ${r.np} partners` : "";
+  $("nbN").textContent = r.nsol; $("nbNtot").textContent = NB.meta.n_solves;
+  $("nbPartH").innerHTML = r.np ? `The ${r.part.length < r.np ? `${r.part.length} strongest of ${r.np}` : `${r.np}`} ${out ? "targets" : "inputs"} of ${T}${inNp}, clockwise from the top by synapses; node and edge size = share of its ${out ? "output" : "input"} synapses; dashed = never solved together. Click a partner for its type-pair view.` : "";
+  nbGeneChips(); nbMap(); nbSide(-1);
+  $("nbGenesH").innerHTML = `Genes in ${tc} that explain its ${out ? "outputs" : "inputs"}${inNp}`;
+  $("nbOtherH").innerHTML = `${out ? "Post" : "Pre"}-side genes <span class="sub">in its ${out ? "targets" : "inputs"}</span>`;
+  if (!r.genes) {
+    $("nbGeneChips").innerHTML = "";
+    $("nbGenes").innerHTML = `<div class="empty">${r.np ? "None of its connected partners was ever solved together with it." : `No ${out ? "outgoing" : "incoming"} connections in this connectome.`}</div>`;
+    $("nbPairs").innerHTML = $("nbOther").innerHTML = ""; $("nbNote").innerHTML = ""; return;
+  }
+  const n = r.nsol, max = r.genes[0][1];
+  const dots = t => { let s = ""; const on = Math.round(t / n * 10); for (let i = 0; i < 10; i++) s += `<i class="${i < on ? "on" : ""}"></i>`; return s; };
+  const pill = f => f >= 0.5 ? `<span class="pill hi">stable</span>` : f >= 0.2 ? `<span class="pill mid">variable</span>` : `<span class="pill lo">rare</span>`;
+  const gchip = ([h, v]) => `<span class="chip g ${oth}">${esc(I.genes[h])}<small>${pct(v)}</small></span>`;
+  const tchip = ([b, v]) => `<button class="chip ty" data-b="${b}">${esc(I.types[b])}<small>${pct(v)}</small></button>`;
+  $("nbGenes").innerHTML = `<table><thead><tr><th>#</th><th>${out ? "Pre" : "Post"} gene</th><th>Share</th><th></th><th>In top ${NB.meta.topg} of solves</th><th>Reach</th><th>Pairs with (${out ? "post" : "pre"} gene)</th><th>Via ${out ? "targets" : "inputs"}</th></tr></thead><tbody>` +
+    r.genes.map(([g, sh, st, reach, hs, bs], i) => `<tr><td class="rk">${i + 1}</td><td class="own">${esc(I.genes[g])}</td>
+      <td><div class="bar"><span style="width:${(sh / max * 100).toFixed(1)}%"></span></div></td><td class="num">${pct(sh)}</td>
+      <td><div class="stab"><span class="dots" aria-hidden="true">${dots(st)}</span>${st}/${n} ${pill(st / n)}</div></td>
+      <td class="reach" title="share of synapses going to partners where this gene carries at least 5% of Ĉ">${pct(reach)}</td>
+      <td class="sub2"><div class="chips">${hs.map(gchip).join("")}</div></td>
+      <td class="sub2"><div class="chips">${bs.map(tchip).join("")}</div></td></tr>`).join("") + `</tbody></table>`;
+  const pmax = r.pairs.length ? r.pairs[0][1] : 1;
+  $("nbPairs").innerHTML = `<table><thead><tr><th>Pre → post</th><th>Share</th><th></th><th>Solves</th></tr></thead><tbody>` +
+    r.pairs.map(([p, sh, st]) => `<tr><td class="pair"><span class="a g">${esc(I.genes[S.pairPre[p]])}</span><span class="arr">→</span><span class="b g">${esc(I.genes[S.pairPost[p]])}</span></td>
+      <td><div class="bar" style="min-width:60px"><span style="width:${(sh / pmax * 100).toFixed(1)}%;background:var(--accent)"></span></div></td><td class="num">${pct(sh)}</td><td class="num">${st}/${n}</td></tr>`).join("") + `</tbody></table>`;
+  const omax = r.other.length ? r.other[0][1] : 1;
+  $("nbOther").innerHTML = `<div style="display:grid;gap:7px">` + r.other.map(([h, v]) =>
+    `<div class="hb"><span class="lab" title="${esc(I.genes[h])}">${esc(I.genes[h])}</span><span class="track"><span style="width:${(v / omax * 100).toFixed(1)}%"></span></span><span class="val">${pct(v)}</span></div>`).join("") + `</div>`;
+  $("nbNote").innerHTML = `<div><b>Share</b>: each connected ${out ? "target" : "input"} b's exact gene-pair split of Ĉ (as in <i>By type pair</i>, summing to 1), averaged over the ${r.ns} partners solved with ${T}, weighted by synapse count; the gene's share is its ${own}-side marginal. Every partner counts by its synapses, not by how well the model predicts it. Unconnected pairs (C = 0) are left out.</div>
+    <div><b>In top ${NB.meta.topg} of solves</b>: the same aggregate per train solve (that solve's partners only). <b>Reach</b>: fraction of these synapses going to partners where the gene carries ≥ 5% of Ĉ, so a high share with low reach comes from a few heavy partners. <b>Via</b>: the partners contributing most to the gene's share (parts add up to the share).</div>` +
+    (npName ? `<div><b>Neuropil ${esc(npName)}</b>: each partner is weighted by its synapses with ${T} that sit in ${esc(npName)} only. A type pair's gene split is the same in every neuropil (the model has no spatial term), so the filter changes which partners count and how much, not the genes of any one pair.</div>` : "");
+}
+// ---- radial partner map: the type in the centre, its strongest partners around it; a picked gene colours each edge
+// by the % of that partner's Ĉ it carries (r.gp)
+function nbGeneChips() {
+  const r = NB.r, I = S.idx;
+  $("nbGeneChips").innerHTML = `<button type="button" class="chip all" data-gi="-1" aria-pressed="${NB.g === -1}">Synapses only</button>` +
+    (r.genes || []).map(([g, sh], i) => `<button type="button" class="chip" data-gi="${i}" aria-pressed="${NB.g === i}">${esc(I.genes[g])}<small>${pct(sh)}</small></button>`).join("");
+}
+function nbMap() {
+  const r = NB.r, I = S.idx, out = NB.d === "o", svg = $("nbMap");
+  if (!r.np) { svg.innerHTML = `<text x="360" y="320" text-anchor="middle" fill="var(--muted)" font-size="15">No ${out ? "outgoing" : "incoming"} connections in this connectome.</text>`; return; }
+  const W = 720, cx = 360, cy = 320, R = 228, r0 = 64, P = r.part, n = P.length, w0 = P[0][1], gi = NB.g;
+  const gp = gi >= 0 && r.gp ? r.gp[gi] : null;
+  const col = v => v < 0 ? "var(--rule)" : `color-mix(in srgb, var(--own-bar) ${Math.max(6, v)}%, var(--rule))`;
+  let edges = "", nodes = "";
+  P.forEach(([b, w, ch], i) => {
+    const a = -Math.PI / 2 + 2 * Math.PI * i / n, ux = Math.cos(a), uy = Math.sin(a), rel = Math.sqrt(w / w0);
+    const nr = 7 + 15 * rel, sw = ch === null ? 1.5 : 1.5 + 11 * rel, px = cx + R * ux, py = cy + R * uy, solved = ch !== null;
+    const v = gp ? gp[i] : (solved ? 100 : -1), c = gp ? col(v) : solved ? "color-mix(in srgb, var(--ink) 55%, var(--rule))" : "var(--rule)";
+    // arrow along the synapse direction: centre -> partner for outputs, partner -> centre for inputs
+    const [x1, y1, x2, y2] = out ? [cx + r0 * ux, cy + r0 * uy, px - (nr + 4) * ux, py - (nr + 4) * uy]
+                                 : [px - (nr + 2) * ux, py - (nr + 2) * uy, cx + (r0 + 4) * ux, cy + (r0 + 4) * uy];
+    const dx = out ? ux : -ux, dy = out ? uy : -uy, ah = 7 + sw * 0.6, hx = x2 - dx * ah, hy = y2 - dy * ah;
+    edges += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${hx.toFixed(1)}" y2="${hy.toFixed(1)}" style="stroke:${c}" stroke-width="${sw.toFixed(1)}" stroke-linecap="round"${solved ? "" : ' stroke-dasharray="5 5"'}/>` +
+      `<polygon points="${x2.toFixed(1)},${y2.toFixed(1)} ${(hx - dy * ah * 0.6).toFixed(1)},${(hy + dx * ah * 0.6).toFixed(1)} ${(hx + dy * ah * 0.6).toFixed(1)},${(hy - dx * ah * 0.6).toFixed(1)}" style="fill:${c}"/>`;
+    const lx = px + (nr + 8) * ux, ly = py + (nr + 8) * uy, anchor = Math.abs(ux) < 0.25 ? "middle" : ux > 0 ? "start" : "end";
+    const dyl = Math.abs(ux) < 0.25 ? (uy < 0 ? -10 : 16) : 4;
+    const sub = gp ? (v < 0 ? "not solved" : `${v}%`) : pct(w / r.w);
+    nodes += `<g class="pn" data-b="${b}" data-i="${i}" tabindex="0" role="button" aria-label="${esc(I.types[b])}">
+      <circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${nr.toFixed(1)}" style="fill:color-mix(in srgb, var(--oth-bar) ${gp && v >= 0 ? 20 + 0.6 * v : 22}%, var(--panel));stroke:var(--oth-bar)" stroke-width="1.5"${solved ? "" : ' stroke-dasharray="3 3"'}/>
+      <text class="pl" x="${lx.toFixed(1)}" y="${(ly + dyl).toFixed(1)}" text-anchor="${anchor}" font-size="13" font-weight="600" fill="var(--ink)">${esc(I.types[b])}<tspan fill="var(--muted)" font-weight="400" font-size="12" dx="5">${sub}</tspan></text></g>`;
+  });
+  const g = gi >= 0 ? r.genes[gi] : null, tname = I.types[NB.x], fs = tname.length > 9 ? 15 : 19;
+  const centre = `<circle cx="${cx}" cy="${cy}" r="${r0}" style="fill:color-mix(in srgb, var(--own-bar) 16%, var(--panel));stroke:var(--own-bar)" stroke-width="2.5"/>
+    <text x="${cx}" y="${cy + (g ? -6 : 6)}" text-anchor="middle" font-size="${fs}" font-weight="700" style="fill:var(--own)">${esc(tname)}</text>` +
+    (g ? `<text x="${cx}" y="${cy + 16}" text-anchor="middle" font-size="14" font-style="italic" style="fill:var(--own)">${esc(I.genes[g[0]])}</text>
+    <text x="${cx}" y="${cy + 33}" text-anchor="middle" font-size="12" fill="var(--muted)">${pct(g[1])} of ${out ? "outputs" : "inputs"}</text>` : "");
+  svg.innerHTML = edges + nodes + centre;
+}
+function nbSide(hi) {
+  const r = NB.r, I = S.idx, out = NB.d === "o", oth = out ? "post" : "pre", T = esc(I.types[NB.x]);
+  if (!r.np) { $("nbSide").innerHTML = ""; return; }
+  let hov = `<span class="sub">Hover a partner for its numbers.</span>`;
+  if (hi >= 0) {
+    const [b, w, ch] = r.part[hi], v = NB.g >= 0 && r.gp ? r.gp[NB.g][hi] : null;
+    hov = `<b>${esc(I.types[b])}</b>: ${pct(w / r.w)} of the synapses (${syn(w)})<br>` +
+      (ch === null ? "never solved together with " + T : `mean Ĉ ${fmt(ch, 2)}` + (v !== null ? `; <i>${esc(I.genes[r.genes[NB.g][0]])}</i> carries ${v}% of it` : ""));
+  }
+  if (NB.g < 0 || !r.genes) {
+    $("nbSide").innerHTML = `<div class="sub">Edges show synapse share only. Pick a gene above to colour each edge by how much of that partner's Ĉ the gene carries.</div><div class="hov">${hov}</div>`;
+    return;
+  }
+  const [g, sh, st, reach, hs] = r.genes[NB.g], n = r.nsol;
+  $("nbSide").innerHTML = `<div class="gname">${esc(I.genes[g])}</div>
+    <div class="kv"><span>Share of ${T}'s ${out ? "outputs" : "inputs"}</span><span>${pct(sh)}</span></div>
+    <div class="kv"><span>In top ${NB.meta.topg} of solves</span><span>${st}/${n}</span></div>
+    <div class="kv"><span title="share of synapses going to partners where this gene carries at least 5% of Ĉ">Reach</span><span>${pct(reach)}</span></div>
+    <div><div class="sub" style="margin-bottom:4px">Pairs with (${oth} gene in its ${out ? "targets" : "inputs"})</div><div class="chips">${hs.map(([h, v]) => `<span class="chip ${oth}">${esc(I.genes[h])}<small>${pct(v)}</small></span>`).join("")}</div></div>
+    <div class="legend-r">0%<span class="ramp"></span>100% of the partner's Ĉ</div>
+    <div class="hov">${hov}</div>`;
+}
+$("nbGeneChips").addEventListener("click", e => { const b = e.target.closest("[data-gi]"); if (b && NB.r) { NB.g = +b.dataset.gi; nbGeneChips(); nbMap(); nbSide(-1); } });
+$("nbMap").addEventListener("mouseover", e => { const g = e.target.closest(".pn"); if (g) nbSide(+g.dataset.i); });
+$("nbMap").addEventListener("focusin", e => { const g = e.target.closest(".pn"); if (g) nbSide(+g.dataset.i); });
+$("nbMap").addEventListener("keydown", e => { const g = e.target.closest(".pn"); if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); g.dispatchEvent(new MouseEvent("click", { bubbles: true })); } });
+$("nbType").addEventListener("change", e => { const k = S.tpos && S.tpos.get(e.target.value.trim()); if (k !== undefined) { NB.x = k; nbRender(); } });
+$("nbDir").addEventListener("click", e => { const b = e.target.closest("[data-d]"); if (b && b.dataset.d !== NB.d) { NB.d = b.dataset.d; nbRender(); } });
+$("nbNp").addEventListener("change", e => { NB.np = e.target.value; nbRender(); });
+$("viewNeuron").addEventListener("click", e => {
+  const b = e.target.closest("[data-b]"); if (!b) return;
+  const p = +b.dataset.b;
+  [S.pre, S.post] = NB.d === "o" ? [NB.x, p] : [p, NB.x];
+  setTab("pair"); render();
+});
+// ---- Excel export: every table downloads as .xlsx of the current selection (full precision, not the rounded view),
+// with an "About" sheet saying what it is. SheetJS loads on the first click; the file goes through the viewer's
+// downloads capability (a confirmation the viewer may decline); without that capability the buttons stay hidden.
+const XL = { dl: null, lib: null };
+(async () => {
+  try { XL.dl = window.claude && await window.claude.use("downloads"); } catch (e) { XL.dl = null; }
+  if (XL.dl) document.body.classList.add("can-dl");
+})();
+function xlLib() {
+  if (!XL.lib) XL.lib = new Promise((ok, no) => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    sc.onload = () => ok(window.XLSX); sc.onerror = () => { XL.lib = null; no(new Error("could not load the Excel writer")); };
+    document.head.appendChild(sc);
+  });
+  return XL.lib;
+}
+const DSNAME = { Adult: "Visual", CXbestmc1: "Central complex", motor_tp3: "Motor", motor_tp3_seurat2000: "Motor (seurat 2000)" };
+// sheet from a header row and data rows; pct: column indexes shown as percentages
+function xlSheet(X, head, rows, pct = []) {
+  const ws = X.utils.aoa_to_sheet([head, ...rows]);
+  for (let i = 0; i < rows.length; i++) for (const c of pct) {
+    const cell = ws[X.utils.encode_cell({ r: i + 1, c })];
+    if (cell && typeof cell.v === "number") cell.z = "0.00%";
+  }
+  ws["!cols"] = head.map((h, c) => ({ wch: Math.min(48, Math.max(String(h).length, ...rows.map(r => String(r[c] ?? "").length)) + 2) }));
+  ws["!freeze"] = { xSplit: 0, ySplit: 1 };
+  return ws;
+}
+function xlBuild(kind) {
+  const I = S.idx, ds = DSNAME[S.base] || S.base, about = [["Connectivity Gene Pairs"], ["Dataset", ds], ["Train solves", I.n_solves]];
+  if (kind === "pairs" || kind === "preSide" || kind === "postSide") {
+    const L = S.last; if (!L || !L.n) return null;
+    const pair = `${I.types[L.a]} -> ${I.types[L.b]}`;
+    about.push(["Type pair (pre -> post)", pair], ["Connected in C", L.tc > 0 ? "yes" : "no"], ["Mean predicted C_hat", L.chat], ["Solves with both types in train", L.n]);
+    if (kind === "pairs") {
+      about.push(["Share", "this gene pair's part of C_hat[pre, post], exact per-solve split summed over solves (all pairs add to 1)"],
+                 ["In top 10 of solves", "number of those solves in which the pair is among that solve's 10 largest contributions"]);
+      const rows = L.rows.map((x, i) => [i + 1, x.g, x.h, x.sh, x.top, L.n]);
+      if (L.cov < 0.995) rows.push(["", "other pairs", "", Math.max(0, 1 - L.cov), "", ""]);
+      return { name: `${pair} gene pairs`, sheet: ["Gene pairs", ["Rank", "Pre gene", "Post gene", "Share of C_hat", "In top 10 of solves", "Solves"], rows, [3]], about };
+    }
+    const pre = kind === "preSide", list = pre ? L.pre : L.post, t = I.types[pre ? L.a : L.b];
+    about.push(["Share", `the gene's ${pre ? "pre" : "post"}-side marginal: its pairs' shares summed`]);
+    return { name: `${pair} ${pre ? "pre" : "post"}-side genes`, sheet: [`${pre ? "Pre" : "Post"}-side genes`, ["Rank", `${pre ? "Pre" : "Post"} gene (in ${t})`, "Share of C_hat"], list.map(([g, v], i) => [i + 1, g, v]), [2]], about };
+  }
+  const r = NB.r; if (!r || NB.x === null) return null;
+  const out = NB.d === "o", T = I.types[NB.x], dir = out ? "outputs" : "inputs", own = out ? "Pre" : "Post", oth = out ? "Post" : "Pre";
+  const npSfx = NB.np === "all" ? "" : ` ${NB.npm.neuropils[+NB.np]}`;
+  about.push(["Cell type", T], ["Direction", out ? "outputs (as presynaptic)" : "inputs (as postsynaptic)"],
+    ["Neuropil", NB.np === "all" ? "all neuropils" : NB.npm.neuropils[+NB.np] + " (partners weighted by synapses in this neuropil only)"],
+    ["Connected partners", r.np], ["Partners solved together", r.ns], ["Synapses", r.w], ["Synapses to solved partners", r.ws], ["Solves", r.nsol],
+    ["Weighting", "each connected partner's exact gene-pair split of C_hat, averaged with synapse-count weights"]);
+  if (kind === "nbPartners") {
+    const gs = (r.genes || []).map(g => I.genes[g[0]]);
+    about.push(["Gene columns", "% of that partner's C_hat carried by the gene (blank = never solved together)"], ["Listed", `the ${r.part.length} strongest of ${r.np} partners by synapses`]);
+    const rows = r.part.map(([b, w, ch], i) => [i + 1, I.types[b], w, w / r.w, ch, ...gs.map((_, k) => { const v = r.gp ? r.gp[k][i] : -1; return v < 0 ? "" : v / 100; })]);
+    return { name: `${T} ${dir}${npSfx} partners`, sheet: [`${out ? "Targets" : "Inputs"}`, ["Rank", out ? "Target type" : "Input type", "Synapses", "Share of synapses", "Mean C_hat", ...gs], rows, [3, ...gs.map((_, k) => 5 + k)]], about };
+  }
+  if (!r.genes) return null;
+  if (kind === "nbGenes") {
+    about.push(["Share", `the gene's ${own.toLowerCase()}-side share of ${T}'s ${dir}`], ["In top 10 of solves", "solves in which the gene is among that solve's 10 largest"],
+      ["Reach", "fraction of these synapses going to partners where the gene carries >= 5% of C_hat"]);
+    const rows = r.genes.map(([g, sh, st, reach, hs, bs], i) => [i + 1, I.genes[g], sh, st, r.nsol, reach,
+      hs.map(([h, v]) => `${I.genes[h]} (${(v * 100).toFixed(1)}%)`).join(", "), bs.map(([b, v]) => `${I.types[b]} (${(v * 100).toFixed(1)}%)`).join(", ")]);
+    return { name: `${T} ${dir}${npSfx} genes`, sheet: ["Genes", ["Rank", `${own} gene`, "Share", "In top 10 of solves", "Solves", "Reach", `Pairs with (${oth.toLowerCase()} gene)`, `Via ${dir === "outputs" ? "targets" : "inputs"}`], rows, [2, 5]], about };
+  }
+  if (kind === "nbPairs") {
+    const rows = r.pairs.map(([p, sh, st], i) => [i + 1, I.genes[S.pairPre[p]], I.genes[S.pairPost[p]], sh, st, r.nsol]);
+    return { name: `${T} ${dir}${npSfx} gene pairs`, sheet: ["Gene pairs", ["Rank", "Pre gene", "Post gene", "Share", "In top 10 of solves", "Solves"], rows, [3]], about };
+  }
+  const rows = r.other.map(([h, v], i) => [i + 1, I.genes[h], v]);
+  return { name: `${T} ${dir}${npSfx} ${oth.toLowerCase()}-side genes`, sheet: [`${oth}-side genes`, ["Rank", `${oth} gene (in its ${out ? "targets" : "inputs"})`, "Share"], rows, [2]], about };
+}
+document.addEventListener("click", async e => {
+  const btn = e.target.closest(".xl"); if (!btn || !XL.dl) return;
+  const spec = xlBuild(btn.dataset.xl), st = btn.closest(".view").querySelector(".status");
+  if (!spec) { if (st) st.textContent = "Nothing to export for this selection."; return; }
+  btn.setAttribute("aria-busy", "true");
+  try {
+    const X = await xlLib(), wb = X.utils.book_new(), [nm, head, rows, pc] = spec.sheet;
+    X.utils.book_append_sheet(wb, xlSheet(X, head, rows, pc), nm.slice(0, 31));
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(spec.about), "About");
+    const buf = X.write(wb, { bookType: "xlsx", type: "array" });
+    const file = `${DSNAME[S.base] || S.base} - ${spec.name}`.replace(/->/g, "to").replace(/[\\/:*?"<>|]+/g, "_") + ".xlsx";
+    await XL.dl.save({ filename: file, data: new Blob([buf]) });
+  } catch (err) {
+    if (st && err && err.code !== "declined") st.textContent = err.code === "unavailable" || err.code === "not_granted" ? "Downloads are not available in this view." : `Could not save the file (${err.message || err.code || err}).`;
+  } finally { btn.removeAttribute("aria-busy"); }
+});
 boot("Adult");
 })();
 </script>
+
 </body>
 </html>
