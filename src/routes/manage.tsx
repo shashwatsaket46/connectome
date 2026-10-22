@@ -38,6 +38,9 @@ function ManagePage() {
   const [globalEnabled, setGlobalEnabled] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(SEED_EXPERIMENTS.map((s) => [s.id, s.enabled])),
   );
+  const [globalNew, setGlobalNew] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(SEED_EXPERIMENTS.map((s) => [s.id, !!s.isNew])),
+  );
   const [globalBusy, setGlobalBusy] = useState<Record<string, boolean>>({});
   const [globalMsg, setGlobalMsg] = useState<Record<string, string>>({});
 
@@ -53,26 +56,29 @@ function ManagePage() {
     setAdminAuthed(false);
   };
 
-  const toggleGlobal = async (id: string, nextEnabled: boolean) => {
-    setGlobalBusy((b) => ({ ...b, [id]: true }));
-    setGlobalMsg((m) => ({ ...m, [id]: "" }));
+  // Commits one registry flag for everyone: `enabled` shows/hides the tile,
+  // `isNew` sets the red "new" pill. Busy/error state is keyed by `${id}:${flag}`.
+  const toggleGlobal = async (id: string, flag: "enabled" | "isNew", next: boolean) => {
+    const key = `${id}:${flag}`;
+    setGlobalBusy((b) => ({ ...b, [key]: true }));
+    setGlobalMsg((m) => ({ ...m, [key]: "" }));
     try {
       const res = await fetch("/api/admin/toggle", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id, enabled: nextEnabled }),
+        body: JSON.stringify({ id, [flag]: next }),
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!res.ok || !data.ok) {
-        setGlobalMsg((m) => ({ ...m, [id]: data.error || "Failed to update." }));
+        setGlobalMsg((m) => ({ ...m, [key]: data.error || "Failed to update." }));
         return;
       }
-      setGlobalEnabled((g) => ({ ...g, [id]: nextEnabled }));
-      setGlobalMsg((m) => ({ ...m, [id]: "" }));
+      (flag === "enabled" ? setGlobalEnabled : setGlobalNew)((g) => ({ ...g, [id]: next }));
+      setGlobalMsg((m) => ({ ...m, [key]: "" }));
     } catch {
-      setGlobalMsg((m) => ({ ...m, [id]: "Network error." }));
+      setGlobalMsg((m) => ({ ...m, [key]: "Network error." }));
     } finally {
-      setGlobalBusy((b) => ({ ...b, [id]: false }));
+      setGlobalBusy((b) => ({ ...b, [key]: false }));
     }
   };
 
@@ -103,7 +109,8 @@ function ManagePage() {
         The registry drives the menu. The checkbox on the left of each row hides an experiment just
         for you — it's stored in this browser only. The "everyone" toggle on the right actually
         commits the change to the registry, so it hides or shows the tile for every visitor once the
-        site redeploys; that one needs an admin login.
+        site redeploys. The "New" toggle does the same for the red "new" pill in the sidebar. Both
+        need an admin login.
       </p>
 
       <div className="mt-4 flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-2.5 text-xs">
@@ -220,37 +227,30 @@ function ManagePage() {
                 {e.description}
               </p>
               {!e.custom && e.id in globalEnabled && (
-                <div className="mt-2 flex items-center gap-2">
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={globalEnabled[e.id]}
-                    aria-label={`${e.title} visible for everyone`}
-                    disabled={!adminAuthed || globalBusy[e.id]}
-                    onClick={() => toggleGlobal(e.id, !globalEnabled[e.id])}
-                    title={
-                      adminAuthed
-                        ? globalEnabled[e.id]
-                          ? "Visible for everyone — click to hide"
-                          : "Hidden for everyone — click to show"
-                        : "Log in as admin to change this for everyone"
-                    }
-                    className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                      globalEnabled[e.id] ? "bg-primary" : "bg-border"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                        globalEnabled[e.id] ? "translate-x-[18px]" : "translate-x-0.5"
-                      }`}
-                    />
-                  </button>
-                  <span className="text-xs text-muted-foreground">
-                    {globalBusy[e.id] ? "Saving…" : "Everyone"}
-                  </span>
-                  {globalMsg[e.id] && (
-                    <span className="text-xs text-destructive">{globalMsg[e.id]}</span>
-                  )}
+                <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2">
+                  <AdminSwitch
+                    label="Everyone"
+                    ariaLabel={`${e.title} visible for everyone`}
+                    on={!!globalEnabled[e.id]}
+                    busy={!!globalBusy[`${e.id}:enabled`]}
+                    msg={globalMsg[`${e.id}:enabled`]}
+                    disabled={!adminAuthed}
+                    titleOn="Visible for everyone — click to hide"
+                    titleOff="Hidden for everyone — click to show"
+                    onToggle={() => toggleGlobal(e.id, "enabled", !globalEnabled[e.id])}
+                  />
+                  <AdminSwitch
+                    label="New"
+                    ariaLabel={`${e.title} marked as new`}
+                    on={!!globalNew[e.id]}
+                    busy={!!globalBusy[`${e.id}:isNew`]}
+                    msg={globalMsg[`${e.id}:isNew`]}
+                    disabled={!adminAuthed}
+                    titleOn="Shows the “new” pill — click to remove it"
+                    titleOff="No “new” pill — click to add it"
+                    onToggle={() => toggleGlobal(e.id, "isNew", !globalNew[e.id])}
+                    accent="bg-red-500"
+                  />
                 </div>
               )}
             </div>
@@ -289,6 +289,55 @@ function ManagePage() {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+function AdminSwitch({
+  label,
+  ariaLabel,
+  on,
+  busy,
+  msg,
+  disabled,
+  titleOn,
+  titleOff,
+  onToggle,
+  accent = "bg-primary",
+}: {
+  label: string;
+  ariaLabel: string;
+  on: boolean;
+  busy: boolean;
+  msg?: string | undefined;
+  disabled: boolean;
+  titleOn: string;
+  titleOff: string;
+  onToggle: () => void;
+  accent?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label={ariaLabel}
+        disabled={disabled || busy}
+        onClick={onToggle}
+        title={disabled ? "Log in as admin to change this for everyone" : on ? titleOn : titleOff}
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+          on ? accent : "bg-border"
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+            on ? "translate-x-[18px]" : "translate-x-0.5"
+          }`}
+        />
+      </button>
+      <span className="text-xs text-muted-foreground">{busy ? "Saving…" : label}</span>
+      {msg && <span className="text-xs text-destructive">{msg}</span>}
     </div>
   );
 }

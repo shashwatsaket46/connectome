@@ -2,8 +2,8 @@
 // is the one source of truth every visitor's browser falls back to -- a plain
 // per-browser toggle (see useExperiments in experiments.ts) only overrides it
 // locally. To hide something for *everyone*, the seed itself has to change,
-// which means a real commit to the repo. This commits that one `enabled`
-// flip via the GitHub Contents API, using a token configured on the host
+// which means a real commit to the repo. This commits that one `enabled` (or
+// `isNew`) flip via the GitHub Contents API, using a token configured on the host
 // (never exposed to the client), so a redeploy picks it up for all visitors.
 
 const EXPERIMENTS_FILE_PATH = "src/lib/experiments.ts";
@@ -39,9 +39,46 @@ function utf8ToBase64(text: string): string {
 
 export type ToggleResult = { ok: true; commit: string } | { ok: false; error: string };
 
+// The registry flags an admin can flip for everyone: `enabled` (show/hide the
+// tile) and `isNew` (the red "new" pill in the sidebar).
+export type ExperimentFlag = "enabled" | "isNew";
+
+// Rewrites one flag inside one SEED_EXPERIMENTS entry. `enabled` is always
+// present; `isNew` is optional, so it is inserted after `enabled:` when absent.
+function setFlagInSource(
+  source: string,
+  id: string,
+  flag: ExperimentFlag,
+  value: boolean,
+): string | null {
+  const start = source.indexOf(`id: "${id}"`);
+  if (start === -1) return null;
+  const end = source.indexOf("\n  },", start);
+  if (end === -1) return null;
+  const block = source.slice(start, end);
+  let next: string;
+  if (new RegExp(`\\b${flag}:\\s*(true|false)`).test(block)) {
+    next = block.replace(new RegExp(`(\\b${flag}:\\s*)(true|false)`), `$1${value}`);
+  } else if (flag === "isNew") {
+    next = block.replace(/(\n(\s*)enabled:\s*(?:true|false),)/, `$1\n$2isNew: ${value},`);
+    if (next === block) return null;
+  } else {
+    return null;
+  }
+  return source.slice(0, start) + next + source.slice(end);
+}
+
 export async function setExperimentEnabledOnGitHub(
   id: string,
   enabled: boolean,
+): Promise<ToggleResult> {
+  return setExperimentFlagOnGitHub(id, "enabled", enabled);
+}
+
+export async function setExperimentFlagOnGitHub(
+  id: string,
+  flag: ExperimentFlag,
+  value: boolean,
 ): Promise<ToggleResult> {
   const config = githubConfig();
   if (!config) {
@@ -65,21 +102,23 @@ export async function setExperimentEnabledOnGitHub(
   const file = (await getRes.json()) as { content: string; sha: string };
   const current = base64ToUtf8(file.content);
 
-  const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(`(id:\\s*"${escapedId}"[\\s\\S]*?enabled:\\s*)(true|false)`);
-  if (!pattern.test(current)) {
+  const updated = setFlagInSource(current, id, flag, value);
+  if (updated === null) {
     return { ok: false, error: `Could not find experiment "${id}" in ${EXPERIMENTS_FILE_PATH}.` };
   }
-  const updated = current.replace(pattern, `$1${enabled}`);
   if (updated === current) {
     return { ok: true, commit: file.sha }; // already in the desired state
   }
+  const message =
+    flag === "enabled"
+      ? `${value ? "Show" : "Hide"} "${id}" for everyone (admin toggle)`
+      : `${value ? "Mark" : "Unmark"} "${id}" as new (admin toggle)`;
 
   const putRes = await fetch(apiBase, {
     method: "PUT",
     headers: { ...headers, "Content-Type": "application/json" },
     body: JSON.stringify({
-      message: `${enabled ? "Show" : "Hide"} "${id}" for everyone (admin toggle)`,
+      message,
       content: utf8ToBase64(updated),
       sha: file.sha,
       branch,

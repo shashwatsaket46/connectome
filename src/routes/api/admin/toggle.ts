@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { isAdminRequest } from "@/lib/admin-auth";
-import { setExperimentEnabledOnGitHub } from "@/lib/admin-github";
+import { setExperimentFlagOnGitHub } from "@/lib/admin-github";
 
 export const Route = createFileRoute("/api/admin/toggle")({
   server: {
@@ -14,7 +14,8 @@ export const Route = createFileRoute("/api/admin/toggle")({
           });
         }
 
-        let body: { id?: string; enabled?: boolean };
+        // { id, enabled } shows/hides a tile for everyone; { id, isNew } sets its "new" pill.
+        let body: { id?: string; enabled?: boolean; isNew?: boolean };
         try {
           body = await request.json();
         } catch {
@@ -23,14 +24,17 @@ export const Route = createFileRoute("/api/admin/toggle")({
             headers: { "content-type": "application/json" },
           });
         }
-        if (!body.id || typeof body.enabled !== "boolean") {
-          return new Response(JSON.stringify({ ok: false, error: "id and enabled are required" }), {
+        const flag =
+          typeof body.enabled === "boolean" ? "enabled" : typeof body.isNew === "boolean" ? "isNew" : null;
+        if (!body.id || flag === null) {
+          return new Response(JSON.stringify({ ok: false, error: "id and enabled or isNew are required" }), {
             status: 400,
             headers: { "content-type": "application/json" },
           });
         }
 
-        const result = await setExperimentEnabledOnGitHub(body.id, body.enabled);
+        const value = flag === "enabled" ? body.enabled : body.isNew;
+        const result = await setExperimentFlagOnGitHub(body.id, flag, value as boolean);
         return new Response(JSON.stringify(result), {
           status: result.ok ? 200 : 502,
           headers: { "content-type": "application/json" },
