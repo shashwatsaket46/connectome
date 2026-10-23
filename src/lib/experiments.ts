@@ -131,7 +131,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     url: "/expt-add/cx_best_g5_h2000_bn1_train_test.html",
     category: "Full Solver Run",
     enabled: true,
-    isNew: true,
+    isNew: false,
     builtBy: "cm_central_complex/scripts/build_cx_grid_workbench.py",
   },
   {
