@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { ConnectomeBackground } from "@/components/ConnectomeBackground";
 import { useExperiments } from "@/lib/experiments";
@@ -19,18 +20,41 @@ export function HubShell({ children }: { children: ReactNode }) {
   // These experiments expose their internal views as sidebar sub-items.
   const SUBMENU_EXPERIMENTS = ["umap-vs-confusion", "ablation-explorer"];
   const sections = activeId && SUBMENU_EXPERIMENTS.includes(activeId) ? detected : [];
+  const [menuHidden, setMenuHidden] = useMenuHidden();
 
   return (
     <div className="flex min-h-screen text-foreground">
       {!activeId && <ConnectomeBackground />}
-      <aside className="sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-border bg-sidebar/85 backdrop-blur md:flex">
-        <div className="border-b border-border px-5 py-5">
-          <Link to="/" className="block">
+      {menuHidden && (
+        <button
+          type="button"
+          onClick={() => setMenuHidden(false)}
+          aria-label="Show menu"
+          title="Show menu"
+          className="fixed left-3 top-3 z-40 hidden rounded-md border border-border bg-sidebar/90 p-2 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:text-foreground md:block"
+        >
+          <PanelLeftOpen className="h-4 w-4" />
+        </button>
+      )}
+      <aside
+        className={`sticky top-0 hidden h-screen w-72 shrink-0 flex-col border-r border-border bg-sidebar/85 backdrop-blur ${menuHidden ? "" : "md:flex"}`}
+      >
+        <div className="flex items-start gap-2 border-b border-border px-5 py-5">
+          <Link to="/" className="block min-w-0 flex-1">
             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-primary">
               ConnectionMiner
             </p>
             <h1 className="mt-1 text-lg font-semibold leading-tight">Experiment Hub</h1>
           </Link>
+          <button
+            type="button"
+            onClick={() => setMenuHidden(true)}
+            aria-label="Hide menu"
+            title="Hide menu"
+            className="-mr-2 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </button>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
@@ -107,6 +131,30 @@ export function HubShell({ children }: { children: ReactNode }) {
       </div>
     </div>
   );
+}
+
+const MENU_KEY = "connectionminer.menu-hidden";
+
+/** Whether the desktop side menu is hidden; remembered per browser. Read after mount so server and first client
+ * render agree (the menu shows, then hides if the viewer hid it last time). */
+function useMenuHidden(): [boolean, (v: boolean) => void] {
+  const [hidden, setHidden] = useState(false);
+  useEffect(() => {
+    try {
+      setHidden(window.localStorage.getItem(MENU_KEY) === "1");
+    } catch {
+      /* storage blocked: the menu just starts shown */
+    }
+  }, []);
+  const set = (v: boolean) => {
+    setHidden(v);
+    try {
+      window.localStorage.setItem(MENU_KEY, v ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  };
+  return [hidden, set];
 }
 
 function ThemeToggle({ theme, toggle }: { theme: string; toggle: () => void }) {
