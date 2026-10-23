@@ -56,7 +56,7 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     url: "/expt-add/morphology_visual.html",
     category: "Morphology",
     enabled: true,
-    isNew: true,
+    isNew: false,
     builtBy: "cm_motor/scripts/build_visual_morphology_viewer.py",
   },
   {
