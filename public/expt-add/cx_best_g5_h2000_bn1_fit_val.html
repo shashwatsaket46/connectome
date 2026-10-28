@@ -1417,7 +1417,11 @@ function mountAll(){
   `<button class="chip" style="padding:3px 7px;font-size:9.5px;flex:0 0 auto"
     data-reset="at_0" title="back to the whole embedding">reset</button>`
   +`<button class="chip" style="padding:3px 7px;font-size:9.5px;flex:0 0 auto"
-    data-full="at_0" data-title="Cell atlas · both blocks">expand</button>`);
+    data-full="at_0" data-title="Cell atlas · both blocks">expand</button>`
+  +`<button class="chip" style="padding:3px 7px;font-size:9.5px;flex:0 0 auto"
+    data-dl="at_0" data-fmt="png" title="download the UMAP as a PNG (3x)">PNG</button>`
+  +`<button class="chip" style="padding:3px 7px;font-size:9.5px;flex:0 0 auto"
+    data-dl="at_0" data-fmt="svg" title="download the UMAP as an SVG">SVG</button>`);
 
  const seq=orderedPanels();
  seq.forEach((p,i)=>{
@@ -1849,6 +1853,29 @@ document.addEventListener("click",e=>{
  if(!b)return;
  e.preventDefault();
  resetZoom(b.dataset.reset);
+});
+// ---------------- download ----------------
+// The UMAP as it is on screen: current colouring, zoom and labels.
+document.addEventListener("click",async e=>{
+ const b=e.target.closest&&e.target.closest("[data-dl]");
+ if(!b)return;
+ e.preventDefault();
+ const gd=document.getElementById(b.dataset.dl);if(!gd||!gd.data)return;
+ const fmt=b.dataset.fmt,W=Math.max(gd.clientWidth,600),H=Math.max(gd.clientHeight,500);
+ const name=("cx_umap_"+(typeof ACOL!=="undefined"?ACOL:"")+"_"
+   +(typeof CUR!=="undefined"&&CUR?CUR:"")).replace(/[^A-Za-z0-9._-]+/g,"_");
+ try{
+  if(fmt==="svg"){await Plotly.downloadImage(gd,{format:"svg",width:W,height:H,filename:name});return;}
+  const url=await Plotly.toImage(gd,{format:"png",width:W,height:H,scale:3});
+  const im=new Image();im.src=url;await im.decode();
+  const cv=document.createElement("canvas");cv.width=im.width;cv.height=im.height;
+  const cx=cv.getContext("2d");
+  cx.fillStyle=getComputedStyle(document.body).backgroundColor||"#fff";
+  if(/rgba\(.*,\s*0\)$|transparent/.test(cx.fillStyle))cx.fillStyle="#fff";
+  cx.fillRect(0,0,cv.width,cv.height);cx.drawImage(im,0,0);
+  const a=document.createElement("a");a.download=name+".png";a.href=cv.toDataURL("image/png");
+  document.body.appendChild(a);a.click();a.remove();
+ }catch(err){if(typeof note==="function")note("download failed: "+err.message);}
 });
 // ---------------- expand ----------------
 // The plot div is MOVED into the overlay and back, never re-plotted: re-plotting
