@@ -75,6 +75,13 @@ canvas { display: block; width: 100%; background: #fff; }
 .ramp { width: 90px; height: 10px; border-radius: 3px; background: linear-gradient(90deg, #440154, #3b528b, #21918c, #5ec962, #fde725); display: inline-block; vertical-align: -1px; }
 .note { font-size: .78rem; color: var(--muted); margin: 8px 0 0; }
 .zw { position: relative; }
+.cmp { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 760px) { .cmp { grid-template-columns: minmax(0, 1fr); } }
+.cmp h3 { font-size: .95rem; font-style: italic; font-weight: 700; text-align: center; margin: 0 0 4px; }
+.cmp .rowlab { font-size: .72rem; color: var(--muted); margin: 4px 0 2px; }
+.cmp .vals { display: grid; grid-template-columns: auto minmax(0, 1fr) 2.6rem; gap: 3px 6px; align-items: center; font-size: .8rem; margin-top: 6px; }
+.cmp .vals b { font-weight: 700; } .cmp .vals .bb { height: 10px; background: var(--soft); position: relative; }
+.cmp .vals .bb i { position: absolute; left: 0; top: 0; bottom: 0; } .cmp .vals .n { font-family: var(--mono); text-align: right; }
 .zm { position: absolute; right: 6px; top: 6px; display: flex; gap: 3px; z-index: 3; }
 .zm button { font: 600 14px/1 var(--sans); width: 26px; height: 26px; padding: 0; border: 1px solid var(--rule); border-radius: 4px; background: rgba(255,255,255,.92); color: var(--ink); cursor: pointer; }
 .zm button:hover { background: #f0f0f0; }
@@ -123,6 +130,9 @@ expression difference; any two types can also be typed in directly.</p>
         <div class="bar" style="margin:0">
           <label class="small">gene <input id="gq" list="gl" placeholder="type a gene" style="width:9rem;font-family:var(--mono)"></label>
           <datalist id="gl"></datalist>
+          <div class="seg" id="psv" role="group" aria-label="Neurons shown">
+            <button data-v="all" aria-pressed="true">All cell types</button><button data-v="ab" aria-pressed="false">A + B only</button>
+          </div>
           <label class="small"><input type="checkbox" id="pshl" checked> outline A and B</label>
           <button class="btn" id="psr">Reset view</button>
         </div>
@@ -191,6 +201,22 @@ expression difference; any two types can also be typed in directly.</p>
         <span><i style="background:#c8c8c8"></i>unannotated</span><span><i style="background:var(--a)"></i>A</span><span><i style="background:var(--b)"></i>B</span></div>
       <div id="gpart" class="note"></div>
     </div>
+
+    <div class="card">
+      <div class="bar" style="justify-content:space-between;margin-bottom:8px">
+        <h2 style="margin:0">Compare 3 genes in A and B</h2>
+        <div class="bar" style="margin:0">
+          <input id="cg0" list="gl" placeholder="gene 1" style="width:7.5rem;font-family:var(--mono)">
+          <input id="cg1" list="gl" placeholder="gene 2" style="width:7.5rem;font-family:var(--mono)">
+          <input id="cg2" list="gl" placeholder="gene 3" style="width:7.5rem;font-family:var(--mono)">
+          <button class="btn" id="cgtop">Top 3 differing</button>
+          <span class="zm inline" id="czm"></span>
+        </div>
+      </div>
+      <div class="cmp" id="cmp"></div>
+      <div class="legend"><span>top row: every EM neuron coloured by its type's expression · bottom row: only A and B, each coloured by its own value (as Fig 3c)</span>
+        <span><span class="ramp"></span> 0 → 1 fraction of cells expressing the gene</span></div>
+    </div>
   </div>
 </div>
 <div class="tip" id="tip"></div>
@@ -203,7 +229,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 const $ = id => document.getElementById(id);
 const SYSCOL = { visual: "#0072B2", cx: "#009E73", motor: "#E69F00" }, BCOL = "#CC79A7";
 const CA = () => SYSCOL[S.k];
-const S = { k: "visual", D: {}, a: -1, b: -1, gene: -1, fam: "all", skm: "type", sort: ["max_dpg", -1], sz: [0, 1, 0, 1], gn: 0, lz: [0, 1] };
+const S = { k: "visual", D: {}, a: -1, b: -1, gene: -1, fam: "all", skm: "type", sort: ["max_dpg", -1], sz: [0, 1, 0, 1], gn: 0, lz: [0, 1], psv: "all", cg: [-1, -1, -1], cz: 1 };
 const tip = $("tip");
 
 let s3buf;
@@ -263,7 +289,9 @@ function setPair(a, b) {
   $("ta").value = a; $("tb").value = b;
   S.a = D().ti.has(a) ? D().ti.get(a) : -1; S.b = D().ti.has(b) ? D().ti.get(b) : -1;
   S.sz = [0, 1, 0, 1]; S.lz = [0, 1]; S.gn = 0;
-  S.gene = -1; if (S.a >= 0 && S.b >= 0) { const L = diffGenes(); if (L.length) S.gene = L[0][0]; } renderAll();
+  S.gene = -1; S.cg = [-1, -1, -1];
+  if (S.a >= 0 && S.b >= 0) { const L = diffGenes(); if (L.length) S.gene = L[0][0]; S.cg = [0, 1, 2].map(j => L[j] ? L[j][0] : -1);
+    S.cg.forEach((g, j) => $(`cg${j}`).value = g >= 0 ? D().genes[g] : ""); } renderAll();
 }
 function onPick() {
   const a = $("ta").value.trim(), b = $("tb").value.trim();
@@ -451,14 +479,15 @@ function drawPS() {
   // so high-expressing types sit on top from every angle, as Fig 3c draws them
   const first = psSys !== S.k;
   if (psGeom) { for (const o of [...VP.group.children]) if (o.geometry === psGeom) { VP.group.remove(o); o.material.dispose(); } psGeom.dispose(); }
-  const order = m.types.map((_, t) => t); if (g >= 0) order.sort((p, q) => val(p, g) - val(q, g));
+  const only = S.psv === "ab" && S.a >= 0 && S.b >= 0;
+  const order = only ? [S.a, S.b] : m.types.map((_, t) => t); if (g >= 0) order.sort((p, q) => val(p, g) - val(q, g));
   psGeom = segGeom(m, order);
   const ls = new THREE.LineSegments(psGeom, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthTest: false, depthWrite: false }));
   VP.group.add(ls); psGeom.computeBoundingBox();
   if (first) { psSys = S.k; fit(VP, psGeom.boundingBox); }
   paint(psGeom, t => g < 0 ? [0.75, 0.75, 0.75] : rampRGB(val(t, g)));
   if (psHi) { VP.group.remove(psHi); psHi.traverse(o => { if (o.geometry) { o.geometry.dispose(); o.material.dispose(); } }); psHi = null; }
-  if ($("pshl").checked && S.a >= 0 && S.b >= 0) {   // A and B drawn on top in their pair colours
+  if ($("pshl").checked && !only && S.a >= 0 && S.b >= 0) {   // A and B drawn on top in their pair colours
     psHi = new THREE.Group();
     [[S.a, CA()], [S.b, BCOL]].forEach(([t, col]) => { const gg = segGeom(m, [t]); paint(gg, () => rgb(col));
       const hl = new THREE.LineSegments(gg, new THREE.LineBasicMaterial({ vertexColors: true, depthTest: false })); hl.renderOrder = 2; psHi.add(hl); });
@@ -496,6 +525,10 @@ document.querySelectorAll("#skm button").forEach(bt => bt.addEventListener("clic
 }));
 
 $("pshl").addEventListener("change", drawPS);
+document.querySelectorAll("#psv button").forEach(bt => bt.addEventListener("click", () => {
+  document.querySelectorAll("#psv button").forEach(x => x.setAttribute("aria-pressed", x === bt)); S.psv = bt.dataset.v; drawPS();
+  if (psGeom) fit(VP, psGeom.boundingBox);
+}));
 
 let gdPts = [];
 function drawGene() {
@@ -555,8 +588,46 @@ function zoomList(f) {                          // zoom the 0..1 axis of the gen
 }
 zoomBtns($("lzm"), () => zoomList(0.6), () => zoomList(1.6), () => { S.lz = [0, 1]; renderGenes(); });
 
+// ---------------- compare 3 genes (2-D, Fig 3c layout)
+function draw2D(c, types, g, colOf) {
+  const [x, w, h] = sizeCanvas(c); x.clearRect(0, 0, w, h); const m = D();
+  let [x0, x1, y0, y1] = m.bounds;
+  if (types.length <= 2) { x0 = 1e9; x1 = -1e9; y0 = 1e9; y1 = -1e9;
+    for (const t of types) for (let i = m.skel_off[t] * 4; i < m.skel_off[t + 1] * 4; i += 2) {
+      x0 = Math.min(x0, m.sk[i]); x1 = Math.max(x1, m.sk[i]); y0 = Math.min(y0, m.sk[i + 1]); y1 = Math.max(y1, m.sk[i + 1]); }
+    if (x0 > x1) [x0, x1, y0, y1] = m.bounds; }
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, sc = S.cz * Math.min((w - 12) / (x1 - x0 || 1), (h - 12) / (y1 - y0 || 1)), flip = S.k === "motor";
+  const P = (px, py) => [w / 2 + (px - cx) * sc, flip ? h / 2 - (py - cy) * sc : h / 2 + (py - cy) * sc];
+  const order = [...types].sort((p, q) => val(p, g) - val(q, g));          // high-expressing types on top
+  x.lineWidth = types.length <= 2 ? 0.8 : 0.45;
+  for (const t of order) { x.strokeStyle = colOf(t); x.beginPath();
+    for (let i = m.skel_off[t] * 4; i < m.skel_off[t + 1] * 4; i += 4) {
+      const [ax, ay] = P(m.sk[i], m.sk[i + 1]), [bx, by] = P(m.sk[i + 2], m.sk[i + 3]); x.moveTo(ax, ay); x.lineTo(bx, by); }
+    x.stroke(); }
+}
+function drawCompare() {
+  const box = $("cmp"), m = D();
+  if (S.a < 0 || S.b < 0) { box.innerHTML = `<div class="empty">Choose two cell types first.</div>`; return; }
+  const gs = S.cg.filter(g => g >= 0);
+  if (!gs.length) { box.innerHTML = `<div class="empty">Type up to three genes, or press "Top 3 differing".</div>`; return; }
+  box.innerHTML = S.cg.map((g, j) => g < 0 ? `<div></div>` : `<div><h3>${m.genes[g]}</h3>
+    <div class="rowlab">all cell types</div><canvas id="cpa${j}" height="190"></canvas>
+    <div class="rowlab">${m.types[S.a]} + ${m.types[S.b]}</div><canvas id="cpb${j}" height="190"></canvas>
+    <div class="vals">${[[S.a, CA()], [S.b, BCOL]].map(([t, col]) => `<b style="color:${col}">${m.types[t]}</b>
+      <div class="bb"><i style="width:${val(t, g) * 100}%;background:${ramp(val(t, g))}"></i></div><span class="n">${fmt(val(t, g))}</span>`).join("")}</div></div>`).join("");
+  const all = m.types.map((_, t) => t);
+  S.cg.forEach((g, j) => { if (g < 0) return;
+    draw2D($(`cpa${j}`), all, g, t => ramp(val(t, g)));
+    draw2D($(`cpb${j}`), [S.a, S.b], g, t => ramp(val(t, g))); });
+}
+function setCompare(gs) { S.cg = [0, 1, 2].map(j => gs[j] ?? -1); S.cg.forEach((g, j) => $(`cg${j}`).value = g >= 0 ? D().genes[g] : ""); drawCompare(); }
+[0, 1, 2].forEach(j => $(`cg${j}`).addEventListener("change", () => {
+  const g = D().gi.get($(`cg${j}`).value.trim()); S.cg[j] = g === undefined ? -1 : g; drawCompare(); }));
+$("cgtop").addEventListener("click", () => setCompare(diffGenes().slice(0, 3).map(r => r[0])));
+zoomBtns($("czm"), () => { S.cz = Math.min(8, S.cz * 1.4); drawCompare(); }, () => { S.cz = Math.max(0.5, S.cz / 1.4); drawCompare(); }, () => { S.cz = 1; drawCompare(); });
+
 function selectGene(g) { S.gene = g; renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); }
-function renderAll() { renderCand(); renderFacts(); renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); }
+function renderAll() { renderCand(); renderFacts(); renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); drawCompare(); }
 
 async function setSys(k) {
   S.k = k; document.documentElement.style.setProperty("--a", SYSCOL[k]); document.querySelectorAll("#sys button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k));
@@ -567,7 +638,7 @@ async function setSys(k) {
   if (first) setPair(first.a, first.b); else { S.a = S.b = -1; renderAll(); }
 }
 document.querySelectorAll("#sys button").forEach(b => b.addEventListener("click", () => setSys(b.dataset.k)));
-let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { drawScatter(); drawGene(); }, 120); });
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { drawScatter(); drawGene(); drawCompare(); }, 120); });
 setSys("visual").catch(e => { $("status").textContent = "Could not load data: " + e; });
 </script>
 </body>
