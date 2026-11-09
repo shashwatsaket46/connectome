@@ -60,7 +60,7 @@ tr.row.sel { background: #e9eef4; }
 .glist .g { font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .glist .g:hover, .glist .g.on { color: var(--focus); text-decoration: underline; }
 .glist .d { font-family: var(--mono); text-align: right; font-size: .78rem; }
-.track { position: relative; height: 16px; cursor: pointer; }
+.track { position: relative; height: 16px; cursor: pointer; overflow: hidden; }
 .track .ax { position: absolute; left: 0; right: 0; top: 7px; height: 2px; background: var(--soft); }
 .track .ln { position: absolute; top: 7px; height: 2px; background: #9a9a9a; }
 .track .pa, .track .pb { position: absolute; top: 3px; width: 10px; height: 10px; border-radius: 50%; margin-left: -5px; box-shadow: 0 0 0 .6px #555; }
@@ -74,6 +74,14 @@ canvas { display: block; width: 100%; background: #fff; }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
 .ramp { width: 90px; height: 10px; border-radius: 3px; background: linear-gradient(90deg, #440154, #3b528b, #21918c, #5ec962, #fde725); display: inline-block; vertical-align: -1px; }
 .note { font-size: .78rem; color: var(--muted); margin: 8px 0 0; }
+.zw { position: relative; }
+.zm { position: absolute; right: 6px; top: 6px; display: flex; gap: 3px; z-index: 3; }
+.zm button { font: 600 14px/1 var(--sans); width: 26px; height: 26px; padding: 0; border: 1px solid var(--rule); border-radius: 4px; background: rgba(255,255,255,.92); color: var(--ink); cursor: pointer; }
+.zm button:hover { background: #f0f0f0; }
+.zm.inline { position: static; display: inline-flex; vertical-align: middle; margin-left: 8px; }
+.v3 { position: relative; width: 100%; border: 1px solid var(--rule); overflow: hidden; cursor: grab; }
+.v3 canvas { width: 100% !important; height: 100% !important; }
+.v3 .lab { position: absolute; left: 8px; top: 6px; font-size: .8rem; font-weight: 700; pointer-events: none; line-height: 1.35; }
 .empty { color: var(--muted); font-size: .85rem; padding: 12px 0; }
 </style>
 </head>
@@ -110,6 +118,22 @@ expression difference; any two types can also be typed in directly.</p>
 
   <div class="stack">
     <div class="card">
+      <div class="bar" style="justify-content:space-between;margin-bottom:6px">
+        <h2 style="margin:0" id="psh">Pseudo-spatial transcriptome</h2>
+        <div class="bar" style="margin:0">
+          <label class="small">gene <input id="gq" list="gl" placeholder="type a gene" style="width:9rem;font-family:var(--mono)"></label>
+          <datalist id="gl"></datalist>
+          <label class="small"><input type="checkbox" id="pshl" checked> outline A and B</label>
+          <button class="btn" id="psr">Reset view</button>
+        </div>
+      </div>
+      <div class="v3" id="ps" style="height:520px" aria-label="Every EM neuron in 3-D coloured by its cell type's predicted expression of the selected gene"></div>
+      <div class="legend"><span>drag to rotate · scroll to zoom · right-drag to pan</span>
+        <span>every EM neuron receives its cell type's predicted expression (Fig 3c, top row)</span>
+        <span><span class="ramp"></span> 0 → 1 fraction of cells expressing the gene</span></div>
+    </div>
+
+    <div class="card">
       <div class="pick">
         <span class="dot" style="background:var(--a)"></span>
         <input id="ta" list="tl" aria-label="Cell type A" placeholder="type A">
@@ -135,7 +159,7 @@ expression difference; any two types can also be typed in directly.</p>
           <label class="small"><input type="checkbox" id="nohk" checked> hide housekeeping</label>
         </div>
       </div>
-      <div class="scale"><div></div><div><span>0</span><span>0.5</span><span>1</span></div><div style="text-align:right">A − B</div></div>
+      <div class="scale"><div><span class="zm inline" id="lzm"></span></div><div id="lscale"><span>0</span><span>0.5</span><span>1</span></div><div style="text-align:right">A − B</div></div>
       <div class="glist" id="glist"></div>
       <p class="note">Each row: <span style="color:var(--a)">●</span> A and <span style="color:var(--b)">●</span> B, fraction of cells expressing the gene.
         Genes shown are expressed at or above "min expr" in at least one of the two types. Click a gene for its detail.</p>
@@ -150,23 +174,14 @@ expression difference; any two types can also be typed in directly.</p>
       <div class="card">
         <div class="bar" style="justify-content:space-between;margin-bottom:6px">
           <h2 style="margin:0">EM neurons</h2>
+          <button class="btn" id="skr">Reset</button>
           <div class="seg" id="skm" role="group" aria-label="Neuron colouring">
             <button data-m="type" aria-pressed="true">by type</button><button data-m="gene" aria-pressed="false">by selected gene</button>
           </div>
         </div>
-        <canvas id="sk" height="360" aria-label="EM skeletons of the two types"></canvas>
+        <div class="v3" id="sk" style="height:380px" aria-label="EM skeletons of the two types in 3-D"></div>
         <div class="legend" id="skleg"></div>
       </div>
-    </div>
-
-    <div class="card">
-      <div class="bar" style="justify-content:space-between;margin-bottom:6px">
-        <h2 style="margin:0" id="psh">Pseudo-spatial transcriptome</h2>
-        <label class="small"><input type="checkbox" id="pshl" checked> outline A and B</label>
-      </div>
-      <canvas id="ps" height="420" aria-label="Every EM neuron coloured by its cell type's predicted expression of the selected gene"></canvas>
-      <div class="legend"><span>every EM neuron in the system receives its cell type's predicted expression (as Fig 3c, top row)</span>
-        <span><span class="ramp"></span> 0 → 1 fraction of cells expressing the gene</span></div>
     </div>
 
     <div class="card">
@@ -180,22 +195,27 @@ expression difference; any two types can also be typed in directly.</p>
 </div>
 <div class="tip" id="tip"></div>
 
-<script>
-"use strict";
+<script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 const $ = id => document.getElementById(id);
 const SYSCOL = { visual: "#0072B2", cx: "#009E73", motor: "#E69F00" }, BCOL = "#CC79A7";
 const CA = () => SYSCOL[S.k];
-const S = { k: "visual", D: {}, a: -1, b: -1, gene: -1, fam: "all", skm: "type", sort: ["max_dpg", -1] };
+const S = { k: "visual", D: {}, a: -1, b: -1, gene: -1, fam: "all", skm: "type", sort: ["max_dpg", -1], sz: [0, 1, 0, 1], gn: 0, lz: [0, 1] };
 const tip = $("tip");
 
+let s3buf;
 async function load(k) {
   if (S.D[k]) return S.D[k];
   $("status").textContent = "loading " + k + "…";
   const [m, pg, sk] = await Promise.all([
     fetch(`data/${k}_meta.json`).then(r => r.json()),
     fetch(`data/${k}_pg.bin`).then(r => r.arrayBuffer()),
-    fetch(`data/${k}_skel.bin`).then(r => r.arrayBuffer())]);
-  m.pg = new Uint8Array(pg); m.sk = new Int16Array(sk); m.G = m.genes.length;
+    fetch(`data/${k}_skel.bin`).then(r => r.arrayBuffer()),
+    fetch(`data/${k}_skel3d.bin`).then(r => r.arrayBuffer())]).then(v => { s3buf = v[3]; return v.slice(0, 3); });
+  m.pg = new Uint8Array(pg); m.sk = new Int16Array(sk); m.s3 = new Int16Array(s3buf); m.G = m.genes.length;
   m.ti = new Map(m.types.map((t, i) => [t, i]));
   m.out = m.types.map(() => new Set()); m.inn = m.types.map(() => new Set());
   for (const [a, b] of m.edges) { m.out[a].add(b); m.inn[b].add(a); }
@@ -242,6 +262,7 @@ $("cq").addEventListener("input", renderCand); $("sisOnly").addEventListener("ch
 function setPair(a, b) {
   $("ta").value = a; $("tb").value = b;
   S.a = D().ti.has(a) ? D().ti.get(a) : -1; S.b = D().ti.has(b) ? D().ti.get(b) : -1;
+  S.sz = [0, 1, 0, 1]; S.lz = [0, 1]; S.gn = 0;
   S.gene = -1; if (S.a >= 0 && S.b >= 0) { const L = diffGenes(); if (L.length) S.gene = L[0][0]; } renderAll();
 }
 function onPick() {
@@ -289,11 +310,14 @@ function diffGenes() {
 function renderGenes() {
   if (S.a < 0 || S.b < 0) { $("glist").innerHTML = ""; return; }
   const L = diffGenes().slice(0, +$("ntop").value), m = D();
-  $("glist").innerHTML = L.length ? L.map(([g, x, y, d]) => {
+  const [z0, z1] = S.lz, pc = v => Math.max(-2, Math.min(102, (v - z0) / (z1 - z0) * 100));
+  $("lscale").innerHTML = [z0, (z0 + z1) / 2, z1].map(v => `<span>${+v.toFixed(2)}</span>`).join("");
+  $("glist").innerHTML = L.length ? L.map(([g, x0_, y0_, d]) => {
+    const x = pc(x0_) / 100, y = pc(y0_) / 100;
     const lo = Math.min(x, y) * 100, hi = Math.max(x, y) * 100, f = famOf(g);
     return `<div class="g${g === S.gene ? " on" : ""}" data-g="${g}" title="${m.genes[g]}">${m.genes[g]}<span class="fam">${f}${m.inter[m.genes[g]] ? " · int" : ""}</span></div>
       <div class="track" data-g="${g}"><div class="ax"></div><div class="ln" style="left:${lo}%;width:${hi - lo}%"></div>
-      <div class="pa" style="left:${x * 100}%"></div><div class="pb" style="left:${y * 100}%"></div></div>
+      <div class="pa" style="left:${x * 100}%;${x0_ < z0 || x0_ > z1 ? "opacity:.25" : ""}"></div><div class="pb" style="left:${y * 100}%;${y0_ < z0 || y0_ > z1 ? "opacity:.25" : ""}"></div></div>
       <div class="d" style="color:${d > 0 ? "var(--a)" : "var(--b)"}">${d > 0 ? "+" : ""}${d.toFixed(2)}</div>`;
   }).join("") : `<div class="empty" style="grid-column:1/-1">No gene passes these filters. Lower "min expr" or pick another family.</div>`;
 }
@@ -314,20 +338,27 @@ let scPts = [];
 function drawScatter() {
   const c = $("sc"), [x, w, h] = sizeCanvas(c); x.clearRect(0, 0, w, h); scPts = [];
   if (S.a < 0 || S.b < 0) return;
-  const P = 36, W = Math.min(w, h + 40) - P - 10, X = v => P + v * W, Y = v => h - P - v * (h - P - 10);
+  const P = 36, W = Math.min(w, h + 40) - P - 10, [zx0, zx1, zy0, zy1] = S.sz;
+  const X = v => P + (v - zx0) / (zx1 - zx0) * W, Y = v => h - P - (v - zy0) / (zy1 - zy0) * (h - P - 10);
+  scGeo = { P, W, h, zx0, zx1, zy0, zy1 };
   x.strokeStyle = "#222"; x.lineWidth = 1; x.beginPath(); x.moveTo(P, 10); x.lineTo(P, h - P); x.lineTo(P + W, h - P); x.stroke();
+  x.save(); x.beginPath(); x.rect(P, 10, W, h - P - 10); x.clip();
   x.setLineDash([4, 3]);
   [[0, 0, 1, 1], [0.2, 0, 1, 0.8], [0, 0.2, 0.8, 1]].forEach(([a0, b0, a1, b1], i) => {
     x.strokeStyle = i ? "#bbbbbb" : "#000000"; x.beginPath(); x.moveTo(X(a0), Y(b0)); x.lineTo(X(a1), Y(b1)); x.stroke(); });
   x.setLineDash([]);
+  x.restore();
   x.fillStyle = "#555"; x.font = "11px IBM Plex Mono"; x.textAlign = "center";
-  [0, 0.5, 1].forEach(v => { x.fillText(v, X(v), h - P + 14); x.textAlign = "right"; x.fillText(v, P - 4, Y(v) + 4); x.textAlign = "center"; });
+  const tk = (a, b) => [a, (a + b) / 2, b].map(v => +v.toFixed(2));
+  tk(zx0, zx1).forEach(v => x.fillText(v, X(v), h - P + 14)); x.textAlign = "right"; tk(zy0, zy1).forEach(v => x.fillText(v, P - 4, Y(v) + 4)); x.textAlign = "center";
+  x.save(); x.beginPath(); x.rect(P, 10, W, h - P - 10); x.clip();
   x.font = "12px Arimo, Arial"; x.fillStyle = CA(); x.font = "bold 12px Arimo, Arial"; x.fillText(D().types[S.a] + " (A)", P + W / 2, h - 4);
   x.save(); x.translate(10, (h - P) / 2); x.rotate(-Math.PI / 2); x.fillStyle = BCOL; x.fillText(D().types[S.b] + " (B)", 0, 0); x.restore();
   const m = D(), hk = $("nohk").checked;
   for (let g = 0; g < m.G; g++) {
     if (hk && m.hk[g]) continue;
     const a = val(S.a, g), b = val(S.b, g); if (a < 0.02 && b < 0.02) continue;
+    if (a < zx0 || a > zx1 || b < zy0 || b > zy1) continue;
     const on = famOK(g), px = X(a), py = Y(b);
     x.fillStyle = on ? (Math.abs(a - b) >= 0.2 ? "rgba(70,70,70,.9)" : "rgba(154,154,154,.55)") : "rgba(154,154,154,.15)";
     x.beginPath(); x.arc(px, py, on ? 2.0 : 1.4, 0, 7); x.fill();
@@ -336,6 +367,7 @@ function drawScatter() {
   if (S.gene >= 0) { x.fillStyle = val(S.a, S.gene) >= val(S.b, S.gene) ? CA() : BCOL; x.strokeStyle = "#222"; x.lineWidth = 0.8;
     x.beginPath(); x.arc(X(val(S.a, S.gene)), Y(val(S.b, S.gene)), 5, 0, 7); x.fill(); x.stroke();
     x.fillStyle = "#222"; x.textAlign = "left"; x.font = "italic 12px Arimo, Arial"; x.fillText(m.genes[S.gene], X(val(S.a, S.gene)) + 7, Y(val(S.b, S.gene)) - 6); }
+  x.restore();
 }
 function nearest(e) {
   const r = $("sc").getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
@@ -347,82 +379,122 @@ $("sc").addEventListener("mousemove", e => {
   tip.style.display = "block"; tip.style.left = e.clientX + 12 + "px"; tip.style.top = e.clientY + 12 + "px";
 });
 $("sc").addEventListener("mouseleave", () => tip.style.display = "none");
-$("sc").addEventListener("click", e => { const p = nearest(e); if (p) selectGene(p[2]); });
+let scGeo = null, drag = null;
+function zoomSc(f, cx, cy) {                    // f < 1 zooms in, around data point (cx, cy)
+  const [a0, a1, b0, b1] = S.sz, w = Math.min(1, (a1 - a0) * f), hh = Math.min(1, (b1 - b0) * f);
+  if (cx === undefined) { cx = (a0 + a1) / 2; cy = (b0 + b1) / 2; }
+  const fx = (cx - a0) / (a1 - a0), fy = (cy - b0) / (b1 - b0);
+  let x0 = cx - fx * w, y0 = cy - fy * hh; x0 = Math.max(0, Math.min(1 - w, x0)); y0 = Math.max(0, Math.min(1 - hh, y0));
+  S.sz = [x0, x0 + w, y0, y0 + hh]; drawScatter();
+}
+function scData(e) { const r = $("sc").getBoundingClientRect(), g = scGeo;
+  return [g.zx0 + (e.clientX - r.left - g.P) / g.W * (g.zx1 - g.zx0), g.zy0 + (g.h - g.P - (e.clientY - r.top)) / (g.h - g.P - 10) * (g.zy1 - g.zy0)]; }
+$("sc").addEventListener("wheel", e => { if (!scGeo) return; e.preventDefault(); const [cx, cy] = scData(e); zoomSc(e.deltaY < 0 ? 0.8 : 1.25, cx, cy); }, { passive: false });
+$("sc").addEventListener("mousedown", e => { drag = { x: e.clientX, y: e.clientY, sz: [...S.sz], moved: false }; });
+addEventListener("mouseup", () => setTimeout(() => drag = null, 0));
+$("sc").addEventListener("mousemove", e => { if (!drag || !scGeo) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (Math.abs(dx) + Math.abs(dy) < 4) return; drag.moved = true; const g = scGeo, [a0, a1, b0, b1] = drag.sz;
+  const sx = dx / g.W * (a1 - a0), sy = dy / (g.h - g.P - 10) * (b1 - b0);
+  const nx = Math.max(0, Math.min(1 - (a1 - a0), a0 - sx)), ny = Math.max(0, Math.min(1 - (b1 - b0), b0 + sy));
+  S.sz = [nx, nx + (a1 - a0), ny, ny + (b1 - b0)]; drawScatter(); });
+$("sc").addEventListener("click", e => { if (drag && drag.moved) return; const p = nearest(e); if (p) selectGene(p[2]); });
 
 const RAMP = [[68, 1, 84], [59, 82, 139], [33, 145, 140], [94, 201, 98], [253, 231, 37]];   // viridis, as Fig 3c
 function ramp(v) {
   v = Math.max(0, Math.min(1, v)) * 4; const i = Math.min(3, Math.floor(v)), f = v - i, a = RAMP[i], b = RAMP[i + 1];
   return `rgb(${a.map((c, j) => Math.round(c + (b[j] - c) * f)).join(",")})`;
 }
-function drawSkel() {
-  const c = $("sk"), [x, w, h] = sizeCanvas(c); x.clearRect(0, 0, w, h);
-  const m = D(); if (S.a < 0 || S.b < 0) return;
-  const segs = t => [m.skel_off[t], m.skel_off[t + 1]];
-  const ext = ts => { let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
-    for (const t of ts) { const [s0, s1] = segs(t);
-      for (let i = s0 * 4; i < s1 * 4; i += 2) { const px = m.sk[i], py = m.sk[i + 1]; x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py); } }
-    return x0 > x1 ? m.bounds : [x0, x1, y0, y1]; };
-  const byGene = S.skm === "gene" && S.gene >= 0, flip = S.k === "motor";
-  // by type: both types overlaid in one frame; by gene: side by side (same scale), each coloured by its own value
-  const slots = byGene ? [[S.a, 0, w / 2], [S.b, w / 2, w / 2]] : [[S.a, 0, w], [S.b, 0, w]];
-  const E = byGene ? null : ext([S.a, S.b]);
-  const Ea = ext([S.a]), Eb = ext([S.b]);
-  const span = byGene ? Math.max(Ea[1] - Ea[0], Eb[1] - Eb[0], (Ea[3] - Ea[2]) * 2, (Eb[3] - Eb[2]) * 2) : 0;
-  const leg = [];
-  slots.forEach(([t, sx, sw], q) => {
-    const [x0, x1, y0, y1] = byGene ? (q ? Eb : Ea) : E, pad = 14;
-    const sc = byGene ? Math.min((sw - 2 * pad) / Math.max(x1 - x0, 1), (h - 40) / Math.max(y1 - y0, 1), (sw - 2 * pad) / span * 2)
-                      : Math.min((sw - 2 * pad) / Math.max(x1 - x0, 1), (h - 2 * pad) / Math.max(y1 - y0, 1));
-    const ox = sx + (sw - sc * (x1 - x0)) / 2, oy = (h - sc * (y1 - y0)) / 2 + (byGene ? 10 : 0);
-    const P = (px, py) => [ox + (px - x0) * sc, flip ? h - oy - (py - y0) * sc + (byGene ? 20 : 0) : oy + (py - y0) * sc];
-    const col = byGene ? ramp(val(t, S.gene)) : (q ? BCOL : CA());
-    const [s0, s1] = segs(t);
-    x.strokeStyle = col; x.globalAlpha = byGene ? 1 : 0.7; x.lineWidth = byGene ? 1.2 : 0.8;
-    x.beginPath();
-    for (let i = s0 * 4; i < s1 * 4; i += 4) { const [ax, ay] = P(m.sk[i], m.sk[i + 1]), [bx, by] = P(m.sk[i + 2], m.sk[i + 3]); x.moveTo(ax, ay); x.lineTo(bx, by); }
-    x.stroke(); x.globalAlpha = 1;
-    if (byGene) { x.fillStyle = q ? BCOL : CA(); x.font = "600 12px Arimo, Arial"; x.textAlign = "center";
-      x.fillText(`${q ? "B" : "A"}: ${m.types[t]}  ${fmt(val(t, S.gene))}`, sx + sw / 2, 16); }
-    leg.push(`<span><i style="background:${col}"></i>${m.types[t]}${byGene ? " " + fmt(val(t, S.gene)) : ""}${s1 > s0 ? "" : " (no skeleton)"}</span>`);
-  });
-  $("skleg").innerHTML = leg.join("") + (byGene ? `<span><span class="ramp"></span> 0 → 1 expression of <em>${m.genes[S.gene]}</em></span>`
-    : S.skm === "gene" ? "<span>select a gene to colour the neurons</span>" : "");
+// ---------------- 3-D viewers (three.js): one renderer per container, redraw on demand
+const UP = { visual: [0, 0, -1], cx: [0, 0, -1], motor: [0, 0, 1] };          // same orientation as Fig 3c
+function viewer(el) {
+  const r = new THREE.WebGLRenderer({ antialias: true }); r.setPixelRatio(Math.min(devicePixelRatio, 2)); el.appendChild(r.domElement);
+  const lab = document.createElement("div"); lab.className = "lab"; el.appendChild(lab);
+  const scene = new THREE.Scene(); scene.background = new THREE.Color(0xffffff);
+  const cam = new THREE.PerspectiveCamera(28, 1, 100, 1e7), ctl = new OrbitControls(cam, r.domElement);
+  ctl.enableDamping = true; ctl.dampingFactor = 0.12;
+  const v = { r, scene, cam, ctl, el, lab, group: new THREE.Group(), R: 40000, dirty: true };
+  scene.add(v.group);
+  const size = () => { const w = el.clientWidth, h = el.clientHeight; r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); v.dirty = true; };
+  new ResizeObserver(size).observe(el); size();
+  ctl.addEventListener("change", () => v.dirty = true);
+  (function loop() { requestAnimationFrame(loop); if (ctl.update() || v.dirty) { r.render(scene, cam); v.dirty = false; } })();
+  return v;
 }
+function fit(v, box) {                          // look along +y (FlyWire anterior-posterior), up as Fig 3c
+  const c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
+  const R = Math.max(sz.x / v.cam.aspect, sz.z, sz.y * 0.5) * 0.62 / Math.tan(v.cam.fov * Math.PI / 360) + sz.y / 2;
+  v.cam.up.set(...UP[S.k]); v.cam.position.set(c.x, c.y - R, c.z); v.ctl.target.copy(c); v.cam.lookAt(c); v.ctl.update(); v.dirty = true;
+}
+function clear(v) { for (const o of [...v.group.children]) { v.group.remove(o); o.geometry.dispose(); o.material.dispose(); } }
+function segGeom(m, types, dx = 0) {            // positions for the given types' 3-D segments
+  let n = 0; for (const t of types) n += m.skel3d_off[t + 1] - m.skel3d_off[t];
+  const pos = new Float32Array(n * 6), own = new Uint16Array(n * 2); let j = 0;
+  for (const t of types) for (let i = m.skel3d_off[t] * 6; i < m.skel3d_off[t + 1] * 6; i += 6) {
+    pos[j * 6] = m.s3[i] + dx; pos[j * 6 + 1] = m.s3[i + 1]; pos[j * 6 + 2] = m.s3[i + 2];
+    pos[j * 6 + 3] = m.s3[i + 3] + dx; pos[j * 6 + 4] = m.s3[i + 4]; pos[j * 6 + 5] = m.s3[i + 5]; own[j * 2] = own[j * 2 + 1] = t; j++; }
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  g.setAttribute("color", new THREE.BufferAttribute(new Float32Array(n * 6), 3)); g.userData.own = own; return g;
+}
+function paint(g, colOf) {                      // colOf(type) -> [r, g, b] 0..1
+  const c = g.attributes.color.array, own = g.userData.own, cache = new Map();
+  for (let i = 0; i < own.length; i++) { const t = own[i]; let v = cache.get(t); if (!v) { v = colOf(t); cache.set(t, v); }
+    c[i * 3] = v[0]; c[i * 3 + 1] = v[1]; c[i * 3 + 2] = v[2]; }
+  g.attributes.color.needsUpdate = true;
+}
+const rgb = s => { const c = new THREE.Color(s); return [c.r, c.g, c.b]; };
+const rampRGB = v => rgb(ramp(v));
+let VS, VP, psSys = null, psGeom = null, psHi = null;
+function drawPS() {
+  VP = VP || viewer($("ps")); const m = D(), g = S.gene;
+  if (psSys !== S.k) { clear(VP); psGeom = null; psHi = null; }
+  // all neurons of the system, rebuilt per gene in order of expression (low first) and drawn without depth test,
+  // so high-expressing types sit on top from every angle, as Fig 3c draws them
+  const first = psSys !== S.k;
+  if (psGeom) { for (const o of [...VP.group.children]) if (o.geometry === psGeom) { VP.group.remove(o); o.material.dispose(); } psGeom.dispose(); }
+  const order = m.types.map((_, t) => t); if (g >= 0) order.sort((p, q) => val(p, g) - val(q, g));
+  psGeom = segGeom(m, order);
+  const ls = new THREE.LineSegments(psGeom, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthTest: false, depthWrite: false }));
+  VP.group.add(ls); psGeom.computeBoundingBox();
+  if (first) { psSys = S.k; fit(VP, psGeom.boundingBox); }
+  paint(psGeom, t => g < 0 ? [0.75, 0.75, 0.75] : rampRGB(val(t, g)));
+  if (psHi) { VP.group.remove(psHi); psHi.traverse(o => { if (o.geometry) { o.geometry.dispose(); o.material.dispose(); } }); psHi = null; }
+  if ($("pshl").checked && S.a >= 0 && S.b >= 0) {   // A and B drawn on top in their pair colours
+    psHi = new THREE.Group();
+    [[S.a, CA()], [S.b, BCOL]].forEach(([t, col]) => { const gg = segGeom(m, [t]); paint(gg, () => rgb(col));
+      const hl = new THREE.LineSegments(gg, new THREE.LineBasicMaterial({ vertexColors: true, depthTest: false })); hl.renderOrder = 2; psHi.add(hl); });
+    VP.group.add(psHi);
+  }
+  $("psh").innerHTML = g < 0 ? "Pseudo-spatial transcriptome" : `Pseudo-spatial transcriptome: <i>${m.genes[g]}</i>`;
+  if (g >= 0) $("gq").value = m.genes[g];
+  VP.lab.innerHTML = g < 0 || S.a < 0 ? "" : `<span style="color:${CA()}">A: ${m.types[S.a]} ${fmt(val(S.a, g))}</span><br><span style="color:${BCOL}">B: ${m.types[S.b]} ${fmt(val(S.b, g))}</span>`;
+  VP.dirty = true;
+}
+function drawSkel() {
+  VS = VS || viewer($("sk")); clear(VS); const m = D();
+  if (S.a < 0 || S.b < 0) return;
+  const byGene = S.skm === "gene" && S.gene >= 0, leg = [];
+  // by type: overlaid; by gene: side by side (B shifted right), each coloured by its own value
+  const ext = t => { let lo = 1e9, hi = -1e9; for (let i = m.skel3d_off[t] * 6; i < m.skel3d_off[t + 1] * 6; i += 3) { lo = Math.min(lo, m.s3[i]); hi = Math.max(hi, m.s3[i]); } return [lo, hi]; };
+  const [, aHi] = ext(S.a), [bLo] = ext(S.b), dx = byGene && aHi > bLo - 2000 ? aHi - bLo + 4000 : 0;
+  [[S.a, CA(), 0], [S.b, BCOL, dx]].forEach(([t, col, d]) => {
+    const g = segGeom(m, [t], d), c = byGene ? rampRGB(val(t, S.gene)) : rgb(col); paint(g, () => c);
+    VS.group.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.9 })));
+    const has = m.skel3d_off[t + 1] > m.skel3d_off[t];
+    leg.push(`<span><i style="background:${byGene ? ramp(val(t, S.gene)) : col}"></i>${m.types[t]}${byGene ? " " + fmt(val(t, S.gene)) : ""}${has ? "" : " (no skeleton)"}</span>`);
+  });
+  const box = new THREE.Box3().setFromObject(VS.group); if (!box.isEmpty()) fit(VS, box);
+  VS.lab.innerHTML = byGene ? `<span style="color:${CA()}">A ${m.types[S.a]}</span> · <span style="color:${BCOL}">B ${m.types[S.b]}</span> (B on the right)` : "";
+  $("skleg").innerHTML = leg.join("") + "<span>drag to rotate</span>" + (byGene ? `<span><span class="ramp"></span> 0 → 1 expression of <em>${m.genes[S.gene]}</em></span>`
+    : S.skm === "gene" ? "<span>select a gene to colour the neurons</span>" : "");
+  VS.dirty = true;
+}
+$("psr").addEventListener("click", () => { if (psGeom) fit(VP, psGeom.boundingBox); });
+$("skr").addEventListener("click", () => { const b = new THREE.Box3().setFromObject(VS.group); if (!b.isEmpty()) fit(VS, b); });
+$("gq").addEventListener("change", () => { const g = D().gi.get($("gq").value.trim()); if (g !== undefined) selectGene(g); });
 document.querySelectorAll("#skm button").forEach(bt => bt.addEventListener("click", () => {
   document.querySelectorAll("#skm button").forEach(x => x.setAttribute("aria-pressed", x === bt)); S.skm = bt.dataset.m; drawSkel();
 }));
 
-function drawPS() {
-  const c = $("ps"), [x, w, h] = sizeCanvas(c); x.clearRect(0, 0, w, h);
-  const m = D(), g = S.gene;
-  if (g < 0) { $("psh").textContent = "Pseudo-spatial transcriptome"; x.fillStyle = "#555"; x.font = "13px Arimo, Arial";
-    x.textAlign = "center"; x.fillText("Select a gene (list, scatter) to colour every neuron by it.", w / 2, h / 2); return; }
-  $("psh").innerHTML = `Pseudo-spatial transcriptome: <i>${m.genes[g]}</i>`;
-  const [x0, x1, y0, y1] = m.bounds, pad = 10, flip = S.k === "motor";
-  const sc = Math.min((w - 2 * pad) / (x1 - x0), (h - 2 * pad) / (y1 - y0));
-  const ox = (w - sc * (x1 - x0)) / 2, oy = (h - sc * (y1 - y0)) / 2;
-  const P = (px, py) => [ox + (px - x0) * sc, flip ? h - oy - (py - y0) * sc : oy + (py - y0) * sc];
-  // low expression first so high-expressing types are drawn on top; one path per colour bin (fast)
-  const T = m.types.length, NB = 40, bins = Array.from({ length: NB }, () => []);
-  for (let t = 0; t < T; t++) { if (m.skel_off[t + 1] > m.skel_off[t]) bins[Math.min(NB - 1, Math.floor(val(t, g) * NB))].push(t); }
-  x.lineWidth = 0.5; x.globalAlpha = 0.85;
-  bins.forEach((ts, b) => {
-    if (!ts.length) return; x.strokeStyle = ramp((b + 0.5) / NB); x.beginPath();
-    for (const t of ts) for (let i = m.skel_off[t] * 4; i < m.skel_off[t + 1] * 4; i += 4) {
-      const [ax, ay] = P(m.sk[i], m.sk[i + 1]), [bx, by] = P(m.sk[i + 2], m.sk[i + 3]); x.moveTo(ax, ay); x.lineTo(bx, by); }
-    x.stroke();
-  });
-  x.globalAlpha = 1;
-  if ($("pshl").checked) [[S.a, CA(), "A"], [S.b, BCOL, "B"]].forEach(([t, col, lab], q) => {
-    if (t < 0) return;
-    x.strokeStyle = col; x.lineWidth = 0.9; x.beginPath();
-    for (let i = m.skel_off[t] * 4; i < m.skel_off[t + 1] * 4; i += 4) {
-      const [ax, ay] = P(m.sk[i], m.sk[i + 1]), [bx, by] = P(m.sk[i + 2], m.sk[i + 3]); x.moveTo(ax, ay); x.lineTo(bx, by); }
-    x.stroke();
-    x.fillStyle = col; x.font = "bold 12px Arimo, Arial"; x.textAlign = "left";
-    x.fillText(`${lab}: ${m.types[t]}  ${fmt(val(t, g))}`, 8, 16 + 16 * q);
-  });
-}
 $("pshl").addEventListener("change", drawPS);
 
 let gdPts = [];
@@ -431,8 +503,10 @@ function drawGene() {
   const m = D(), g = S.gene;
   if (g < 0) { $("gdh").textContent = "Selected gene"; $("gpart").textContent = "Click a gene in the list or the scatter."; return; }
   $("gdh").innerHTML = `Selected gene: <i>${m.genes[g]}</i> <span class="fam">${famOf(g)}</span>`;
-  const T = m.types.length, ord = [...Array(T).keys()].sort((p, q) => val(q, g) - val(p, g));
-  const P = 30, bw = (w - P - 6) / T, Y = v => h - 20 - v * (h - 32);
+  const T = m.types.length, ordAll = [...Array(T).keys()].sort((p, q) => val(q, g) - val(p, g));
+  const N = Math.min(T, S.gn || T), ord = ordAll.slice(0, N);
+  const P = 30, bw = (w - P - 6) / N, Y = v => h - 20 - v * (h - 32);
+  if (N < T) { x.fillStyle = "#555"; x.font = "11px Arimo, Arial"; x.textAlign = "left"; x.fillText(`top ${N} of ${T} cell types`, P + 4, h - 4); }
   x.strokeStyle = "#222"; x.beginPath(); x.moveTo(P, Y(0)); x.lineTo(w - 6, Y(0)); x.stroke();
   x.fillStyle = "#555"; x.font = "11px IBM Plex Mono"; x.textAlign = "right"; [0, 0.5, 1].forEach(v => x.fillText(v, P - 4, Y(v) + 4));
   ord.forEach((t, i) => {
@@ -440,9 +514,9 @@ function drawGene() {
     const bx = P + i * bw; x.fillRect(bx, Y(v), Math.max(bw - (bw > 3 ? 0.5 : 0), 0.6), Y(0) - Y(v)); gdPts.push([bx, bx + bw, t]);
   });
   [[S.a, CA(), "A"], [S.b, BCOL, "B"]].forEach(([t, col, lab]) => {
-    const i = ord.indexOf(t), bx = P + (i + 0.5) * bw, v = val(t, g);
-    x.fillStyle = col; x.beginPath(); x.moveTo(bx, Y(v) - 4); x.lineTo(bx - 5, Y(v) - 12); x.lineTo(bx + 5, Y(v) - 12); x.fill();
-    x.textAlign = "right"; x.font = "12px Arimo, Arial"; x.fillText(`${lab}: ${m.types[t]}  ${fmt(v)}  (rank ${i + 1} of ${T})`, w - 8, lab === "A" ? 14 : 30);
+    const i = ordAll.indexOf(t), bx = P + (i + 0.5) * bw, v = val(t, g);
+    x.fillStyle = col; if (i < N) { x.beginPath(); x.moveTo(bx, Y(v) - 4); x.lineTo(bx - 5, Y(v) - 12); x.lineTo(bx + 5, Y(v) - 12); x.fill(); }
+    x.textAlign = "right"; x.font = "12px Arimo, Arial"; x.fillText(`${lab}: ${m.types[t]}  ${fmt(v)}  (rank ${i + 1} of ${T})`, w - 100, lab === "A" ? 14 : 30);
   });
   const ps = m.inter[m.genes[g]];
   $("gpart").innerHTML = ps ? "Known binding partners (interactome): " + ps.map(p => {
@@ -455,6 +529,31 @@ $("gd").addEventListener("mousemove", e => {
   tip.style.left = e.clientX + 12 + "px"; tip.style.top = e.clientY + 12 + "px";
 });
 $("gd").addEventListener("mouseleave", () => tip.style.display = "none");
+$("gd").addEventListener("wheel", e => { if (S.gene < 0) return; e.preventDefault(); const T = D().types.length;
+  S.gn = Math.max(20, Math.min(T, Math.round((S.gn || T) * (e.deltaY < 0 ? 0.7 : 1.4)))); drawGene(); }, { passive: false });
+
+// ---------------- zoom buttons on every panel
+function zoomBtns(host, fin, fout, freset) {
+  const z = host.classList.contains("zm") ? host : Object.assign(document.createElement("div"), { className: "zm" });
+  [["+", "Zoom in", fin], ["−", "Zoom out", fout], ["⟲", "Reset zoom", freset]].forEach(([t, l, f]) => {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.title = l; b.setAttribute("aria-label", l);
+    b.addEventListener("click", e => { e.stopPropagation(); f(); }); z.appendChild(b); });
+  if (z !== host) host.appendChild(z);
+}
+function wrap(c) { const d = document.createElement("div"); d.className = "zw"; c.parentNode.insertBefore(d, c); d.appendChild(c); return d; }
+function dolly(v, f) { if (!v) return; const d = v.cam.position.clone().sub(v.ctl.target).multiplyScalar(f); v.cam.position.copy(v.ctl.target).add(d); v.dirty = true; }
+zoomBtns($("ps"), () => dolly(VP, 0.75), () => dolly(VP, 1.33), () => { if (psGeom) fit(VP, psGeom.boundingBox); });
+zoomBtns($("sk"), () => dolly(VS, 0.75), () => dolly(VS, 1.33), () => { const b = new THREE.Box3().setFromObject(VS.group); if (!b.isEmpty()) fit(VS, b); });
+zoomBtns(wrap($("sc")), () => zoomSc(0.6, S.gene >= 0 ? val(S.a, S.gene) : undefined, S.gene >= 0 ? val(S.b, S.gene) : undefined),
+  () => zoomSc(1.6), () => { S.sz = [0, 1, 0, 1]; drawScatter(); });
+zoomBtns(wrap($("gd")), () => { const T = D().types.length; S.gn = Math.max(20, Math.round((S.gn || T) / 2)); drawGene(); },
+  () => { const T = D().types.length; S.gn = Math.min(T, Math.round((S.gn || T) * 2)); drawGene(); }, () => { S.gn = 0; drawGene(); });
+function zoomList(f) {                          // zoom the 0..1 axis of the gene list around the shown genes' centre
+  const L = diffGenes().slice(0, +$("ntop").value); let c = (S.lz[0] + S.lz[1]) / 2;
+  if (L.length && f < 1) { const v = L.flatMap(r => [r[1], r[2]]); c = (Math.min(...v) + Math.max(...v)) / 2; }
+  const w = Math.min(1, Math.max(0.05, (S.lz[1] - S.lz[0]) * f)); let z0 = Math.max(0, Math.min(1 - w, c - w / 2)); S.lz = [z0, z0 + w]; renderGenes();
+}
+zoomBtns($("lzm"), () => zoomList(0.6), () => zoomList(1.6), () => { S.lz = [0, 1]; renderGenes(); });
 
 function selectGene(g) { S.gene = g; renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); }
 function renderAll() { renderCand(); renderFacts(); renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); }
@@ -462,12 +561,13 @@ function renderAll() { renderCand(); renderFacts(); renderGenes(); drawScatter()
 async function setSys(k) {
   S.k = k; document.documentElement.style.setProperty("--a", SYSCOL[k]); document.querySelectorAll("#sys button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k));
   const m = await load(k);
+  $("gl").innerHTML = m.genes.map(g => `<option value="${g}">`).join("");
   $("tl").innerHTML = m.types.map((t, i) => `<option value="${t}">${m.annotated[i] ? "annotated" : "unannotated"}</option>`).join("");
   const first = m.cand.filter(r => r.sister).sort((p, q) => q.max_dpg - p.max_dpg)[0] || m.cand[0];
   if (first) setPair(first.a, first.b); else { S.a = S.b = -1; renderAll(); }
 }
 document.querySelectorAll("#sys button").forEach(b => b.addEventListener("click", () => setSys(b.dataset.k)));
-let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { drawScatter(); drawSkel(); drawPS(); drawGene(); }, 120); });
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { drawScatter(); drawGene(); }, 120); });
 setSys("visual").catch(e => { $("status").textContent = "Could not load data: " + e; });
 </script>
 </body>
