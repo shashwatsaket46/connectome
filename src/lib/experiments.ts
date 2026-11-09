@@ -93,6 +93,17 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     builtBy: "synnet/build_synnet.py",
   },
   {
+    id: "fig3-pair-browser",
+    title: "Fig 3 Pair Browser",
+    description:
+      "Choose the cell-type pair for Fig 3. Pick any two cell types in the visual (adult), central-complex (best) or motor (tp3) model and see the genes that separate them: a ranked dumbbell list of the largest expression differences (filter by TF, CAM, neuropeptide or interactome genes, minimum expression, housekeeping), all genes A vs B, the two types' EM neurons coloured by type or by a selected gene, and that gene across every cell type. Expression = predicted fraction of a type's cells expressing the gene, mean of the 50 solves, every atlas gene. The candidate list ranks sister pairs (shared specific candidate cells, both wired, both with a skeleton) by largest difference.",
+    url: "/expt-add/fig3-candidates/index.html",
+    category: "Gene Pairs",
+    enabled: true,
+    isNew: true,
+    builtBy: "biorender_fig/fig3/fig3_pair_candidates_v6.py, biorender_fig/fig3/export_web_v6.py",
+  },
+  {
     id: "pg-solve-explorer",
     title: "P·G Solve Explorer",
     description:
