@@ -160,6 +160,16 @@ expression difference; any two types can also be typed in directly.</p>
     </div>
 
     <div class="card">
+      <div class="bar" style="justify-content:space-between;margin-bottom:6px">
+        <h2 style="margin:0" id="psh">Pseudo-spatial transcriptome</h2>
+        <label class="small"><input type="checkbox" id="pshl" checked> outline A and B</label>
+      </div>
+      <canvas id="ps" height="420" aria-label="Every EM neuron coloured by its cell type's predicted expression of the selected gene"></canvas>
+      <div class="legend"><span>every EM neuron in the system receives its cell type's predicted expression (as Fig 3c, top row)</span>
+        <span><span class="ramp"></span> 0 → 1 fraction of cells expressing the gene</span></div>
+    </div>
+
+    <div class="card">
       <h2 id="gdh">Selected gene</h2>
       <canvas id="gd" height="170" aria-label="Selected gene across every cell type"></canvas>
       <div class="legend"><span>every cell type in the system, sorted by expression</span><span><i style="background:var(--ann)"></i>annotated</span>
@@ -232,7 +242,7 @@ $("cq").addEventListener("input", renderCand); $("sisOnly").addEventListener("ch
 function setPair(a, b) {
   $("ta").value = a; $("tb").value = b;
   S.a = D().ti.has(a) ? D().ti.get(a) : -1; S.b = D().ti.has(b) ? D().ti.get(b) : -1;
-  S.gene = -1; renderAll();
+  S.gene = -1; if (S.a >= 0 && S.b >= 0) { const L = diffGenes(); if (L.length) S.gene = L[0][0]; } renderAll();
 }
 function onPick() {
   const a = $("ta").value.trim(), b = $("tb").value.trim();
@@ -382,6 +392,39 @@ document.querySelectorAll("#skm button").forEach(bt => bt.addEventListener("clic
   document.querySelectorAll("#skm button").forEach(x => x.setAttribute("aria-pressed", x === bt)); S.skm = bt.dataset.m; drawSkel();
 }));
 
+function drawPS() {
+  const c = $("ps"), [x, w, h] = sizeCanvas(c); x.clearRect(0, 0, w, h);
+  const m = D(), g = S.gene;
+  if (g < 0) { $("psh").textContent = "Pseudo-spatial transcriptome"; x.fillStyle = "#555"; x.font = "13px Arimo, Arial";
+    x.textAlign = "center"; x.fillText("Select a gene (list, scatter) to colour every neuron by it.", w / 2, h / 2); return; }
+  $("psh").innerHTML = `Pseudo-spatial transcriptome: <i>${m.genes[g]}</i>`;
+  const [x0, x1, y0, y1] = m.bounds, pad = 10, flip = S.k === "motor";
+  const sc = Math.min((w - 2 * pad) / (x1 - x0), (h - 2 * pad) / (y1 - y0));
+  const ox = (w - sc * (x1 - x0)) / 2, oy = (h - sc * (y1 - y0)) / 2;
+  const P = (px, py) => [ox + (px - x0) * sc, flip ? h - oy - (py - y0) * sc : oy + (py - y0) * sc];
+  // low expression first so high-expressing types are drawn on top; one path per colour bin (fast)
+  const T = m.types.length, NB = 40, bins = Array.from({ length: NB }, () => []);
+  for (let t = 0; t < T; t++) { if (m.skel_off[t + 1] > m.skel_off[t]) bins[Math.min(NB - 1, Math.floor(val(t, g) * NB))].push(t); }
+  x.lineWidth = 0.5; x.globalAlpha = 0.85;
+  bins.forEach((ts, b) => {
+    if (!ts.length) return; x.strokeStyle = ramp((b + 0.5) / NB); x.beginPath();
+    for (const t of ts) for (let i = m.skel_off[t] * 4; i < m.skel_off[t + 1] * 4; i += 4) {
+      const [ax, ay] = P(m.sk[i], m.sk[i + 1]), [bx, by] = P(m.sk[i + 2], m.sk[i + 3]); x.moveTo(ax, ay); x.lineTo(bx, by); }
+    x.stroke();
+  });
+  x.globalAlpha = 1;
+  if ($("pshl").checked) [[S.a, CA(), "A"], [S.b, BCOL, "B"]].forEach(([t, col, lab], q) => {
+    if (t < 0) return;
+    x.strokeStyle = col; x.lineWidth = 0.9; x.beginPath();
+    for (let i = m.skel_off[t] * 4; i < m.skel_off[t + 1] * 4; i += 4) {
+      const [ax, ay] = P(m.sk[i], m.sk[i + 1]), [bx, by] = P(m.sk[i + 2], m.sk[i + 3]); x.moveTo(ax, ay); x.lineTo(bx, by); }
+    x.stroke();
+    x.fillStyle = col; x.font = "bold 12px Arimo, Arial"; x.textAlign = "left";
+    x.fillText(`${lab}: ${m.types[t]}  ${fmt(val(t, g))}`, 8, 16 + 16 * q);
+  });
+}
+$("pshl").addEventListener("change", drawPS);
+
 let gdPts = [];
 function drawGene() {
   const c = $("gd"), [x, w, h] = sizeCanvas(c); x.clearRect(0, 0, w, h); gdPts = [];
@@ -413,8 +456,8 @@ $("gd").addEventListener("mousemove", e => {
 });
 $("gd").addEventListener("mouseleave", () => tip.style.display = "none");
 
-function selectGene(g) { S.gene = g; renderGenes(); drawScatter(); drawSkel(); drawGene(); }
-function renderAll() { renderCand(); renderFacts(); renderGenes(); drawScatter(); drawSkel(); drawGene(); }
+function selectGene(g) { S.gene = g; renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); }
+function renderAll() { renderCand(); renderFacts(); renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); }
 
 async function setSys(k) {
   S.k = k; document.documentElement.style.setProperty("--a", SYSCOL[k]); document.querySelectorAll("#sys button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k));
@@ -424,7 +467,7 @@ async function setSys(k) {
   if (first) setPair(first.a, first.b); else { S.a = S.b = -1; renderAll(); }
 }
 document.querySelectorAll("#sys button").forEach(b => b.addEventListener("click", () => setSys(b.dataset.k)));
-let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { drawScatter(); drawSkel(); drawGene(); }, 120); });
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { drawScatter(); drawSkel(); drawPS(); drawGene(); }, 120); });
 setSys("visual").catch(e => { $("status").textContent = "Could not load data: " + e; });
 </script>
 </body>
