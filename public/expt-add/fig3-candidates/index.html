@@ -670,9 +670,12 @@ function drawPS() {
   lodReset(VP); VP.items = only ? [S.a, S.b].map(t => ({ t, dx: 0, depth: false, c: g < 0 ? [0.75, 0.75, 0.75] : rampRGB(val(t, g)) })) : [];
   VP.lodHint = only ? "" : "zoom detail (every neuron, full SWC) is available in \"A + B only\"";
   if (first) { psSys = S.k; fit(VP, psGeom.boundingBox); } else lodSched(VP);
-  paint(psGeom, t => g < 0 ? [0.75, 0.75, 0.75] : rampRGB(val(t, g)));
+  const hlOn = $("pshl").checked && !only && S.a >= 0 && S.b >= 0;
+  // outline on: every other neuron is washed toward white (overlaps stay pale), so A and B stand out on top
+  paint(psGeom, t => { const c0 = g < 0 ? [0.75, 0.75, 0.75] : rampRGB(val(t, g)); return hlOn ? c0.map(v => v + (1 - v) * 0.78) : c0; });
+  ls.material.opacity = hlOn ? 0.5 : 0.85;
   if (psHi) { VP.group.remove(psHi); psHi.traverse(o => { if (o.geometry) { o.geometry.dispose(); o.material.dispose(); } }); psHi = null; }
-  if ($("pshl").checked && !only && S.a >= 0 && S.b >= 0) {   // A and B drawn on top in their pair colours
+  if (hlOn) {   // A and B drawn on top in their pair colours
     psHi = new THREE.Group();
     [[S.a, CA()], [S.b, BCOL]].forEach(([t, col]) => { const gg = segGeom(m, [t]); paint(gg, () => rgb(col));
       const hl = new THREE.LineSegments(gg, new THREE.LineBasicMaterial({ vertexColors: true, depthTest: false, depthWrite: false, transparent: true, opacity: 1 })); hl.renderOrder = 2; psHi.add(hl); });   // transparent pass, so it draws AFTER the (transparent) all-neuron layer
