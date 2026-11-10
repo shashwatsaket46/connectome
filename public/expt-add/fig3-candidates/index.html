@@ -88,6 +88,8 @@ canvas { display: block; width: 100%; background: #fff; }
 .zm.inline { position: static; display: inline-flex; vertical-align: middle; margin-left: 8px; }
 .v3 { position: relative; width: 100%; border: 1px solid var(--rule); overflow: hidden; cursor: grab; }
 .v3 canvas { width: 100% !important; height: 100% !important; }
+.v3:fullscreen { width: 100vw; height: 100vh !important; border: 0; background: #fff; }
+.v3:fullscreen .lab { font-size: 1rem; }
 .v3 .det { position: absolute; left: 8px; bottom: 6px; right: 8px; font-size: .72rem; color: #444; pointer-events: none; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
 .v3 .lab { position: absolute; left: 8px; top: 6px; font-size: .8rem; font-weight: 700; pointer-events: none; line-height: 1.35; }
 .top { display: grid; gap: 10px; margin-bottom: 16px; position: sticky; top: 0; z-index: 5; }
@@ -597,8 +599,8 @@ function lodReset(v) { v.gen++; lodDrop(v, new Set()); }
 async function lodUpdate(v) {
   const k = S.k, gen = v.gen, items = v.items || [], ix = items.length ? await lodIndex(k) : null;
   const z = v.fitR ? v.fitR / v.cam.position.distanceTo(v.ctl.target) : 1;
-  const lev = !ix || z < LOD_IN ? 0 : z >= FULL_IN ? 2 : 1;
-  const show0 = on => v.group.traverse(o => { if (o.isLineSegments) o.visible = on; });
+  const lev = !ix ? 0 : Math.max(v.minLev || 0, z < LOD_IN ? 0 : z >= FULL_IN ? 2 : 1);
+  const show0 = on => v.group.traverse(o => { if (o.isLineSegments && !o.userData.keep) o.visible = on; });   // keep = background
   if (gen !== v.gen) return;
   if (lev === 0) { lodDrop(v, new Set()); show0(true);
     v.det.textContent = !items.length ? (v.lodHint || "") : ix ? `detail: overview (25 neurons per type) · zoom in for every neuron` : "";
@@ -667,8 +669,14 @@ function drawPS() {
   const ls = new THREE.LineSegments(psGeom, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthTest: false, depthWrite: false }));
   VP.group.add(ls); psGeom.computeBoundingBox();
   // zoom levels only in "A + B only" (every neuron of every type at full detail would not fit in the browser)
-  lodReset(VP); VP.items = only ? [S.a, S.b].map(t => ({ t, dx: 0, depth: false, c: g < 0 ? [0.75, 0.75, 0.75] : rampRGB(val(t, g)) })) : [];
-  VP.lodHint = only ? "" : "zoom detail (every neuron, full SWC) is available in \"A + B only\"";
+  const hlWant = $("pshl").checked && !only && S.a >= 0 && S.b >= 0;
+  ls.userData.keep = !only;                                  // the all-neuron background is never swapped out
+  // A + B only: the two types, gene-coloured. Outline on: the two types in pair colours over the background. Either
+  // way they come from every neuron (complete skeletons, ~500 nodes) and full SWC blocks when zoomed close.
+  lodReset(VP); VP.items = only ? [S.a, S.b].map(t => ({ t, dx: 0, depth: false, c: g < 0 ? [0.75, 0.75, 0.75] : rampRGB(val(t, g)) }))
+    : hlWant ? [[S.a, CA()], [S.b, BCOL]].map(([t, col]) => ({ t, dx: 0, depth: false, c: rgb(col) })) : [];
+  VP.minLev = VP.items.length ? 1 : 0;
+  VP.lodHint = only || hlWant ? "" : "tick \"outline A and B\" (or A + B only) for every neuron of the two types, with full detail on zoom";
   if (first) { psSys = S.k; fit(VP, psGeom.boundingBox); } else lodSched(VP);
   const hlOn = $("pshl").checked && !only && S.a >= 0 && S.b >= 0;
   // outline on: every other neuron is washed toward white (overlaps stay pale), so A and B stand out on top
@@ -699,6 +707,7 @@ function drawSkel() {
     const has = m.skel3d_off[t + 1] > m.skel3d_off[t];
     leg.push(`<span><i style="background:${byGene ? ramp(val(t, S.gene)) : col}"></i>${m.types[t]}${byGene ? " " + fmt(val(t, S.gene)) : ""}${has ? "" : " (no skeleton)"}</span>`);
   });
+  VS.minLev = 1;                                             // every neuron of A and B from the start (overview = sample)
   lodReset(VS); VS.items = [[S.a, 0], [S.b, dx]].map(([t, d]) => ({ t, dx: d, depth: true,
     c: byGene ? rampRGB(val(t, S.gene)) : rgb(t === S.a ? CA() : BCOL) }));
   const box = new THREE.Box3().setFromObject(VS.group); if (!box.isEmpty()) fit(VS, box);
@@ -756,17 +765,20 @@ $("gd").addEventListener("wheel", e => { if (S.gene < 0) return; e.preventDefaul
   S.gn = Math.max(20, Math.min(T, Math.round((S.gn || T) * (e.deltaY < 0 ? 0.7 : 1.4)))); drawGene(); }, { passive: false });
 
 // ---------------- zoom buttons on every panel
-function zoomBtns(host, fin, fout, freset) {
+function zoomBtns(host, fin, fout, freset, ffull) {
   const z = host.classList.contains("zm") ? host : Object.assign(document.createElement("div"), { className: "zm" });
-  [["+", "Zoom in", fin], ["−", "Zoom out", fout], ["⟲", "Reset zoom", freset]].forEach(([t, l, f]) => {
+  [["+", "Zoom in", fin], ["−", "Zoom out", fout], ["⟲", "Reset zoom", freset], ...(ffull ? [["⛶", "Full screen", ffull]] : [])].forEach(([t, l, f]) => {
     const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.title = l; b.setAttribute("aria-label", l);
     b.addEventListener("click", e => { e.stopPropagation(); f(); }); z.appendChild(b); });
   if (z !== host) host.appendChild(z);
 }
 function wrap(c) { const d = document.createElement("div"); d.className = "zw"; c.parentNode.insertBefore(d, c); d.appendChild(c); return d; }
 function dolly(v, f) { if (!v) return; const d = v.cam.position.clone().sub(v.ctl.target).multiplyScalar(f); v.cam.position.copy(v.ctl.target).add(d); v.dirty = true; }
-zoomBtns($("ps"), () => dolly(VP, 0.75), () => dolly(VP, 1.33), () => { if (psGeom) fit(VP, psGeom.boundingBox); });
-zoomBtns($("sk"), () => dolly(VS, 0.75), () => dolly(VS, 1.33), () => { const b = new THREE.Box3().setFromObject(VS.group); if (!b.isEmpty()) fit(VS, b); });
+function fullScreen(el) {                       // toggle; the viewer re-sizes itself through its ResizeObserver
+  if (document.fullscreenElement) document.exitFullscreen?.(); else (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
+}
+zoomBtns($("ps"), () => dolly(VP, 0.75), () => dolly(VP, 1.33), () => { if (psGeom) fit(VP, psGeom.boundingBox); }, () => fullScreen($("ps")));
+zoomBtns($("sk"), () => dolly(VS, 0.75), () => dolly(VS, 1.33), () => { const b = new THREE.Box3().setFromObject(VS.group); if (!b.isEmpty()) fit(VS, b); }, () => fullScreen($("sk")));
 zoomBtns(wrap($("sc")), () => zoomSc(0.6, S.gene >= 0 ? val(S.a, S.gene) : undefined, S.gene >= 0 ? val(S.b, S.gene) : undefined),
   () => zoomSc(1.6), () => { S.sz = [0, 1, 0, 1]; drawScatter(); });
 zoomBtns(wrap($("gd")), () => { const T = D().types.length; S.gn = Math.max(20, Math.round((S.gn || T) / 2)); drawGene(); },
