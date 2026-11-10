@@ -102,6 +102,8 @@ canvas { display: block; width: 100%; background: #fff; }
 .tabs button { font: inherit; font-size: .9rem; font-weight: 600; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--muted); padding: 8px 14px; cursor: pointer; }
 .tabs button[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--a); }
 .tab[hidden] { display: none; }
+.gpick { margin-bottom: 16px; }
+.gpick select { max-width: 100%; }
 .top-align { align-items: start; }
 .vgrid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 @media (max-width: 900px) { .vgrid { grid-template-columns: minmax(0, 1fr); } }
@@ -158,11 +160,61 @@ expression difference; any two types can also be typed in directly.</p>
 
   <main class="stack">
     <nav class="tabs" id="tabs" role="tablist" aria-label="Views">
-      <button data-t="genes" aria-pressed="true">Genes</button><button data-t="de" aria-pressed="false">Single-cell DE</button>
-      <button data-t="3d" aria-pressed="false">3-D neurons</button><button data-t="cmp" aria-pressed="false">Compare 3 genes</button>
+      <button data-t="3d" aria-pressed="true">3-D neurons</button><button data-t="genes" aria-pressed="false">Genes</button>
+      <button data-t="de" aria-pressed="false">Single-cell DE</button><button data-t="cmp" aria-pressed="false">Compare 3 genes</button>
     </nav>
 
-    <section class="tab" data-t="genes">
+    <section class="tab" data-t="3d">
+      <div class="card gpick">
+        <h2 style="margin:0 0 8px">Choose a gene</h2>
+        <div class="bar" style="margin:0">
+          <label class="small">family <select id="gpf">
+            <option value="all">All genes</option><option value="TF">Transcription factors (TF)</option>
+            <option value="CAM">Cell-adhesion molecules (CAM)</option><option value="NP">Neuropeptides (NP)</option>
+            <option value="NPR">Neuropeptide receptors (NPR)</option><option value="INT">Interactome partners</option>
+            <option value="HK">Housekeeping</option></select></label>
+          <label class="small">rank by <select id="gpr">
+            <option value="diff">largest A − B difference</option><option value="a">highest in A</option><option value="b">highest in B</option>
+            <option value="var">most variable across cell types</option><option value="max">highest in any cell type</option><option value="az">A – Z</option></select></label>
+          <label class="small">gene <select id="gps" style="min-width:16rem;font-family:var(--mono)"></select></label>
+          <span class="small" id="gpn" style="color:var(--muted)"></span>
+        </div>
+      </div>
+      <div class="grid2 top-align">
+    <div class="card">
+      <div class="bar" style="justify-content:space-between;margin-bottom:6px">
+        <h2 style="margin:0" id="psh">Pseudo-spatial transcriptome</h2>
+        <div class="bar" style="margin:0">
+          <label class="small">gene <input id="gq" list="gl" placeholder="type a gene" style="width:9rem;font-family:var(--mono)"></label>
+          <datalist id="gl"></datalist>
+          <div class="seg" id="psv" role="group" aria-label="Neurons shown">
+            <button data-v="all" aria-pressed="true">All cell types</button><button data-v="ab" aria-pressed="false">A + B only</button>
+          </div>
+          <label class="small"><input type="checkbox" id="pshl" checked> outline A and B</label>
+          <button class="btn" id="psr">Reset view</button>
+        </div>
+      </div>
+      <div class="v3" id="ps" style="height:520px" aria-label="Every EM neuron in 3-D coloured by its cell type's predicted expression of the selected gene"></div>
+      <div class="legend"><span>drag to rotate · scroll to zoom · right-drag to pan</span>
+        <span>every EM neuron receives its cell type's predicted expression (Fig 3c, top row)</span>
+        <span><span class="ramp"></span> 0 → 1 fraction of cells expressing the gene</span></div>
+    </div>
+
+        <div class="card">
+        <div class="bar" style="justify-content:space-between;margin-bottom:6px">
+          <h2 style="margin:0">EM neurons</h2>
+          <button class="btn" id="skr">Reset</button>
+          <div class="seg" id="skm" role="group" aria-label="Neuron colouring">
+            <button data-m="type" aria-pressed="true">by type</button><button data-m="gene" aria-pressed="false">by selected gene</button>
+          </div>
+        </div>
+        <div class="v3" id="sk" style="height:520px" aria-label="EM skeletons of the two types in 3-D"></div>
+        <div class="legend" id="skleg"></div>
+      </div>
+      </div>
+    </section>
+
+    <section class="tab" data-t="genes" hidden>
       <div class="grid2 top-align">
     <div class="card">
       <div class="bar" style="justify-content:space-between;margin-bottom:6px">
@@ -215,7 +267,7 @@ expression difference; any two types can also be typed in directly.</p>
           <div class="seg" id="decmp" role="group" aria-label="Comparison">
             <button data-v="ab" aria-pressed="true">A vs B</button><button data-v="ar" aria-pressed="false">A vs rest</button><button data-v="br" aria-pressed="false">B vs rest</button>
           </div>
-          <label class="small">p-value <select id="dey"><option value="null">type-pair null</option><option value="t">t-test (optimistic)</option></select></label>
+          <label class="small">p-value <select id="dey"><option value="t">t-test (optimistic)</option><option value="null">type-pair null</option><option value="cs">count-split pseudobulk (visual, pending)</option></select></label>
         </div>
       </div>
       <div class="small" id="den" style="margin-bottom:4px"></div>
@@ -228,41 +280,6 @@ expression difference; any two types can also be typed in directly.</p>
       <p class="note" id="denote"></p>
     </div>
 
-    </section>
-
-    <section class="tab" data-t="3d" hidden>
-      <div class="grid2 top-align">
-    <div class="card">
-      <div class="bar" style="justify-content:space-between;margin-bottom:6px">
-        <h2 style="margin:0" id="psh">Pseudo-spatial transcriptome</h2>
-        <div class="bar" style="margin:0">
-          <label class="small">gene <input id="gq" list="gl" placeholder="type a gene" style="width:9rem;font-family:var(--mono)"></label>
-          <datalist id="gl"></datalist>
-          <div class="seg" id="psv" role="group" aria-label="Neurons shown">
-            <button data-v="all" aria-pressed="true">All cell types</button><button data-v="ab" aria-pressed="false">A + B only</button>
-          </div>
-          <label class="small"><input type="checkbox" id="pshl" checked> outline A and B</label>
-          <button class="btn" id="psr">Reset view</button>
-        </div>
-      </div>
-      <div class="v3" id="ps" style="height:520px" aria-label="Every EM neuron in 3-D coloured by its cell type's predicted expression of the selected gene"></div>
-      <div class="legend"><span>drag to rotate · scroll to zoom · right-drag to pan</span>
-        <span>every EM neuron receives its cell type's predicted expression (Fig 3c, top row)</span>
-        <span><span class="ramp"></span> 0 → 1 fraction of cells expressing the gene</span></div>
-    </div>
-
-        <div class="card">
-        <div class="bar" style="justify-content:space-between;margin-bottom:6px">
-          <h2 style="margin:0">EM neurons</h2>
-          <button class="btn" id="skr">Reset</button>
-          <div class="seg" id="skm" role="group" aria-label="Neuron colouring">
-            <button data-m="type" aria-pressed="true">by type</button><button data-m="gene" aria-pressed="false">by selected gene</button>
-          </div>
-        </div>
-        <div class="v3" id="sk" style="height:520px" aria-label="EM skeletons of the two types in 3-D"></div>
-        <div class="legend" id="skleg"></div>
-      </div>
-      </div>
     </section>
 
     <section class="tab" data-t="cmp" hidden>
@@ -294,7 +311,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 const $ = id => document.getElementById(id);
 const SYSCOL = { visual: "#0072B2", cx: "#009E73", motor: "#E69F00" }, BCOL = "#CC79A7";
 const CA = () => SYSCOL[S.k];
-const S = { k: "visual", D: {}, a: -1, b: -1, gene: -1, fam: "all", skm: "type", sort: ["max_dpg", -1], sz: [0, 1, 0, 1], gn: 0, lz: [0, 1], psv: "all", cg: [-1, -1, -1], cz: 1, deset: "annot", deconf: "inf_50", decmp: "ab", dey: "null", tab: "genes" };
+const S = { k: "visual", D: {}, a: -1, b: -1, gene: -1, fam: "all", skm: "type", sort: ["max_dpg", -1], sz: [0, 1, 0, 1], gn: 0, lz: [0, 1], psv: "all", cg: [-1, -1, -1], cz: 1, deset: "annot", deconf: "inf_50", decmp: "ab", dey: "t", tab: "3d" };
 const tip = $("tip");
 
 let s3buf;
@@ -507,15 +524,23 @@ function viewer(el) {
   ctl.enableDamping = true; ctl.dampingFactor = 0.12;
   const v = { r, scene, cam, ctl, el, lab, group: new THREE.Group(), R: 40000, dirty: true };
   scene.add(v.group);
-  const size = () => { const w = el.clientWidth, h = el.clientHeight; r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); v.dirty = true; };
+  // never size (or fit) a hidden viewer: a 0x0 canvas gives aspect NaN, the camera goes NaN and OrbitControls'
+  // change detection stays NaN for good (the view then never re-renders on drag / zoom). Fit once it is visible.
+  const size = () => { const w = el.clientWidth, h = el.clientHeight; if (!(w > 0 && h > 0)) return;
+    r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); v.dirty = true;
+    if (v.pendingBox) { const b = v.pendingBox; v.pendingBox = null; fit(v, b); } };
   v.size = size; new ResizeObserver(size).observe(el); size();
   ctl.addEventListener("change", () => { v.dirty = true; lodSched(v); });
   v.lodg = new THREE.Group(); scene.add(v.lodg); v.items = []; v.lodObjs = new Map(); v.gen = 0;
   v.det = document.createElement("div"); v.det.className = "det"; el.appendChild(v.det);
-  (function loop() { requestAnimationFrame(loop); if (ctl.update() || v.dirty) { r.render(scene, cam); v.dirty = false; } })();
+  const last = { p: new THREE.Vector3(NaN), q: new THREE.Quaternion() };
+  (function loop() { requestAnimationFrame(loop);
+    const moved = ctl.update() || !last.p.equals(cam.position) || !last.q.equals(cam.quaternion);
+    if (moved || v.dirty) { r.render(scene, cam); v.dirty = false; last.p.copy(cam.position); last.q.copy(cam.quaternion); } })();
   return v;
 }
 function fit(v, box) {                          // look along +y (FlyWire anterior-posterior), up as Fig 3c
+  if (!(v.el.clientWidth > 0 && v.el.clientHeight > 0)) { v.pendingBox = box.clone(); return; }   // hidden: fit when shown
   v.size?.();
   const c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
   const R = Math.max(sz.x / v.cam.aspect, sz.z, sz.y * 0.5) * 0.62 / Math.tan(v.cam.fov * Math.PI / 360) + sz.y / 2;
@@ -650,7 +675,7 @@ function drawPS() {
   if ($("pshl").checked && !only && S.a >= 0 && S.b >= 0) {   // A and B drawn on top in their pair colours
     psHi = new THREE.Group();
     [[S.a, CA()], [S.b, BCOL]].forEach(([t, col]) => { const gg = segGeom(m, [t]); paint(gg, () => rgb(col));
-      const hl = new THREE.LineSegments(gg, new THREE.LineBasicMaterial({ vertexColors: true, depthTest: false })); hl.renderOrder = 2; psHi.add(hl); });
+      const hl = new THREE.LineSegments(gg, new THREE.LineBasicMaterial({ vertexColors: true, depthTest: false, depthWrite: false, transparent: true, opacity: 1 })); hl.renderOrder = 2; psHi.add(hl); });   // transparent pass, so it draws AFTER the (transparent) all-neuron layer
     VP.group.add(psHi);
   }
   $("psh").innerHTML = g < 0 ? "Pseudo-spatial transcriptome" : `Pseudo-spatial transcriptome: <i>${m.genes[g]}</i>`;
@@ -876,6 +901,55 @@ function typePairNull(d, R, t1, t2, rest) {
   return { L, n0 };
 }
 let voPts = [], deTok = 0, deAutoFor = "";
+// ---------------- count-split pseudobulk (countsplit/: make_split.py -> devstages Adult_cs1 rebuild -> pseudobulk_de.py)
+const DECS = {}, CS_MINCOUNT = 10;
+function csLoad(k, set) {
+  return DECS[k + "/" + set] ??= (async () => {
+    const info = await (await fetch(`data/de_cs/${k}_info.json`)).json();
+    const r = await fetch(`data/de_cs/${k}_${set}.bin.gz`); if (!r.ok) throw new Error("missing");
+    const buf = await gunzip(await r.arrayBuffer());
+    const [T, G, Sn, R] = new Uint32Array(buf, 0, 4); let o = 16;
+    const rt = new Uint16Array(buf, o, R); o += 2 * R; const rs = new Uint16Array(buf, o, R); o += 2 * R;
+    const rn = new Uint32Array(buf, o, R); o += 4 * R; const lib = new Float32Array(buf, o, R); o += 4 * R;
+    const rlib = new Float32Array(buf, o, R); o += 4 * R;
+    const L = new Uint16Array(buf, o, R * G); o += 2 * R * G; const RL = new Uint16Array(buf, o, R * G);
+    const byT = new Map();
+    for (let i = 0; i < R; i++) { if (!byT.has(rt[i])) byT.set(rt[i], new Map()); byT.get(rt[i]).set(rs[i], i); }
+    return { info, G, R, rn, lib, rlib, L, RL, byT, LS: info.LS };
+  })();
+}
+async function drawDEcs(tok) {
+  const m = D(), c = $("vo"), [x, w, h] = sizeCanvas(c); x.clearRect(0, 0, w, h); voPts = [];
+  const msg = (a, b) => { x.fillStyle = "#555"; x.font = "13px Arimo, Arial"; x.textAlign = "center"; x.fillText(a, w / 2, h / 2 - 8);
+    if (b) x.fillText(b, w / 2, h / 2 + 12); $("detop").innerHTML = ""; };
+  const set = S.deset === "annot" ? "annot" : S.deconf;
+  $("denote").innerHTML = "<b>Count-split pseudobulk.</b> Every UMI count was split at random into two halves (binomial thinning). The whole model — genes, metacells, G, P and each cell's type — was rebuilt from half A only (10-fold type split, one solver seed per fold). The test uses only the held-out half B: counts summed per type and atlas sample (15 samples), log2(CPM + 1), paired t-test across the samples where both groups have ≥ 5 cells, genes with ≥ 10 expected counts on both sides, Benjamini-Hochberg over genes. Calibration: with cell labels shuffled within samples, ≤ 6% of pairs show any hit (at most 2 genes)."
+    + (S.deset === "annot" ? " <b>Still circular for annotated cells:</b> their labels (and the raw clusters that bound metacells) come from the full data." : "");
+  let d; try { d = await csLoad("visual", set); } catch (e) { if (tok === deTok) { $("den").innerHTML = ""; msg("count-split results are not available yet for this cell set"); } return; }
+  if (tok !== deTok) return;
+  const [t1, rest, t2] = S.decmp === "ab" ? [S.a, false, S.b] : S.decmp === "ar" ? [S.a, true, S.a] : [S.b, true, S.b];
+  const c1 = t1 === S.a ? CA() : BCOL, c2 = rest ? "#666666" : BCOL, l1 = m.types[t1], l2 = rest ? "rest" : m.types[t2];
+  const ra = d.byT.get(t1) || new Map(), rb = rest ? ra : (d.byT.get(t2) || new Map());
+  const ss = [...ra.keys()].filter(s => rb.has(s)).sort((p, q) => p - q), nOf = mp => [...mp.values()].reduce((a, i) => a + d.rn[i], 0);
+  const setName = S.deset === "annot" ? "annotated cells" : `inferred cells, confidence ${set === "inf_any" ? "any" : set === "inf_50" ? "≥ 0.5" : "≥ 0.8"}`;
+  $("den").innerHTML = `<span style="color:${c1};font-weight:700">${l1}: ${nOf(ra).toLocaleString()} cells in ${ra.size} samples</span> vs <span style="color:${c2};font-weight:700">${rest ? "the rest of the set in the same samples"
+    : `${l2}: ${nOf(rb).toLocaleString()} cells in ${rb.size} samples`}</span> · ${ss.length} paired samples · ${setName} · groups from the half-A rebuild, counts from half B`;
+  if (ss.length < 3) { msg(`${ss.length} sample${ss.length === 1 ? "" : "s"} with ≥ ${d.info.MINC} cells of both groups`, "need at least 3 paired samples — try the other cell set or a lower confidence"); return; }
+  const n = ss.length, G = d.G, LS = d.LS, R = [], hk = $("nohk").checked, dd = new Float64Array(n);
+  for (let g = 0; g < G; g++) {
+    if (hk && m.hk[g]) continue;
+    let cx = 0, cy = 0, mu = 0;
+    for (let j = 0; j < n; j++) { const i = ra.get(ss[j]), k2 = rest ? i : rb.get(ss[j]);
+      const xv = d.L[i * G + g] / LS, yv = rest ? d.RL[i * G + g] / LS : d.L[k2 * G + g] / LS;
+      cx += (2 ** xv - 1) * d.lib[i] / 1e6; cy += (2 ** yv - 1) * (rest ? d.rlib[i] : d.lib[k2]) / 1e6; dd[j] = xv - yv; mu += dd[j]; }
+    if (cx / n < CS_MINCOUNT || cy / n < CS_MINCOUNT) continue;
+    mu /= n; let v = 0; for (let j = 0; j < n; j++) v += (dd[j] - mu) ** 2; v /= n - 1; if (!(v > 0)) continue;
+    const t = mu / Math.sqrt(v / n); R.push([g, mu, log10pT(t, n - 1), 0]);
+  }
+  bh(R, 2, 3);
+  plotDE(x, w, h, R, { c1, c2, l1, l2, rest, ylab: "−log10 p (count-split pseudobulk)",
+    info: ` · paired t across ${n} samples · genes with ≥ ${CS_MINCOUNT} expected counts on both sides · Δ = mean log2(CPM + 1) difference` });
+}
 async function drawDE() {
   const tok = ++deTok, c = $("vo"), k = S.k, m = D();
   $("deconfl").style.display = S.deset === "inf" ? "" : "none";
@@ -891,6 +965,8 @@ async function drawDE() {
     document.querySelectorAll("#deset button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === S.deset)); $("deconf").value = S.deconf;
     $("deconfl").style.display = S.deset === "inf" ? "" : "none";
   }
+  const mode = S.dey === "cs" && k !== "visual" ? "null" : S.dey;
+  if (mode === "cs") return drawDEcs(tok);
   const set = S.deset === "annot" ? "annot" : S.deconf, d = await deLoad(k, set); if (tok !== deTok) return;
   const [x, w, h] = sizeCanvas(c); x.clearRect(0, 0, w, h); voPts = [];
   const [t1, rest, t2] = S.decmp === "ab" ? [S.a, false, S.b] : S.decmp === "ar" ? [S.a, true, S.a] : [S.b, true, S.b];
@@ -903,7 +979,7 @@ async function drawDE() {
   $("denote").innerHTML = S.deset === "annot"
     ? "<b>Annotated cells</b> have one candidate type, so they are grouped by their input label (MultiomeNN cluster). Those clusters were defined from the same expression, so these p-values are optimistic (double dipping): treat them as a ranking, not as evidence."
     : "<b>Inferred cells</b> have several candidate types and are grouped by the type the solver gives them most often (confidence = share of the 50-solve posterior on that type). Low-confidence groups are mixtures; raise the confidence for cleaner but smaller groups.";
-  $("denote").innerHTML += (S.dey === "null"
+  $("denote").innerHTML += (S.dey === "cs" ? " <b>Count-split pseudobulk</b> exists for the visual system only so far; this panel shows the type-pair null instead." : "") + (mode === "null"
     ? " <b>Type-pair null</b> (the pbnull exp1-rows shuffle: P rows permuted, P frozen) asks whether the gene separates A and B more than it separates other pairs of types in this cell set. Every group is built the same way, so the circularity cancels."
     : " <b>t-test</b> p-values treat the groups as given; because the groups were built from this expression they are far too small. Use them to rank, not to call significance.");
   const short = [[l1, n1], [rest ? "rest" : l2, n2]].filter(([, n]) => n < DEMIN);
@@ -911,10 +987,16 @@ async function drawDE() {
     x.fillText(short.map(([l, n]) => `${l} has ${n} cell${n === 1 ? "" : "s"} in this set`).join(" · "), w / 2, h / 2 - 8);
     x.fillText("need at least 2 per side — try the other cell set or a lower confidence", w / 2, h / 2 + 12); $("detop").innerHTML = ""; return; }
   let R = welch(grpStats(d, t1, false), grpStats(d, t2, rest), $("nohk").checked);
-  const nul = typePairNull(d, R, t1, t2, rest), useNull = S.dey === "null";
+  const nul = typePairNull(d, R, t1, t2, rest), useNull = mode === "null";
   if (useNull) R = R.map(r => [r[0], r[1], r[4], r[5], r[2], r[3]]);       // [g, Δ, log10 p, log10 q, other p, other q]
   if (useNull && nul.n0 < 1) { x.fillStyle = "#555"; x.font = "13px Arimo, Arial"; x.textAlign = "center";
     x.fillText(`too few types with ≥ ${DEWARN} cells in this set for a null`, w / 2, h / 2); $("detop").innerHTML = ""; return; }
+  plotDE(x, w, h, R, { c1, c2, l1, l2, rest, ylab: useNull ? "−log10 p (type-pair null)" : "−log10 p (t-test)",
+    info: (useNull ? ` · null: ${nul.n0.toLocaleString()} ${rest ? "other types vs their rest" : "other type pairs"} (${nul.L} types with ≥ ${DEWARN} cells), smallest p ${(1 / (1 + nul.n0)).toExponential(1)}`
+      : " · t-test p-values are optimistic (see note)") + (n1 < DEWARN || n2 < DEWARN ? ` · <b>fewer than ${DEWARN} cells on one side: read with care</b>` : "") });
+}
+function plotDE(x, w, h, R, o) {           // o: c1, c2, l1, l2, rest, ylab, info
+  const { c1, c2, l1, l2, rest } = o, m = D();
   const P = 56, X0 = P, X1 = w - 10, Y0 = h - 30, Y1 = 10;
   let xm = 1; for (const r of R) xm = Math.max(xm, Math.abs(r[1])); xm = Math.ceil(xm * 2) / 2;
   let ym = 2; for (const r of R) ym = Math.max(ym, -r[2]); ym *= 1.05;
@@ -928,7 +1010,7 @@ async function drawDE() {
   x.fillStyle = "#555"; x.font = "11px IBM Plex Mono"; x.textAlign = "center";
   [-xm, -xm / 2, 0, xm / 2, xm].forEach(v => x.fillText(+v.toFixed(2), X(v), Y0 + 13));
   x.textAlign = "right"; [0, ym / 2, ym].forEach(v => x.fillText(v >= 100 ? v.toFixed(0) : v.toFixed(1), X0 - 4, Y(v) + 4));
-  x.save(); x.translate(10, (Y0 + Y1) / 2); x.rotate(-Math.PI / 2); x.textAlign = "center"; x.fillText(useNull ? "−log10 p (type-pair null)" : "−log10 p (t-test)", 0, 0); x.restore();
+  x.save(); x.translate(10, (Y0 + Y1) / 2); x.rotate(-Math.PI / 2); x.textAlign = "center"; x.fillText(o.ylab, 0, 0); x.restore();
   x.font = "bold 12px Arimo, Arial"; x.textAlign = "left"; x.fillStyle = c2; x.fillText("← higher in " + (rest ? "rest" : l2), X0 + 4, Y0 + 26);
   x.textAlign = "right"; x.fillStyle = c1; x.fillText("higher in " + l1 + " →", X1, Y0 + 26);
   const sig = r => r[3] <= -1.30103 && Math.abs(r[1]) >= 0.5;
@@ -943,8 +1025,7 @@ async function drawDE() {
     <table style="width:100%;margin-top:3px"><tr><th>gene</th><th class="num">Δ</th><th class="num">q</th></tr>
     ${L.slice(0, 12).map(r => `<tr data-g="${r[0]}" style="cursor:pointer"><td><i>${m.genes[r[0]]}</i></td><td class="num">${r[1].toFixed(2)}</td><td class="num">${q10(r)}</td></tr>`).join("")
       || '<tr><td colspan="3" class="small">none at q &lt; 0.05 and |Δ| ≥ 0.5</td></tr>'}</table></div>`;
-  $("detop").innerHTML = `<div class="small" style="margin-bottom:6px">${R.length.toLocaleString()} genes tested${useNull
-      ? ` · null: ${nul.n0.toLocaleString()} ${rest ? "other types vs their rest" : "other type pairs"} (${nul.L} types with ≥ ${DEWARN} cells), smallest p ${(1 / (1 + nul.n0)).toExponential(1)}` : " · t-test p-values are optimistic (see note)"}${n1 < DEWARN || n2 < DEWARN ? ` · <b>fewer than ${DEWARN} cells on one side: read with care</b>` : ""}</div>`
+  $("detop").innerHTML = `<div class="small" style="margin-bottom:6px">${R.length.toLocaleString()} genes tested${o.info}</div>`
     + lst(up, c1, l1) + lst(dn, c2, rest ? "rest" : l2);
   $("detop").querySelectorAll("tr[data-g]").forEach(tr => tr.addEventListener("click", () => selectGene(+tr.dataset.g)));
 }
@@ -952,8 +1033,8 @@ $("vo").addEventListener("mousemove", e => {
   const r = $("vo").getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top; let best = null, bd = 64;
   for (const p of voPts) { const dd = (p[0] - mx) ** 2 + (p[1] - my) ** 2; if (dd < bd) { bd = dd; best = p; } }
   if (!best) { tip.style.display = "none"; return; }
-  const q = best[2], f = v => v < -300 ? "<1e-300" : (10 ** v).toExponential(1), nl = S.dey === "null";
-  tip.textContent = `${D().genes[q[0]]}  Δ ${q[1].toFixed(2)}  ${nl ? "null" : "t-test"} p ${f(q[2])} q ${f(q[3])}  ·  ${nl ? "t-test" : "null"} p ${f(q[4])}`;
+  const q = best[2], f = v => v < -300 ? "<1e-300" : (10 ** v).toExponential(1), nl = q.length > 4 && S.dey !== "t";
+  tip.textContent = `${D().genes[q[0]]}  Δ ${q[1].toFixed(2)}  p ${f(q[2])}  q ${f(q[3])}` + (q.length > 4 ? `  ·  ${nl ? "t-test" : "null"} p ${f(q[4])}` : "");
   tip.style.display = "block"; tip.style.left = e.clientX + 12 + "px"; tip.style.top = e.clientY + 12 + "px";
 });
 $("vo").addEventListener("mouseleave", () => tip.style.display = "none");
@@ -969,10 +1050,10 @@ document.querySelectorAll("#decmp button").forEach(bt => bt.addEventListener("cl
 $("deconf").addEventListener("change", () => { S.deconf = $("deconf").value; drawDE(); });
 $("dey").addEventListener("change", () => { S.dey = $("dey").value; drawDE(); });
 // ---------------- tabs + sticky header height
-try { S.tab = localStorage.getItem("f3tab") || "genes"; } catch (e) { S.tab = "genes"; }
+try { S.tab = localStorage.getItem("f3tab2") || "3d"; } catch (e) { S.tab = "3d"; }
 function showTab(t) {
-  if (!document.querySelector(`section.tab[data-t="${t}"]`)) t = "genes";
-  S.tab = t; try { localStorage.setItem("f3tab", t); } catch (e) {}
+  if (!document.querySelector(`section.tab[data-t="${t}"]`)) t = "3d";
+  S.tab = t; try { localStorage.setItem("f3tab2", t); } catch (e) {}
   document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.t === t));
   document.querySelectorAll("section.tab").forEach(sec => sec.hidden = sec.dataset.t !== t);
   if (S.a < 0 || S.b < 0) return;
@@ -987,8 +1068,33 @@ document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click
 new ResizeObserver(() => document.documentElement.style.setProperty("--toph", document.querySelector("header.top").offsetHeight + 16 + "px")).observe(document.querySelector("header.top"));
 $("nohk").addEventListener("change", () => drawDE());
 
-function selectGene(g) { S.gene = g; renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); drawDE(); }
-function renderAll() { renderCand(); renderFacts(); renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); drawCompare(); drawDE(); }
+// ---------------- gene picker (3-D tab): family + ranking dropdowns -> gene dropdown -> colours the neurons
+let gpVar = null, gpVarSys = null;
+function gpRefresh() {
+  const m = D(); if (!m || S.a < 0 || S.b < 0) return;
+  const f = $("gpf").value, by = $("gpr").value, T = m.types.length;
+  if (gpVarSys !== S.k) {                       // per-gene variance and max of P.G across cell types, once per system
+    gpVar = new Float32Array(m.G); const gmax = new Float32Array(m.G);
+    for (let g = 0; g < m.G; g++) { let s1 = 0, s2 = 0, mx = 0; for (let t = 0; t < T; t++) { const v = m.pg[t * m.G + g] / 250; s1 += v; s2 += v * v; if (v > mx) mx = v; }
+      gpVar[g] = s2 / T - (s1 / T) ** 2; gmax[g] = mx; }
+    gpVar.max = gmax; gpVarSys = S.k;
+  }
+  const fam = g => f === "all" ? true : f === "INT" ? !!m.inter[m.genes[g]] : f === "HK" ? m.hk[g]
+    : f === "NP" ? famOf(g).split(/[,;/ ]+/).includes("NP") : famOf(g).split(/[,;/ ]+/).includes(f);
+  const key = { diff: g => -Math.abs(val(S.a, g) - val(S.b, g)), a: g => -val(S.a, g), b: g => -val(S.b, g),
+    var: g => -gpVar[g], max: g => -gpVar.max[g], az: null }[by];
+  let L = []; for (let g = 0; g < m.G; g++) if (fam(g)) L.push(g);
+  if (key) L.sort((p, q) => key(p) - key(q)); else L.sort((p, q) => m.genes[p].localeCompare(m.genes[q]));
+  const N = L.length; L = L.slice(0, 300);
+  $("gps").innerHTML = `<option value="-1">— pick a gene (${N.toLocaleString()} in this family) —</option>` +
+    L.map(g => `<option value="${g}"${g === S.gene ? " selected" : ""}>${m.genes[g]}  ·  A ${fmt(val(S.a, g))}  B ${fmt(val(S.b, g))}${famOf(g) ? "  [" + famOf(g) + "]" : ""}</option>`).join("");
+  $("gpn").textContent = N > 300 ? `showing the top 300 of ${N.toLocaleString()}` : "";
+}
+$("gpf").addEventListener("change", gpRefresh); $("gpr").addEventListener("change", gpRefresh);
+$("gps").addEventListener("change", () => { const g = +$("gps").value; if (g >= 0) selectGene(g); });
+
+function selectGene(g) { S.gene = g; renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); drawDE(); gpRefresh(); }
+function renderAll() { renderCand(); renderFacts(); renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); drawCompare(); drawDE(); gpRefresh(); }
 
 async function setSys(k) {
   S.k = k; document.documentElement.style.setProperty("--a", SYSCOL[k]); document.querySelectorAll("#sys button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k));
