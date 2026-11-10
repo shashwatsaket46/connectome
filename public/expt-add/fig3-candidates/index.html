@@ -88,6 +88,7 @@ canvas { display: block; width: 100%; background: #fff; }
 .zm.inline { position: static; display: inline-flex; vertical-align: middle; margin-left: 8px; }
 .v3 { position: relative; width: 100%; border: 1px solid var(--rule); overflow: hidden; cursor: grab; }
 .v3 canvas { width: 100% !important; height: 100% !important; }
+.v3 .det { position: absolute; left: 8px; bottom: 6px; right: 8px; font-size: .72rem; color: #444; pointer-events: none; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
 .v3 .lab { position: absolute; left: 8px; top: 6px; font-size: .8rem; font-weight: 700; pointer-events: none; line-height: 1.35; }
 .empty { color: var(--muted); font-size: .85rem; padding: 12px 0; }
 </style>
@@ -444,7 +445,9 @@ function viewer(el) {
   scene.add(v.group);
   const size = () => { const w = el.clientWidth, h = el.clientHeight; r.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); v.dirty = true; };
   new ResizeObserver(size).observe(el); size();
-  ctl.addEventListener("change", () => v.dirty = true);
+  ctl.addEventListener("change", () => { v.dirty = true; lodSched(v); });
+  v.lodg = new THREE.Group(); scene.add(v.lodg); v.items = []; v.lodObjs = new Map(); v.gen = 0;
+  v.det = document.createElement("div"); v.det.className = "det"; el.appendChild(v.det);
   (function loop() { requestAnimationFrame(loop); if (ctl.update() || v.dirty) { r.render(scene, cam); v.dirty = false; } })();
   return v;
 }
@@ -452,8 +455,97 @@ function fit(v, box) {                          // look along +y (FlyWire anteri
   const c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
   const R = Math.max(sz.x / v.cam.aspect, sz.z, sz.y * 0.5) * 0.62 / Math.tan(v.cam.fov * Math.PI / 360) + sz.y / 2;
   v.cam.up.set(...UP[S.k]); v.cam.position.set(c.x, c.y - R, c.z); v.ctl.target.copy(c); v.cam.lookAt(c); v.ctl.update(); v.dirty = true;
+  v.fitR = R; lodSched(v);
 }
-function clear(v) { for (const o of [...v.group.children]) { v.group.remove(o); o.geometry.dispose(); o.material.dispose(); } }
+// ---------------- zoom levels (biorender_fig/fig3/fig3_lod.py). As the camera moves in, more detail loads:
+//   0 overview  = <k>_skel3d.bin (25 neurons per type, ~200 nodes)
+//   1 all       = every neuron of the type, ~500 nodes                      data/lod/<k>/m/<t>.bin.gz
+//   2 full      = every neuron, every SWC node, only the blocks in view     <FULL_BASE>/<t>.bin (HTTP Range per block)
+const FULL_BASE = { cx: "data/lod/cx/f/", visual: null };   // visual full level: set to the bucket URL once it is hosted
+const LOD_IN = 1.5, FULL_IN = 3.5, FULL_BUDGET = 3e6;       // zoom (fit distance / distance) thresholds; max full segments
+const lodIdx = {}, segCache = new Map(), fileCache = new Map();
+function lodIndex(k) { return lodIdx[k] ??= fetch(`data/lod/${k}/index.json`).then(r => r.ok ? r.json() : null).catch(() => null); }
+async function gunzip(buf) {                    // blocks are gzip files; skip if the server already decoded them
+  const u = new Uint8Array(buf); if (u[0] !== 0x1f || u[1] !== 0x8b) return buf;
+  return new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+}
+function decodeSegs(buf) {                      // Uint32 n | Uint32 rel[n] | Int16 xyz[3n] (root absolute, others delta)
+  const n = new Uint32Array(buf, 0, 1)[0]; if (!n) return new Float32Array(0);
+  const rel = new Uint32Array(buf, 4, n), d = new Int16Array(buf, 4 + 4 * n, 3 * n), q = new Float32Array(3 * n);
+  let m = 0;
+  for (let i = 0, a = 0; i < n; i++, a += 3) { const r = rel[i];
+    if (r) { const p = a - 3 * r; q[a] = q[p] + d[a]; q[a + 1] = q[p + 1] + d[a + 1]; q[a + 2] = q[p + 2] + d[a + 2]; m++; }
+    else { q[a] = d[a]; q[a + 1] = d[a + 1]; q[a + 2] = d[a + 2]; } }
+  const pos = new Float32Array(m * 6);
+  for (let i = 0, a = 0, j = 0; i < n; i++, a += 3) if (rel[i]) { const p = a - 3 * rel[i];
+    pos[j] = q[p]; pos[j + 1] = q[p + 1]; pos[j + 2] = q[p + 2]; pos[j + 3] = q[a]; pos[j + 4] = q[a + 1]; pos[j + 5] = q[a + 2]; j += 6; }
+  return pos;
+}
+function cached(key, f) { if (!segCache.has(key)) segCache.set(key, f().catch(e => { segCache.delete(key); throw e; })); return segCache.get(key); }
+const midSegs = (k, t) => cached(`${k}/m/${t}`, async () => decodeSegs(await gunzip(await (await fetch(`data/lod/${k}/m/${t}.bin.gz`)).arrayBuffer())));
+const blkSegs = (k, t, b) => cached(`${k}/f/${t}/${b[0]}_${b[1]}_${b[2]}`, async () => {
+  const url = FULL_BASE[k] + `${t}.bin`, [off, len] = [b[5], b[4]];
+  let whole = fileCache.get(url);
+  if (!whole) { const r = await fetch(url, { headers: { Range: `bytes=${off}-${off + len - 1}` } });
+    if (r.status === 206) return decodeSegs(await gunzip(await r.arrayBuffer()));
+    whole = r.arrayBuffer(); fileCache.set(url, whole); }          // server ignored Range: keep the file, slice it
+  return decodeSegs(await gunzip((await whole).slice(off, off + len)));
+});
+function lodSched(v) { clearTimeout(v.lt); v.lt = setTimeout(() => lodUpdate(v).catch(e => { v.det.textContent = "detail: load failed (" + e + ")"; }), 180); }
+function lodPut(v, key, pos, it) {               // keep one LineSegments per key; reuse when it is still wanted
+  if (v.lodObjs.has(key)) return;
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  const o = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: new THREE.Color(...it.c), transparent: true,
+    opacity: 0.9, depthTest: it.depth, depthWrite: it.depth }));
+  o.position.x = it.dx; o.renderOrder = 1; v.lodg.add(o); v.lodObjs.set(key, o); v.dirty = true;
+}
+function lodDrop(v, keep) {
+  for (const [key, o] of v.lodObjs) if (!keep.has(key)) { v.lodg.remove(o); o.geometry.dispose(); o.material.dispose(); v.lodObjs.delete(key); }
+  v.dirty = true;
+}
+function lodReset(v) { v.gen++; lodDrop(v, new Set()); }
+async function lodUpdate(v) {
+  const k = S.k, gen = v.gen, items = v.items || [], ix = items.length ? await lodIndex(k) : null;
+  const z = v.fitR ? v.fitR / v.cam.position.distanceTo(v.ctl.target) : 1;
+  const lev = !ix || z < LOD_IN ? 0 : z >= FULL_IN ? 2 : 1;
+  const show0 = on => v.group.traverse(o => { if (o.isLineSegments) o.visible = on; });
+  if (gen !== v.gen) return;
+  if (lev === 0) { lodDrop(v, new Set()); show0(true);
+    v.det.textContent = !items.length ? (v.lodHint || "") : ix ? `detail: overview (25 neurons per type) · zoom in for every neuron` : "";
+    return; }
+  const keep = new Set(), sig = it => `${it.t}|${it.c.join()}|${it.dx}|${it.depth}`;
+  // level 1: every neuron of each type, ~500 nodes
+  const mids = await Promise.all(items.map(it => ix.types[it.t] ? midSegs(k, it.t) : null));
+  if (gen !== v.gen) return;
+  items.forEach((it, i) => { if (mids[i]) { const key = "m" + sig(it); keep.add(key); lodPut(v, key, mids[i], it); } });
+  show0(false);
+  const nNeur = items.reduce((s, it) => s + (ix.types[it.t]?.n || 0), 0);
+  let txt = `detail: all ${nNeur.toLocaleString()} neurons (~${ix.mid_nodes} nodes each)`;
+  if (lev === 2 && !FULL_BASE[k]) txt += " · full-resolution SWCs are not hosted yet for this system";
+  if (lev === 2 && FULL_BASE[k]) {               // level 2: full SWC blocks inside the view, nearest first, up to the budget
+    v.cam.updateMatrixWorld(); const fr = new THREE.Frustum().setFromProjectionMatrix(
+      new THREE.Matrix4().multiplyMatrices(v.cam.projectionMatrix, v.cam.matrixWorldInverse));
+    const cs = 2 * ix.lim / ix.grid, want = [];
+    for (const it of items) for (const b of ix.types[it.t]?.full || []) {
+      const lo = new THREE.Vector3(-ix.lim + b[0] * cs + it.dx, -ix.lim + b[1] * cs, -ix.lim + b[2] * cs);
+      const box = new THREE.Box3(lo, lo.clone().addScalar(cs));
+      if (fr.intersectsBox(box)) want.push([box.distanceToPoint(v.cam.position), it, b]);
+    }
+    want.sort((p, q) => p[0] - q[0]);
+    let used = 0, nb = 0; const pick = [];
+    for (const w of want) { if (used + w[2][3] > FULL_BUDGET && pick.length) break; used += w[2][3]; pick.push(w); }
+    v.det.textContent = txt + ` · loading full SWC: 0 / ${pick.length} blocks in view`;
+    await Promise.all(pick.map(async ([, it, b]) => {
+      const pos = await blkSegs(k, it.t, b); if (gen !== v.gen) return;
+      const key = `f${sig(it)}|${b[0]}_${b[1]}_${b[2]}`; keep.add(key); lodPut(v, key, pos, it); nb++;
+      v.det.textContent = txt + ` · full SWC: ${nb} / ${pick.length} blocks in view`;
+    }));
+    if (gen !== v.gen) return;
+    txt += ` · full SWC (every node): ${pick.length} of ${want.length} blocks in view` + (pick.length < want.length ? " (zoom closer for the rest)" : "");
+  }
+  lodDrop(v, keep); v.det.textContent = txt;
+}
+function clear(v) { for (const o of [...v.group.children]) { v.group.remove(o); o.traverse(x => { x.geometry?.dispose(); x.material?.dispose(); }); } }
 function segGeom(m, types, dx = 0) {            // positions for the given types' 3-D segments
   let n = 0; for (const t of types) n += m.skel3d_off[t + 1] - m.skel3d_off[t];
   const pos = new Float32Array(n * 6), own = new Uint16Array(n * 2); let j = 0;
@@ -484,7 +576,10 @@ function drawPS() {
   psGeom = segGeom(m, order);
   const ls = new THREE.LineSegments(psGeom, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthTest: false, depthWrite: false }));
   VP.group.add(ls); psGeom.computeBoundingBox();
-  if (first) { psSys = S.k; fit(VP, psGeom.boundingBox); }
+  // zoom levels only in "A + B only" (every neuron of every type at full detail would not fit in the browser)
+  lodReset(VP); VP.items = only ? [S.a, S.b].map(t => ({ t, dx: 0, depth: false, c: g < 0 ? [0.75, 0.75, 0.75] : rampRGB(val(t, g)) })) : [];
+  VP.lodHint = only ? "" : "zoom detail (every neuron, full SWC) is available in \"A + B only\"";
+  if (first) { psSys = S.k; fit(VP, psGeom.boundingBox); } else lodSched(VP);
   paint(psGeom, t => g < 0 ? [0.75, 0.75, 0.75] : rampRGB(val(t, g)));
   if (psHi) { VP.group.remove(psHi); psHi.traverse(o => { if (o.geometry) { o.geometry.dispose(); o.material.dispose(); } }); psHi = null; }
   if ($("pshl").checked && !only && S.a >= 0 && S.b >= 0) {   // A and B drawn on top in their pair colours
@@ -500,7 +595,7 @@ function drawPS() {
 }
 function drawSkel() {
   VS = VS || viewer($("sk")); clear(VS); const m = D();
-  if (S.a < 0 || S.b < 0) return;
+  if (S.a < 0 || S.b < 0) { lodReset(VS); VS.items = []; lodSched(VS); return; }
   const byGene = S.skm === "gene" && S.gene >= 0, leg = [];
   // by type: overlaid; by gene: side by side (B shifted right), each coloured by its own value
   const ext = t => { let lo = 1e9, hi = -1e9; for (let i = m.skel3d_off[t] * 6; i < m.skel3d_off[t + 1] * 6; i += 3) { lo = Math.min(lo, m.s3[i]); hi = Math.max(hi, m.s3[i]); } return [lo, hi]; };
@@ -511,6 +606,8 @@ function drawSkel() {
     const has = m.skel3d_off[t + 1] > m.skel3d_off[t];
     leg.push(`<span><i style="background:${byGene ? ramp(val(t, S.gene)) : col}"></i>${m.types[t]}${byGene ? " " + fmt(val(t, S.gene)) : ""}${has ? "" : " (no skeleton)"}</span>`);
   });
+  lodReset(VS); VS.items = [[S.a, 0], [S.b, dx]].map(([t, d]) => ({ t, dx: d, depth: true,
+    c: byGene ? rampRGB(val(t, S.gene)) : rgb(t === S.a ? CA() : BCOL) }));
   const box = new THREE.Box3().setFromObject(VS.group); if (!box.isEmpty()) fit(VS, box);
   VS.lab.innerHTML = byGene ? `<span style="color:${CA()}">A ${m.types[S.a]}</span> · <span style="color:${BCOL}">B ${m.types[S.b]}</span> (B on the right)` : "";
   $("skleg").innerHTML = leg.join("") + "<span>drag to rotate</span>" + (byGene ? `<span><span class="ramp"></span> 0 → 1 expression of <em>${m.genes[S.gene]}</em></span>`
