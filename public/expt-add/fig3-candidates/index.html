@@ -195,6 +195,30 @@ expression difference; any two types can also be typed in directly.</p>
       </div>
     </div>
 
+    <div class="card" id="decard">
+      <div class="bar" style="justify-content:space-between;margin-bottom:6px">
+        <h2 style="margin:0">Single-cell differential expression (Welch t-test)</h2>
+        <div class="bar" style="margin:0">
+          <div class="seg" id="deset" role="group" aria-label="Which cells">
+            <button data-v="annot" aria-pressed="true">Annotated cells</button><button data-v="inf" aria-pressed="false">Inferred cells</button>
+          </div>
+          <label class="small" id="deconfl">top-type confidence <select id="deconf">
+            <option value="inf_any">any</option><option value="inf_50">&ge; 0.5</option><option value="inf_80">&ge; 0.8</option></select></label>
+          <div class="seg" id="decmp" role="group" aria-label="Comparison">
+            <button data-v="ab" aria-pressed="true">A vs B</button><button data-v="ar" aria-pressed="false">A vs rest</button><button data-v="br" aria-pressed="false">B vs rest</button>
+          </div>
+        </div>
+      </div>
+      <div class="small" id="den" style="margin-bottom:4px"></div>
+      <div class="grid2">
+        <canvas id="vo" height="400" aria-label="Volcano plot: mean difference against -log10 p for every gene"></canvas>
+        <div id="detop" class="small"></div>
+      </div>
+      <div class="legend"><span>x: difference in mean log2(1 + CP10k) per cell (≈ log2 fold change)</span>
+        <span>dashed: |Δ| = 0.5 and BH q = 0.05 (Benjamini-Hochberg over the genes tested)</span><span>hover a dot for its gene, click to select</span></div>
+      <p class="note" id="denote"></p>
+    </div>
+
     <div class="card">
       <h2 id="gdh">Selected gene</h2>
       <canvas id="gd" height="170" aria-label="Selected gene across every cell type"></canvas>
@@ -230,7 +254,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 const $ = id => document.getElementById(id);
 const SYSCOL = { visual: "#0072B2", cx: "#009E73", motor: "#E69F00" }, BCOL = "#CC79A7";
 const CA = () => SYSCOL[S.k];
-const S = { k: "visual", D: {}, a: -1, b: -1, gene: -1, fam: "all", skm: "type", sort: ["max_dpg", -1], sz: [0, 1, 0, 1], gn: 0, lz: [0, 1], psv: "all", cg: [-1, -1, -1], cz: 1 };
+const S = { k: "visual", D: {}, a: -1, b: -1, gene: -1, fam: "all", skm: "type", sort: ["max_dpg", -1], sz: [0, 1, 0, 1], gn: 0, lz: [0, 1], psv: "all", cg: [-1, -1, -1], cz: 1, deset: "annot", deconf: "inf_50", decmp: "ab" };
 const tip = $("tip");
 
 let s3buf;
@@ -464,7 +488,7 @@ function fit(v, box) {                          // look along +y (FlyWire anteri
 const FULL_BASE = { cx: "data/lod/cx/f/", visual: null };   // visual full level: set to the bucket URL once it is hosted
 const LOD_IN = 1.5, FULL_IN = 3.5, FULL_BUDGET = 3e6;       // zoom (fit distance / distance) thresholds; max full segments
 const lodIdx = {}, segCache = new Map(), fileCache = new Map();
-function lodIndex(k) { return lodIdx[k] ??= fetch(`data/lod/${k}/index.json`).then(r => r.ok ? r.json() : null).catch(() => null); }
+function lodIndex(k) { if (!(k in FULL_BASE)) return Promise.resolve(null); return lodIdx[k] ??= fetch(`data/lod/${k}/index.json`).then(r => r.ok ? r.json() : null).catch(() => null); }
 async function gunzip(buf) {                    // blocks are gzip files; skip if the server already decoded them
   const u = new Uint8Array(buf); if (u[0] !== 0x1f || u[1] !== 0x8b) return buf;
   return new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
@@ -723,8 +747,153 @@ function setCompare(gs) { S.cg = [0, 1, 2].map(j => gs[j] ?? -1); S.cg.forEach((
 $("cgtop").addEventListener("click", () => setCompare(diffGenes().slice(0, 3).map(r => r[0])));
 zoomBtns($("czm"), () => { S.cz = Math.min(8, S.cz * 1.4); drawCompare(); }, () => { S.cz = Math.max(0.5, S.cz / 1.4); drawCompare(); }, () => { S.cz = 1; drawCompare(); });
 
-function selectGene(g) { S.gene = g; renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); }
-function renderAll() { renderCand(); renderFacts(); renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); drawCompare(); }
+// ---------------- single-cell differential expression (biorender_fig/fig3/export_de_v6.py)
+// Each cell is grouped under its most likely type over the 50 solves (pbnull/cell_type_assign.py). Annotated cells (one
+// candidate type) always land on their label; inferred cells (several candidates) are placed by the solver.
+const DE = {};
+function deLoad(k, set) {
+  return DE[k + "/" + set] ??= (async () => {
+    const info = await (await fetch(`data/de/${k}_info.json`)).json();
+    const buf = await gunzip(await (await fetch(`data/de/${k}_${set}.bin.gz`)).arrayBuffer());
+    const hd = new Uint32Array(buf, 0, 2), T = hd[0], G = hd[1], n = new Uint32Array(buf, 8, T);
+    let off = 8 + 4 * T; const tm = new Float32Array(buf, off, G); off += 4 * G; const tv = new Float32Array(buf, off, G); off += 4 * G;
+    const rows = new Map();
+    for (let t = 0; t < T; t++) if (n[t] >= 2) { rows.set(t, [new Uint16Array(buf, off, G), new Uint16Array(buf, off + 2 * G, G)]); off += 4 * G; }
+    let N = 0; for (let t = 0; t < T; t++) N += n[t];
+    return { T, G, n, tm, tv, rows, N, MS: info.MS, VS: info.VS, ntypes: [...n].filter(v => v >= 2).length };
+  })();
+}
+function grpStats(d, t, rest) {                 // -> {n, m: Float64Array, v: Float64Array} for type t, or all other cells
+  const G = d.G, nt = d.n[t], r = d.rows.get(t), m = new Float64Array(G), v = new Float64Array(G);
+  if (!rest) { if (!r) return { n: nt, m, v }; for (let g = 0; g < G; g++) { m[g] = r[0][g] / d.MS; v[g] = r[1][g] / d.VS; } return { n: nt, m, v }; }
+  const N = d.N, nr = N - nt;
+  for (let g = 0; g < G; g++) {
+    const mt = r ? r[0][g] / d.MS : 0, vt = r ? r[1][g] / d.VS : 0;
+    const s1 = N * d.tm[g] - nt * mt, s2 = (N - 1) * d.tv[g] + N * d.tm[g] ** 2 - ((nt - 1) * vt + nt * mt * mt);
+    m[g] = s1 / nr; v[g] = Math.max(0, (s2 - nr * m[g] ** 2) / (nr - 1));
+  }
+  return { n: nr, m, v };
+}
+function lgamma(x) {
+  const c = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+  let y = x, tmp = x + 5.5; tmp -= (x + 0.5) * Math.log(tmp); let ser = 1.000000000190015; for (const q of c) ser += q / ++y;
+  return -tmp + Math.log(2.5066282746310005 * ser / x);
+}
+function betacf(a, b, x) {
+  const qab = a + b, qap = a + 1, qam = a - 1, FP = 1e-300; let c = 1, d = 1 - qab * x / qap; if (Math.abs(d) < FP) d = FP; d = 1 / d; let h = d;
+  for (let m = 1; m <= 300; m++) { const m2 = 2 * m; let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+    d = 1 + aa * d; if (Math.abs(d) < FP) d = FP; c = 1 + aa / c; if (Math.abs(c) < FP) c = FP; d = 1 / d; h *= d * c;
+    aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2)); d = 1 + aa * d; if (Math.abs(d) < FP) d = FP; c = 1 + aa / c; if (Math.abs(c) < FP) c = FP;
+    d = 1 / d; const del = d * c; h *= del; if (Math.abs(del - 1) < 3e-14) break; }
+  return h;
+}
+function log10pT(t, df) {                       // two-sided Student t p-value, in log10 (no underflow): p = I_x(df/2, 1/2)
+  const t2 = t * t, x = df / (df + t2), a = df / 2, b = 0.5;
+  const lfront = a * Math.log(x) + b * Math.log(t2 / (df + t2)) - (lgamma(a) + lgamma(b) - lgamma(a + b));
+  const lnI = x < (a + 1) / (a + b + 2) ? lfront + Math.log(betacf(a, b, x)) - Math.log(a)
+    : Math.log1p(-Math.min(1, Math.exp(lfront + Math.log(betacf(b, a, 1 - x)) - Math.log(b))));
+  return Math.min(0, lnI / Math.LN10);
+}
+function welch(g1, g2, hk) {                    // per gene: [g, delta, log10 p, log10 q]
+  const out = [], G = g1.m.length;
+  for (let g = 0; g < G; g++) {
+    if (hk && D().hk[g]) continue;
+    const a = g1.v[g] / g1.n, b = g2.v[g] / g2.n, se2 = a + b; if (!(se2 > 0)) continue;
+    const dlt = g1.m[g] - g2.m[g], t = dlt / Math.sqrt(se2), df = se2 * se2 / (a * a / (g1.n - 1) + b * b / (g2.n - 1));
+    out.push([g, dlt, t === 0 ? 0 : log10pT(t, Math.max(df, 1)), 0]);
+  }
+  const o = [...out].sort((p, q) => p[2] - q[2]), M = o.length; let run = 0;
+  for (let i = M - 1; i >= 0; i--) { const lq = Math.min(0, o[i][2] + Math.log10(M / (i + 1))); run = i === M - 1 ? lq : Math.min(run, lq); o[i][3] = run; }
+  return out;
+}
+const DEMIN = 2, DEWARN = 10;
+let voPts = [], deTok = 0, deAutoFor = "";
+async function drawDE() {
+  const tok = ++deTok, c = $("vo"), k = S.k, m = D();
+  $("deconfl").style.display = S.deset === "inf" ? "" : "none";
+  if (S.a < 0 || S.b < 0) return;
+  const pairKey = `${k}|${S.a}|${S.b}`;
+  if (deAutoFor !== pairKey) {                  // new pair: start on the first set where both types have >= 10 cells
+    let pick = ["inf", "inf_any"];
+    for (const [set, conf] of [["annot", "annot"], ["inf", "inf_50"], ["inf", "inf_any"]]) {
+      const d = await deLoad(k, conf); if (tok !== deTok) return;
+      if (d.n[S.a] >= DEWARN && d.n[S.b] >= DEWARN) { pick = [set, conf]; break; }
+    }
+    deAutoFor = pairKey; S.deset = pick[0]; if (pick[0] === "inf") S.deconf = pick[1];
+    document.querySelectorAll("#deset button").forEach(x => x.setAttribute("aria-pressed", x.dataset.v === S.deset)); $("deconf").value = S.deconf;
+    $("deconfl").style.display = S.deset === "inf" ? "" : "none";
+  }
+  const set = S.deset === "annot" ? "annot" : S.deconf, d = await deLoad(k, set); if (tok !== deTok) return;
+  const [x, w, h] = sizeCanvas(c); x.clearRect(0, 0, w, h); voPts = [];
+  const [t1, rest, t2] = S.decmp === "ab" ? [S.a, false, S.b] : S.decmp === "ar" ? [S.a, true, S.a] : [S.b, true, S.b];
+  const c1 = t1 === S.a ? CA() : BCOL, c2 = rest ? "#666666" : BCOL;
+  const l1 = m.types[t1], l2 = rest ? `rest (${(d.N - d.n[t1]).toLocaleString()} cells, ${d.ntypes - (d.n[t1] >= 2)} types)` : m.types[t2];
+  const n1 = d.n[t1], n2 = rest ? d.N - d.n[t1] : d.n[t2];
+  const setName = S.deset === "annot" ? "annotated cells" : `inferred cells, confidence ${set === "inf_any" ? "any" : set === "inf_50" ? "≥ 0.5" : "≥ 0.8"}`;
+  $("den").innerHTML = `<span style="color:${c1};font-weight:700">${l1}: ${n1.toLocaleString()} cells</span> vs <span style="color:${c2};font-weight:700">${rest ? l2 : l2 + ": " + n2.toLocaleString() + " cells"}</span>
+    · ${setName} · this set has ${d.N.toLocaleString()} cells in ${d.ntypes} types`;
+  $("denote").innerHTML = S.deset === "annot"
+    ? "<b>Annotated cells</b> have one candidate type, so they are grouped by their input label (MultiomeNN cluster). Those clusters were defined from the same expression, so these p-values are optimistic (double dipping): treat them as a ranking, not as evidence."
+    : "<b>Inferred cells</b> have several candidate types and are grouped by the type the solver gives them most often (confidence = share of the 50-solve posterior on that type). Low-confidence groups are mixtures; raise the confidence for cleaner but smaller groups.";
+  const short = [[l1, n1], [rest ? "rest" : l2, n2]].filter(([, n]) => n < DEMIN);
+  if (short.length) { x.fillStyle = "#555"; x.font = "13px Arimo, Arial"; x.textAlign = "center";
+    x.fillText(short.map(([l, n]) => `${l} has ${n} cell${n === 1 ? "" : "s"} in this set`).join(" · "), w / 2, h / 2 - 8);
+    x.fillText("need at least 2 per side — try the other cell set or a lower confidence", w / 2, h / 2 + 12); $("detop").innerHTML = ""; return; }
+  const R = welch(grpStats(d, t1, false), grpStats(d, t2, rest), $("nohk").checked);
+  const P = 56, X0 = P, X1 = w - 10, Y0 = h - 30, Y1 = 10;
+  let xm = 1; for (const r of R) xm = Math.max(xm, Math.abs(r[1])); xm = Math.ceil(xm * 2) / 2;
+  let ym = 2; for (const r of R) ym = Math.max(ym, -r[2]); ym *= 1.05;
+  const X = v => X0 + (v + xm) / (2 * xm) * (X1 - X0), Y = v => Y0 - v / ym * (Y0 - Y1);
+  x.strokeStyle = "#222"; x.lineWidth = 1; x.beginPath(); x.moveTo(X0, Y1); x.lineTo(X0, Y0); x.lineTo(X1, Y0); x.stroke();
+  let pq = Infinity; for (const r of R) if (r[3] <= -1.30103 && -r[2] < pq) pq = -r[2];          // -log10 p where q crosses 0.05
+  x.setLineDash([4, 3]); x.strokeStyle = "#bbbbbb";
+  [-0.5, 0.5].forEach(v => { x.beginPath(); x.moveTo(X(v), Y0); x.lineTo(X(v), Y1); x.stroke(); });
+  if (isFinite(pq)) { x.beginPath(); x.moveTo(X0, Y(pq)); x.lineTo(X1, Y(pq)); x.stroke(); }
+  x.setLineDash([]);
+  x.fillStyle = "#555"; x.font = "11px IBM Plex Mono"; x.textAlign = "center";
+  [-xm, -xm / 2, 0, xm / 2, xm].forEach(v => x.fillText(+v.toFixed(2), X(v), Y0 + 13));
+  x.textAlign = "right"; [0, ym / 2, ym].forEach(v => x.fillText(v >= 100 ? v.toFixed(0) : v.toFixed(1), X0 - 4, Y(v) + 4));
+  x.save(); x.translate(10, (Y0 + Y1) / 2); x.rotate(-Math.PI / 2); x.textAlign = "center"; x.fillText("−log10 p", 0, 0); x.restore();
+  x.font = "bold 12px Arimo, Arial"; x.textAlign = "left"; x.fillStyle = c2; x.fillText("← higher in " + (rest ? "rest" : l2), X0 + 4, Y0 + 26);
+  x.textAlign = "right"; x.fillStyle = c1; x.fillText("higher in " + l1 + " →", X1, Y0 + 26);
+  const sig = r => r[3] <= -1.30103 && Math.abs(r[1]) >= 0.5;
+  for (const r of R) { const on = sig(r), px = X(r[1]), py = Y(-r[2]);
+    x.fillStyle = on ? (r[1] > 0 ? c1 : c2) : "rgba(154,154,154,.45)"; x.beginPath(); x.arc(px, py, on ? 2.4 : 1.6, 0, 7); x.fill(); voPts.push([px, py, r]); }
+  const selR = R.find(r => r[0] === S.gene);
+  if (selR) { const px = X(selR[1]), py = Y(-selR[2]); x.strokeStyle = "#222"; x.lineWidth = 1.2; x.beginPath(); x.arc(px, py, 5.5, 0, 7); x.stroke();
+    x.fillStyle = "#222"; x.textAlign = px > (X0 + X1) / 2 ? "right" : "left"; x.font = "italic 12px Arimo, Arial"; x.fillText(m.genes[selR[0]], px + (px > (X0 + X1) / 2 ? -8 : 8), py - 7); }
+  const up = R.filter(r => sig(r) && r[1] > 0).sort((p, q) => p[2] - q[2]), dn = R.filter(r => sig(r) && r[1] < 0).sort((p, q) => p[2] - q[2]);
+  const q10 = r => r[3] < -300 ? "<1e-300" : (10 ** r[3]).toExponential(1);
+  const lst = (L, col, lab) => `<div style="margin-bottom:8px"><b style="color:${col}">Higher in ${lab}</b> · ${L.length} significant genes
+    <table style="width:100%;margin-top:3px"><tr><th>gene</th><th class="num">Δ</th><th class="num">q</th></tr>
+    ${L.slice(0, 12).map(r => `<tr data-g="${r[0]}" style="cursor:pointer"><td><i>${m.genes[r[0]]}</i></td><td class="num">${r[1].toFixed(2)}</td><td class="num">${q10(r)}</td></tr>`).join("")
+      || '<tr><td colspan="3" class="small">none at q &lt; 0.05 and |Δ| ≥ 0.5</td></tr>'}</table></div>`;
+  $("detop").innerHTML = `<div class="small" style="margin-bottom:6px">${R.length.toLocaleString()} genes tested${n1 < DEWARN || n2 < DEWARN ? ` · <b>fewer than ${DEWARN} cells on one side: read with care</b>` : ""}</div>`
+    + lst(up, c1, l1) + lst(dn, c2, rest ? "rest" : l2);
+  $("detop").querySelectorAll("tr[data-g]").forEach(tr => tr.addEventListener("click", () => selectGene(+tr.dataset.g)));
+}
+$("vo").addEventListener("mousemove", e => {
+  const r = $("vo").getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top; let best = null, bd = 64;
+  for (const p of voPts) { const dd = (p[0] - mx) ** 2 + (p[1] - my) ** 2; if (dd < bd) { bd = dd; best = p; } }
+  if (!best) { tip.style.display = "none"; return; }
+  const q = best[2]; tip.textContent = `${D().genes[q[0]]}  Δ ${q[1].toFixed(2)}  p ${q[2] < -300 ? "<1e-300" : (10 ** q[2]).toExponential(1)}  q ${q[3] < -300 ? "<1e-300" : (10 ** q[3]).toExponential(1)}`;
+  tip.style.display = "block"; tip.style.left = e.clientX + 12 + "px"; tip.style.top = e.clientY + 12 + "px";
+});
+$("vo").addEventListener("mouseleave", () => tip.style.display = "none");
+$("vo").addEventListener("click", e => {
+  const r = $("vo").getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top; let best = null, bd = 64;
+  for (const p of voPts) { const dd = (p[0] - mx) ** 2 + (p[1] - my) ** 2; if (dd < bd) { bd = dd; best = p; } }
+  if (best) selectGene(best[2][0]);
+});
+document.querySelectorAll("#deset button").forEach(bt => bt.addEventListener("click", () => {
+  document.querySelectorAll("#deset button").forEach(x => x.setAttribute("aria-pressed", x === bt)); S.deset = bt.dataset.v; drawDE(); }));
+document.querySelectorAll("#decmp button").forEach(bt => bt.addEventListener("click", () => {
+  document.querySelectorAll("#decmp button").forEach(x => x.setAttribute("aria-pressed", x === bt)); S.decmp = bt.dataset.v; drawDE(); }));
+$("deconf").addEventListener("change", () => { S.deconf = $("deconf").value; drawDE(); });
+$("nohk").addEventListener("change", () => drawDE());
+
+function selectGene(g) { S.gene = g; renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); drawDE(); }
+function renderAll() { renderCand(); renderFacts(); renderGenes(); drawScatter(); drawSkel(); drawPS(); drawGene(); drawCompare(); drawDE(); }
 
 async function setSys(k) {
   S.k = k; document.documentElement.style.setProperty("--a", SYSCOL[k]); document.querySelectorAll("#sys button").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === k));
@@ -735,7 +904,7 @@ async function setSys(k) {
   if (first) setPair(first.a, first.b); else { S.a = S.b = -1; renderAll(); }
 }
 document.querySelectorAll("#sys button").forEach(b => b.addEventListener("click", () => setSys(b.dataset.k)));
-let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { drawScatter(); drawGene(); drawCompare(); }, 120); });
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { drawScatter(); drawGene(); drawCompare(); drawDE(); }, 120); });
 setSys("visual").catch(e => { $("status").textContent = "Could not load data: " + e; });
 </script>
 </body>

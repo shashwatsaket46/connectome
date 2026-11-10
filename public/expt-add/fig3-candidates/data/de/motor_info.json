@@ -1,0 +1,1 @@
+{"MS": 4900.0, "VS": 2000.0, "sets": {"annot": {"cells": 1519, "types_ge2": 12, "types_ge10": 12, "kb": 236}, "inf_any": {"cells": 9773, "types_ge2": 432, "types_ge10": 229, "kb": 4806}, "inf_50": {"cells": 1562, "types_ge2": 11, "types_ge10": 10, "kb": 208}, "inf_80": {"cells": 513, "types_ge2": 8, "types_ge10": 8, "kb": 155}}}
