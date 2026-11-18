@@ -115,6 +115,17 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     builtBy: "pbnull/pg_consensus.py, pbnull/dash_export.py, pbnull/pg_allgenes.py, pbnull/dash2_export.py",
   },
   {
+    id: "pupal-vnc-explorer",
+    title: "Pupal VNC Explorer",
+    description:
+      "302,765 pupal VNC neurons (6, 24, 36, 48 h APF; VNC.neurons.loom) on the authors' two UMAPs: integrated, and all-ages where stages stay apart. Zoom and pan; colour by hemilineage, stage, transmitter, neuromere, birthtime, sex or sample, by any of 2,913 genes (preMN/MN HVGs, Interactome v3, markers, top HVGs) or by two genes at once; click legend items to filter, split into per-stage panels, lasso a region to see what it holds. Other tabs: annotation cross-tabs, dot plots and heatmaps for any of the 21,050 genes across hemilineages, transmitters and stages, a gene's course from 6 to 48 h per hemilineage, per-cell violins, and marker genes per group.",
+    url: "/expt-add/pupal-vnc/index.html",
+    category: "UMAP Views",
+    enabled: true,
+    isNew: true,
+    builtBy: "conn_data/pupal_vnc_umap/prep_web_data.py",
+  },
+  {
     id: "umap-vs-confusion",
     title: "UMAP + Confusion Matrix — per Family",
     description:
