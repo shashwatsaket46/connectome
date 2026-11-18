@@ -126,6 +126,17 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     builtBy: "conn_data/pupal_vnc_umap/prep_web_data.py",
   },
   {
+    id: "pupal-vnc-paper-figures",
+    title: "Pupal VNC — Paper Figures",
+    description:
+      "Main figures 1–5 of Cachero et al., Nature 2026 (global molecular code for birth order) rebuilt from VNC.neurons.loom and the authors' metadata: stage and birth-time UMAPs, hemilineage and segment calls, Hox, pseudotime trajectories, shared-TF peaks, sex-enriched neighbourhoods (miloR) and sex-regression scores. Connectome and imaging panels are left out.",
+    url: "/expt-add/pupal-vnc/paper.html",
+    category: "UMAP Views",
+    enabled: true,
+    isNew: true,
+    builtBy: "conn_data/pupal_vnc_umap/paper_analysis.py, milo_48h.R, paper_post.py",
+  },
+  {
     id: "umap-vs-confusion",
     title: "UMAP + Confusion Matrix — per Family",
     description:
