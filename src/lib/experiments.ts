@@ -140,12 +140,23 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     id: "visual-explorer",
     title: "Visual (Optic Lobe) Explorer",
     description:
-      "99,656 adult optic-lobe neurons (Adult_noglia.h5ad) on UMAP and tSNE. Colour by cell type, cluster, metacluster, temporal/spatial origin, Notch status or sample, or by any of 1,545 genes; filter, split, lasso. Cross-tabs, dot plots for all 12,028 genes, violins and markers.",
+      "Optic-lobe neurons at P15, P30, P50, P70 and Adult (devstages h5ad files), each stage on its own stored tSNE, split side by side. Colour by cell type, cluster, metacluster, temporal/spatial origin, Notch status or sample, or by gene; follow any gene from P15 to Adult per cell type. Cross-tabs, dot plots, violins and markers.",
     url: "/expt-add/visual-explorer/index.html",
     category: "UMAP Views",
     enabled: true,
     isNew: true,
-    builtBy: "conn_data/explorers/prep_explorer.py visual",
+    builtBy: "conn_data/explorers/prep_explorer.py visual_dev",
+  },
+  {
+    id: "visual-zipursky-explorer",
+    title: "Visual · Zipursky Time Course",
+    description:
+      "Zipursky lab optic-lobe time course, 0 h to 96 h APF (W1118 and DGRP), each time point on its stored tSNE. Colour by multiome cell type, the authors' type/subtype and class, line or gene; follow any gene across time per cell type. Cross-tabs, dot plots, violins and markers.",
+    url: "/expt-add/visual-zipursky-explorer/index.html",
+    category: "UMAP Views",
+    enabled: true,
+    isNew: true,
+    builtBy: "conn_data/explorers/prep_explorer.py zipursky",
   },
   {
     id: "motor-premn-explorer",
