@@ -137,6 +137,50 @@ export const SEED_EXPERIMENTS: Experiment[] = [
     builtBy: "conn_data/pupal_vnc_umap/paper_analysis.py, milo_48h.R, paper_post.py",
   },
   {
+    id: "visual-explorer",
+    title: "Visual (Optic Lobe) Explorer",
+    description:
+      "99,656 adult optic-lobe neurons (Adult_noglia.h5ad) on UMAP and tSNE. Colour by cell type, cluster, metacluster, temporal/spatial origin, Notch status or sample, or by any of 1,545 genes; filter, split, lasso. Cross-tabs, dot plots for all 12,028 genes, violins and markers.",
+    url: "/expt-add/visual-explorer/index.html",
+    category: "UMAP Views",
+    enabled: true,
+    isNew: true,
+    builtBy: "conn_data/explorers/prep_explorer.py visual",
+  },
+  {
+    id: "motor-premn-explorer",
+    title: "Motor · PreMN Explorer",
+    description:
+      "16,383 premotor neurons (counts_cg_corrected.txt, 120 transcriptional clusters) on the authors' tSNE and a UMAP computed here. Colour by cluster, replicate, sex or gene; cross-tabs, dot plots for all genes, violins and markers.",
+    url: "/expt-add/motor-premn-explorer/index.html",
+    category: "UMAP Views",
+    enabled: true,
+    isNew: true,
+    builtBy: "conn_data/explorers/prep_explorer.py motor_premn",
+  },
+  {
+    id: "motor-mn-explorer",
+    title: "Motor · MN Explorer",
+    description:
+      "Leg motor neurons across 4 timepoints (2,709 cells each, 19 clusters) on the authors' per-timepoint UMAP. Split by timepoint, colour by cluster or gene, and follow any gene across timepoints per cluster.",
+    url: "/expt-add/motor-mn-explorer/index.html",
+    category: "UMAP Views",
+    enabled: true,
+    isNew: true,
+    builtBy: "conn_data/explorers/prep_explorer.py motor_mn",
+  },
+  {
+    id: "cx-explorer",
+    title: "Central Complex (T2) Explorer",
+    description:
+      "50,148 T2-lineage neurons (T2.atlas.neurons, 161 clusters) on the authors' rpca UMAP. Colour by cluster, FlyWire / hemibrain type, sample, method or gene; cross-tabs, dot plots for all 21,771 genes, violins and markers.",
+    url: "/expt-add/cx-explorer/index.html",
+    category: "UMAP Views",
+    enabled: true,
+    isNew: true,
+    builtBy: "conn_data/explorers/prep_explorer.py cx",
+  },
+  {
     id: "umap-vs-confusion",
     title: "UMAP + Confusion Matrix — per Family",
     description:

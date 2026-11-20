@@ -10,7 +10,7 @@
 <style>
 :root {
   color-scheme: light;
-  --bg: #f4ecda; --panel: #fbf6ea; --ink: #1d1b16; --ink-2: #4f4a40; --ink-3: #847d70; --rule: #e2d6bd;
+  --bg: #ffffff; --panel: #ffffff; --ink: #1a1a1a; --ink-2: #4a4a4a; --ink-3: #808080; --rule: #e3e3e3;
   --accent: #2a78d6; --sel: #eb6834;
   --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
@@ -45,12 +45,12 @@ h2 { display: none; }
 .badge { font-size: 10.5px; font-weight: 500; padding: 1px 7px; border-radius: 9px; white-space: nowrap; }
 .b-auth { background: #d6e6f7; color: #1b4f8a; }
 .b-ours { background: #fde1cf; color: #8a3b0f; }
-.b-paper { background: #e8dcc2; color: #5e5236; }
+.b-paper { background: #ececec; color: #555555; }
 .b-na { background: #eee; color: #777; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; }
 .row > .cell { flex: 1 1 200px; min-width: 0; overflow: hidden; }
 .cap { font-size: 12px; color: var(--ink-2); margin: 3px 0; font-weight: 500; text-align: center; }
-.scat { position: relative; width: 100%; aspect-ratio: 1 / 1; background: #fffdf7; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; touch-action: none; cursor: grab; }
+.scat { position: relative; width: 100%; aspect-ratio: 1 / 1; background: #ffffff; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; touch-action: none; cursor: grab; }
 .scat.short { aspect-ratio: 4 / 3; }
 .scat canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .scat .rz { position: absolute; right: 4px; top: 4px; font-size: 11px; border: 1px solid var(--rule); background: rgba(255,255,255,.85); border-radius: 4px; padding: 0 5px; cursor: pointer; }
@@ -63,7 +63,7 @@ select, input[type=text] { font: inherit; font-size: 12.5px; padding: 3px 6px; b
 .plot { width: 100%; min-height: 300px; }
 table.t { border-collapse: collapse; font-size: 13px; margin: 6px 0; }
 table.t th, table.t td { border: 1px solid var(--rule); padding: 4px 10px; text-align: center; }
-table.t th { background: #f1e8d4; font-weight: 500; }
+table.t th { background: #f4f4f4; font-weight: 500; }
 .note { font-size: 12px; color: var(--ink-3); line-height: 1.4; margin-top: 6px; }
 .loading { color: var(--ink-3); font-size: 12px; padding: 20px; text-align: center; }
 .err { color: #b3261e; font-size: 12px; }
@@ -188,7 +188,7 @@ class Scat {
     const cw = Math.round(W * dpr), ch = Math.round(H * dpr);
     if (this.cv.width !== cw || this.cv.height !== ch) { this.cv.width = cw; this.cv.height = ch; }
     const ctx = this.cv.getContext("2d"), img = ctx.createImageData(cw, ch), u32 = new Uint32Array(img.data.buffer);
-    u32.fill(0xfff7fdff);   // #fffdf7 in ABGR
+    u32.fill(0xffffffff);   // #ffffff in ABGR
     const s = this.base * this.k, ps = Math.max(1, Math.round(this.size * dpr * Math.min(2.2, Math.max(1, Math.sqrt(this.k))))), h = ps >> 1;
     const rgba = this.rgba, xy = this.xy, ord = this.order, n = ord ? ord.length : this.n;
     for (let q = 0; q < n; q++) {
@@ -203,8 +203,8 @@ class Scat {
     }
     ctx.putImageData(img, 0, 0);
     if (this.labels.length) {
-      ctx.font = `${600} ${Math.round(11 * dpr)}px IBM Plex Sans, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineWidth = 3 * dpr; ctx.strokeStyle = "rgba(255,253,247,.9)";
-      for (const L of this.labels) { const x = (s * L.x + this.tx) * dpr, y = (-s * L.y + this.ty) * dpr; ctx.strokeText(L.t, x, y); ctx.fillStyle = L.c || "#1d1b16"; ctx.fillText(L.t, x, y); }
+      ctx.font = `${600} ${Math.round(11 * dpr)}px IBM Plex Sans, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineWidth = 3 * dpr; ctx.strokeStyle = "rgba(255,255,255,.9)";
+      for (const L of this.labels) { const x = (s * L.x + this.tx) * dpr, y = (-s * L.y + this.ty) * dpr; ctx.strokeText(L.t, x, y); ctx.fillStyle = L.c || "#1a1a1a"; ctx.fillText(L.t, x, y); }
     }
   }
 }
@@ -252,7 +252,7 @@ function cbarHTML(title, lo, hi, css) { return `<div class="cbar">${title} <span
 const BLUE_CSS = "#dcdcdc,#a99be8,#5a3ff0,#1a00c8", PLASMA_CSS = "#0d0887,#6a00a8,#b12a90,#e16462,#fca636,#f0f921", VIR_CSS = "#440154,#3b528b,#21918c,#5ec962,#fde725";
 const SKIP = new WeakMap();
 function NA(parent, L, title, why) { const root = parent.parentElement; let el = SKIP.get(root); if (!el) { el = document.createElement("div"); el.className = "skipped"; el.dataset.items = ""; SKIP.set(root, el); root.appendChild(el); } const items = (el.dataset.items ? el.dataset.items.split("|") : []).concat(L); el.dataset.items = items.join("|"); el.innerHTML = `Not shown (connectome, imaging or brain data): ${items.join(", ")}`; el.title = ""; }
-function lay(extra) { return Object.assign({ paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "#fffdf7", font: { family: "IBM Plex Sans, sans-serif", size: 11.5, color: "#1d1b16" }, margin: { l: 55, r: 15, t: 30, b: 45 }, hoverlabel: { bgcolor: "#fff" } }, extra || {}); }
+function lay(extra) { return Object.assign({ paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "#ffffff", font: { family: "IBM Plex Sans, sans-serif", size: 11.5, color: "#1a1a1a" }, margin: { l: 55, r: 15, t: 30, b: 45 }, hoverlabel: { bgcolor: "#fff" } }, extra || {}); }
 const PC = { responsive: true, displaylogo: false, modeBarButtonsToRemove: ["lasso2d", "select2d"] };
 function plot(parent, h) { const d = div(parent, "plot"); d.style.height = (h || 340) + "px"; return d; }
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pupal VNC Explorer</title>
+<title>Expression Explorer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <script src="https://unpkg.com/deck.gl@8.9.35/dist.min.js"></script>
@@ -11,8 +11,8 @@
 <style>
 :root {
   color-scheme: light;
-  --bg: #f4ecda; --panel: #fbf6ea; --ink: #1d1b16; --ink-2: #4f4a40; --ink-3: #847d70;
-  --rule: #e2d6bd; --accent: #2a78d6; --accent-ink: #fff; --sel: #eb6834; --zero: #d8cfbd;
+  --bg: #ffffff; --panel: #ffffff; --ink: #1a1a1a; --ink-2: #4a4a4a; --ink-3: #808080;
+  --rule: #e3e3e3; --accent: #2a78d6; --accent-ink: #fff; --sel: #eb6834; --zero: #d9d9d9;
   --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
 }
@@ -44,7 +44,7 @@ button.btn.on, button.btn.primary { background: var(--accent); color: var(--acce
 .seg button.on { background: var(--ink); color: #fff; }
 .legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 2px 6px; font-size: 12px; }
 .legend .it { display: flex; align-items: center; gap: 5px; cursor: pointer; padding: 1px 3px; border-radius: 4px; user-select: none; white-space: nowrap; overflow: hidden; }
-.legend .it:hover { background: #efe5cf; }
+.legend .it:hover { background: #f2f2f2; }
 .legend .it.off { opacity: .35; text-decoration: line-through; }
 .legend .sw { width: 10px; height: 10px; border-radius: 50%; flex: none; }
 .legend .n { color: var(--ink-3); font-family: var(--font-mono); font-size: 10px; margin-left: auto; }
@@ -56,22 +56,22 @@ button.btn.on, button.btn.primary { background: var(--accent); color: var(--acce
 #deckcanvas { position: absolute; inset: 0; }
 #overlay { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; touch-action: none; }
 #overlay.lasso { pointer-events: auto; cursor: crosshair; }
-.ptitle { position: absolute; font-size: 12px; font-weight: 600; color: var(--ink-2); background: rgba(251,246,234,.85); padding: 1px 6px; border-radius: 4px; pointer-events: none; }
+.ptitle { position: absolute; font-size: 12px; font-weight: 600; color: var(--ink-2); background: rgba(255,255,255,.85); padding: 1px 6px; border-radius: 4px; pointer-events: none; }
 .vsep { position: absolute; border: 1px solid var(--rule); pointer-events: none; }
 .tip { position: absolute; pointer-events: none; background: #fff; border: 1px solid var(--rule); border-radius: 6px; padding: 6px 8px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.12); z-index: 5; max-width: 280px; }
 .tip b { font-weight: 600; }
-.cbar { position: absolute; right: 10px; bottom: 10px; background: rgba(251,246,234,.92); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 8px; font-size: 11px; }
+.cbar { position: absolute; right: 10px; bottom: 10px; background: rgba(255,255,255,.92); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 8px; font-size: 11px; }
 .cbar .bar { width: 160px; height: 10px; border-radius: 3px; }
 .cbar .lab { display: flex; justify-content: space-between; font-family: var(--font-mono); }
-.status { position: absolute; left: 10px; bottom: 10px; font-size: 11px; color: var(--ink-3); background: rgba(251,246,234,.9); padding: 2px 6px; border-radius: 4px; }
+.status { position: absolute; left: 10px; bottom: 10px; font-size: 11px; color: var(--ink-3); background: rgba(255,255,255,.9); padding: 2px 6px; border-radius: 4px; }
 .loading { position: absolute; inset: 0; display: grid; place-items: center; font-size: 14px; color: var(--ink-2); }
 table.t { border-collapse: collapse; width: 100%; font-size: 12px; }
 table.t th, table.t td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--rule); }
 table.t th { color: var(--ink-3); font-weight: 500; position: sticky; top: 0; background: var(--panel); }
 table.t td.num { font-family: var(--font-mono); text-align: right; }
 table.t tr.click { cursor: pointer; }
-table.t tr.click:hover td { background: #efe5cf; }
-.pill { display: inline-block; font-size: 10px; padding: 0 5px; border-radius: 8px; background: #e8dcc2; color: var(--ink-2); margin-left: 4px; }
+table.t tr.click:hover td { background: #f2f2f2; }
+.pill { display: inline-block; font-size: 10px; padding: 0 5px; border-radius: 8px; background: #ececec; color: var(--ink-2); margin-left: 4px; }
 .pill.pc { background: #d6e6f7; color: #1b4f8a; }
 .chart { width: 100%; min-height: 480px; }
 .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
@@ -82,24 +82,24 @@ table.t tr.click:hover td { background: #efe5cf; }
 .err { color: #b3261e; font-size: 12px; }
 .prose { max-width: 900px; line-height: 1.55; color: var(--ink-2); }
 .prose h2 { font-size: 16px; color: var(--ink); margin: 18px 0 6px; }
-.prose code { font-family: var(--font-mono); font-size: 12px; background: #efe5cf; padding: 0 4px; border-radius: 3px; }
+.prose code { font-family: var(--font-mono); font-size: 12px; background: #f2f2f2; padding: 0 4px; border-radius: 3px; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>Pupal VNC Explorer</h1>
+    <h1 id="h1">Explorer</h1>
     <span class="sub" id="subtitle">loading…</span>
-    <a class="sub" href="paper.html" style="margin-left:auto;color:var(--accent)">Paper figures →</a>
+    <a class="sub" id="paperLink" href="paper.html" style="margin-left:auto;color:var(--accent)" hidden>Paper figures →</a>
   </header>
   <nav class="tabs" id="tabs">
     <button data-tab="umap" class="on">UMAP</button>
     <button data-tab="comp">Composition</button>
     <button data-tab="dot">Dot plot / heatmap</button>
-    <button data-tab="dev">Across stages</button>
+    <button data-tab="dev" id="devTabBtn">Across stages</button>
     <button data-tab="dist">Distributions</button>
     <button data-tab="markers">Markers</button>
-    <button data-tab="about">About the data</button>
+    <button data-tab="about">About</button>
   </nav>
 
   <!-- ===================== UMAP TAB ===================== -->
@@ -114,7 +114,7 @@ table.t tr.click:hover td { background: #efe5cf; }
         </div>
         <div id="modeAnn" style="margin-top:8px"><label class="row">annotation <select id="annSel"></select></label></div>
         <div id="modeGene" hidden style="margin-top:8px">
-          <label class="row">gene <input type="search" id="geneIn" list="dlPercell" placeholder="e.g. VGlut, unc-4"></label>
+          <label class="row">gene <input type="search" id="geneIn" list="dlPercell" placeholder="gene"></label>
           <label class="row">clip at <select id="clipSel"><option value="100">max</option><option value="99" selected>99th pct</option><option value="95">95th pct</option><option value="90">90th pct</option></select></label>
           <div class="hint" id="geneMsg"></div>
         </div>
@@ -124,7 +124,7 @@ table.t tr.click:hover td { background: #efe5cf; }
           <div class="hint">Red = A only, green = B only, yellow = both.</div>
           <div class="hint" id="coMsg"></div>
         </div>
-        <div id="modeQc" hidden style="margin-top:8px"><label class="row">metric <select id="qcSel"><option>nUMI</option><option>nGene</option></select></label></div>
+        <div id="modeQc" hidden style="margin-top:8px"><label class="row">metric <select id="qcSel"></select></label></div>
       </div>
       <div class="card">
         <h3>Layout</h3>
@@ -150,7 +150,7 @@ table.t tr.click:hover td { background: #efe5cf; }
       </div>
       <div class="card filters">
         <h3>Legend &amp; filters</h3>
-        <div class="hint" style="margin-bottom:6px">Click an item to hide/show it. Double-click to show only that item. Filters apply to every tab.</div>
+        <div class="hint" style="margin-bottom:6px">Click: hide/show · double-click: only this</div>
         <div id="legendMain"></div>
         <div id="filterList" style="margin-top:8px"></div>
         <div class="btns" style="margin-top:8px"><button class="btn" id="clearFilters">Clear all filters</button></div>
@@ -163,7 +163,7 @@ table.t tr.click:hover td { background: #efe5cf; }
       <div class="tip" id="tip" hidden></div>
       <div class="cbar" id="cbar" hidden></div>
       <div class="status" id="status"></div>
-      <div class="loading" id="loading">Loading 302,765 cells…</div>
+      <div class="loading" id="loading">Loading…</div>
     </div>
   </section>
 
@@ -176,7 +176,7 @@ table.t tr.click:hover td { background: #efe5cf; }
       <label class="row">show <select id="compNorm"><option value="count">cell counts</option><option value="row" selected>% within bar</option><option value="col">% within colour group</option></select></label>
       <label class="row">chart <select id="compKind"><option value="bar">stacked bars</option><option value="heat">heatmap</option></select></label>
       <label class="row">cells <select id="compScope"><option value="vis">current filter</option><option value="sel">lasso selection</option></select></label>
-      <div class="hint">Uses the filters set on the UMAP tab. Example: bars = hemilineage, stack = neurotransmitter shows each hemilineage's transmitter identity; bars = hemilineage, stack = Stage shows sampling across development.</div>
+      
     </div></div>
     <div class="card"><div id="compChart" class="chart"></div></div>
   </section>
@@ -184,8 +184,8 @@ table.t tr.click:hover td { background: #efe5cf; }
   <!-- ===================== DOT PLOT ===================== -->
   <section id="tab-dot" class="grid" hidden>
     <div class="side"><div class="card">
-      <h3>Genes (any of the 21,050)</h3>
-      <textarea id="dotGenes" rows="6">VGlut ChAT Gad1 unc-4 Lim3 tup exex ems Antp Ubx abd-A Abd-B</textarea>
+      <h3 id="dotH">Genes</h3>
+      <textarea id="dotGenes" rows="6"></textarea>
       <div class="btns" style="margin-top:6px">
         <button class="btn" data-preset="markers">Top markers</button>
         <button class="btn" data-preset="nt">Transmitter</button>
@@ -195,12 +195,12 @@ table.t tr.click:hover td { background: #efe5cf; }
       </div>
       <label class="row" style="margin-top:8px">groups <select id="dotGroup"></select></label>
       <label class="row">chart <select id="dotKind"><option value="dot">dot plot</option><option value="heat">heatmap (mean)</option><option value="heatf">heatmap (% expr.)</option></select></label>
-      <label class="row">scale <select id="dotScale"><option value="gene">0–1 per gene</option><option value="raw">log1p CP10k</option><option value="z">z-score per gene</option></select></label>
+      <label class="row">scale <select id="dotScale"><option value="gene">0–1 per gene</option><option value="raw">raw mean</option><option value="z">z-score per gene</option></select></label>
       <label class="row">order groups <select id="dotOrder"><option value="name">by name</option><option value="cluster">by similarity</option></select></label>
       <label class="row"><input type="checkbox" id="dotDropNA" checked style="width:auto"> <span>drop NA / Unclassified</span></label>
       <div class="btns"><button class="btn primary" id="dotGo">Plot</button></div>
       <div class="err" id="dotErr"></div>
-      <div class="hint" style="margin-top:6px">Dot size = % of cells expressing (count &gt; 0); colour = mean log1p(CP10k). Computed on all cells, before filters.</div>
+      
     </div></div>
     <div class="card"><div id="dotChart" class="chart"></div></div>
   </section>
@@ -208,14 +208,14 @@ table.t tr.click:hover td { background: #efe5cf; }
   <!-- ===================== ACROSS STAGES ===================== -->
   <section id="tab-dev" class="grid" hidden>
     <div class="side"><div class="card">
-      <h3>Gene across development</h3>
-      <label class="row">gene <input type="search" id="devGene" list="dlAll" value="Ets65A"></label>
-      <label class="row">metric <select id="devMetric"><option value="mean">mean log1p CP10k</option><option value="frac">% cells expressing</option></select></label>
-      <label class="row">split by <select id="devBy"><option value="hemilineage">hemilineage</option><option value="neurotransmitter">neurotransmitter</option></select></label>
+      <h3>Gene across <span id="devAxisName">stages</span></h3>
+      <label class="row">gene <input type="search" id="devGene" list="dlAll"></label>
+      <label class="row">metric <select id="devMetric"><option value="mean">mean</option><option value="frac">% cells expressing</option></select></label>
+      <label class="row">split by <select id="devBy"></select></label>
       <label class="row">lines <select id="devTop"><option value="8">top 8 groups</option><option value="15">top 15</option><option value="all">all</option></select></label>
       <div class="btns"><button class="btn primary" id="devGo">Plot</button></div>
       <div class="err" id="devErr"></div>
-      <div class="hint" style="margin-top:6px">Stages are hours after puparium formation (6, 24, 36, 48 h APF). Groups with fewer than 20 cells at a stage are left out.</div>
+      
     </div></div>
     <div style="display:grid; gap:12px">
       <div class="card"><div id="devLine" class="chart" style="min-height:380px"></div></div>
@@ -227,13 +227,13 @@ table.t tr.click:hover td { background: #efe5cf; }
   <section id="tab-dist" class="grid" hidden>
     <div class="side"><div class="card">
       <h3>Per-cell distribution</h3>
-      <label class="row">value <select id="distKind"><option value="gene">gene expression</option><option value="nUMI">nUMI</option><option value="nGene">nGene</option></select></label>
-      <label class="row">gene <input type="search" id="distGene" list="dlPercell" value="VGlut"></label>
+      <label class="row">value <select id="distKind"></select></label>
+      <label class="row">gene <input type="search" id="distGene" list="dlPercell"></label>
       <label class="row">groups <select id="distGroup"></select></label>
       <label class="row">cells <select id="distZero"><option value="nz">expressing only (&gt;0)</option><option value="all">all cells</option></select></label>
       <div class="btns"><button class="btn primary" id="distGo">Plot</button></div>
       <div class="err" id="distErr"></div>
-      <div class="hint" style="margin-top:6px">Violins use the cells kept by the UMAP filters, up to 3,000 random cells per group. Per-cell values exist for the genes listed in the UMAP gene box.</div>
+      
     </div></div>
     <div class="card"><div id="distChart" class="chart"></div></div>
   </section>
@@ -244,7 +244,7 @@ table.t tr.click:hover td { background: #efe5cf; }
       <h3>Marker genes</h3>
       <label class="row">grouping <select id="mkGrouping"></select></label>
       <label class="row">group <select id="mkGroup"></select></label>
-      <div class="hint">Ranked by mean log1p(CP10k) in the group minus the mean in all other cells, keeping genes expressed in ≥ 25% of the group's cells. Click a gene with a <span class="pill pc">UMAP</span> tag to colour the UMAP by it; any gene is added to the dot-plot list.</div>
+      
       <div class="btns" style="margin-top:8px"><button class="btn" id="mkDot">Dot plot of top 3 per group</button></div>
     </div></div>
     <div class="card" style="max-height:calc(100vh - 150px); overflow:auto"><table class="t" id="mkTable"></table></div>
@@ -277,8 +277,8 @@ const FIXED = {
   birthtime: {"primary":"#e3693a","earlysecondary":"#a8326e","secondary":"#2a78d6"},
   maturation: {"mature":"#2a78d6","precursor":"#eb6834"},
 };
-const NA_LIKE = new Set(["NA","Unclassified","noHemi"]);
-const GREY = [216, 207, 189];
+const NA_LIKE = new Set(["NA","Unclassified","noHemi","unknown"]);
+const GREY = [215, 215, 215];
 const VIR = ["#440154","#482878","#3e4989","#31688e","#26828e","#1f9e89","#35b779","#6ece58","#b5de2b","#fde725"];
 const hex2rgb = (h) => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
 const VIR_RGB = VIR.map(hex2rgb);
@@ -290,12 +290,19 @@ for (let i = 0; i < 256; i++) {
 const PLOTLY_VIR = VIR.map((c,i) => [i/(VIR.length-1), c]);
 
 // ---------------- state ----------------
-let M, N, CELLS = {}, perm;
+let M, N, CELLS = {}, perm, C;
+const PUPAL = { title: "Pupal VNC Explorer", unit: "neurons", primary: "hemilineage", paper: "paper.html",
+  split: ["Stage", "neurotransmitter", "birthtime", "Sex", "maturation", "soma_neuromere"],
+  hover: ["hemilineage", "Stage", "neurotransmitter", "soma_neuromere", "birthtime", "maturation", "Sex"],
+  comp: ["hemilineage", "neurotransmitter"], dot_group: "hemilineage", dist_gene: "VGlut",
+  dot_genes: "VGlut ChAT Gad1 unc-4 Lim3 tup exex ems Antp Ubx abd-A Abd-B", qc: ["nUMI", "nGene"], value_label: "log1p CP10k",
+  dev: { tab: "Across stages", axis: "Stage", by: ["hemilineage", "neurotransmitter"], x_title: "hours APF", suffix: " h", default_gene: "Ets65A" },
+  emb_labels: { umap: "UMAP (integrated)", UMAPallages: "UMAP all ages" } };
 const geneIdx = new Map();      // per-cell gene -> file index
 const allGeneIdx = new Map();   // any gene -> row in aggregates
 const geneCache = new Map();
 const aggCache = new Map();
-const S = { emb: "umap", mode: "ann", ann: "hemilineage", gene: null, coA: null, coB: null, qc: "nUMI",
+const S = { emb: null, mode: "ann", ann: null, gene: null, coA: null, coB: null, qc: "nUMI",
   clip: 99, split: "none", size: 1.4, op: 0.85, hideMode: "grey", hidden: {}, selMask: null, selPoly: null,
   selView: null, keepSel: false, lasso: false };
 let deckgl, viewState = null, views = [], layerIdx = {}, visible;
@@ -315,7 +322,7 @@ function colorsFor(key) {
   let j = 0;
   cats.forEach((c) => {
     if (FIXED[key] && FIXED[key][c]) out.push(FIXED[key][c]);
-    else if (NA_LIKE.has(c)) out.push("#cfc6b4");
+    else if (NA_LIKE.has(c)) out.push("#d0d0d0");
     else out.push(PAL[j++ % PAL.length]);
   });
   return out;
@@ -325,6 +332,12 @@ function colorsFor(key) {
 async function init() {
   M = await (await fetch(DATA + "manifest.json")).json();
   N = M.n_cells;
+  C = Object.assign({}, M.config ? { qc: ["nUMI", "nGene"], value_label: "log1p CP10k", split: [], hover: [], emb_labels: {} } : PUPAL, M.config || {});
+  S.emb = Object.keys(M.embeddings)[0]; S.ann = C.primary; S.split = C.default_split || "none"; S.qc = C.qc[0];
+  document.title = C.title; $("h1").textContent = C.title;
+  if (C.paper) { $("paperLink").href = C.paper; $("paperLink").hidden = false; }
+  if (!C.dev) $("devTabBtn").hidden = true; else $("devTabBtn").textContent = C.dev.tab || `Across ${C.dev.axis}s`;
+  $("dotGenes").value = C.dot_genes; $("distGene").value = C.dist_gene;
   const buf = await fetchBin(DATA + "cells.bin.gz");
   const TA = { float32: Float32Array, uint16: Uint16Array, uint8: Uint8Array };
   for (const [name, L] of Object.entries(M.layout)) CELLS[name] = new TA[L.dtype](buf, L.offset, L.length);
@@ -336,7 +349,7 @@ async function init() {
   let seed = 7; const rnd = () => (seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296;
   for (let i = N - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = perm[i]; perm[i] = perm[j]; perm[j] = t; }
   for (const k of Object.keys(M.annotations)) S.hidden[k] = new Set();
-  $("subtitle").textContent = `${fmt(N)} neurons · ${fmt(M.n_genes_total)} genes · stages 6–48 h APF · ${M.genes_percell.length.toLocaleString()} genes with per-cell values`;
+  $("subtitle").textContent = `${fmt(N)} ${C.unit} · ${fmt(M.n_genes_total)} genes`;
   buildControls();
   $("loading").hidden = true;
   setupDeck();
@@ -349,12 +362,14 @@ async function init() {
 const ANN_KEYS = () => Object.keys(M.annotations);
 function opts(list, sel) { return list.map((v) => `<option value="${v}"${v === sel ? " selected" : ""}>${v}</option>`).join(""); }
 function buildControls() {
-  $("embSeg").innerHTML = Object.keys(M.embeddings).map((e) => `<button data-e="${e}" class="${e === S.emb ? "on" : ""}">${e === "umap" ? "UMAP (integrated)" : "UMAP all ages"}</button>`).join("");
+  $("embSeg").innerHTML = Object.keys(M.embeddings).map((e) => `<button data-e="${e}" class="${e === S.emb ? "on" : ""}">${C.emb_labels[e] || e}</button>`).join("");
   $("embSeg").onclick = (ev) => { const e = ev.target.dataset.e; if (!e) return; S.emb = e; [...$("embSeg").children].forEach((b) => b.classList.toggle("on", b.dataset.e === e)); clearSel(); viewState = null; render(); };
   $("modeSeg").onclick = (ev) => { const m = ev.target.dataset.m; if (!m) return; setMode(m); };
   $("annSel").innerHTML = opts(ANN_KEYS(), S.ann);
   $("annSel").onchange = () => { S.ann = $("annSel").value; render(); };
-  $("splitSel").innerHTML = opts(["none", "Stage", "neurotransmitter", "birthtime", "Sex", "maturation", "soma_neuromere"], "none");
+  $("splitSel").innerHTML = opts(["none", ...C.split], S.split);
+  $("qcSel").innerHTML = opts(C.qc, C.qc[0]);
+  $("distKind").innerHTML = `<option value="gene">gene expression</option>` + opts(C.qc);
   $("splitSel").onchange = () => { S.split = $("splitSel").value; clearSel(); viewState = null; render(); };
   $("sizeIn").oninput = () => { S.size = +$("sizeIn").value; render(true); };
   $("opIn").oninput = () => { S.op = +$("opIn").value; render(true); };
@@ -374,32 +389,33 @@ function buildControls() {
   $("clearFilters").onclick = () => { for (const k in S.hidden) S.hidden[k].clear(); S.keepSel = false; computeVisible(); render(); };
   $("selClear").onclick = () => { clearSel(); render(); };
   $("selKeep").onclick = () => { S.keepSel = true; computeVisible(); render(); };
-  $("selAnn").innerHTML = opts(ANN_KEYS(), "hemilineage");
+  $("selAnn").innerHTML = opts(ANN_KEYS(), C.primary);
   $("selAnn").onchange = drawSelChart;
   setupLasso();
   // tabs
   $("tabs").onclick = (ev) => { const t = ev.target.dataset.tab; if (t) showTab(t); };
   // composition
-  $("compRow").innerHTML = opts(ANN_KEYS(), "hemilineage");
-  $("compCol").innerHTML = opts(ANN_KEYS(), "neurotransmitter");
+  $("compRow").innerHTML = opts(ANN_KEYS(), C.comp[0]);
+  $("compCol").innerHTML = opts(ANN_KEYS(), C.comp[1]);
   ["compRow", "compCol", "compNorm", "compKind", "compScope"].forEach((id) => $(id).onchange = drawComp);
   // dot plot
   const gk = Object.keys(M.groupings);
-  $("dotGroup").innerHTML = opts(gk, "hemilineage");
+  $("dotGroup").innerHTML = opts(gk, C.dot_group);
+  $("dotH").textContent = `Genes (any of ${fmt(M.n_genes_total)})`;
   $("dotGo").onclick = drawDot;
   ["dotGroup", "dotKind", "dotScale", "dotOrder", "dotDropNA"].forEach((id) => $(id).onchange = drawDot);
   document.querySelectorAll("[data-preset]").forEach((b) => b.onclick = () => presetGenes(b.dataset.preset));
   // dev
+  if (C.dev) { $("devBy").innerHTML = opts(C.dev.by, C.dev.by[0]); $("devAxisName").textContent = C.dev.axis; $("devGene").value = C.dev.default_gene || C.dist_gene; }
   $("devGo").onclick = drawDev; ["devMetric", "devBy", "devTop"].forEach((id) => $(id).onchange = drawDev);
   $("devGene").onchange = drawDev;
   // dist
-  $("distGroup").innerHTML = opts(ANN_KEYS(), "hemilineage");
+  $("distGroup").innerHTML = opts(ANN_KEYS(), C.primary);
   $("distGo").onclick = drawDist; ["distKind", "distGroup", "distZero"].forEach((id) => $(id).onchange = drawDist);
   // markers
-  $("mkGrouping").innerHTML = opts(Object.keys(MARKERS_KEYS), "hemilineage");
+  getMarkers().then((mk) => { $("mkGrouping").innerHTML = opts(Object.keys(mk), C.primary in mk ? C.primary : Object.keys(mk)[0]); });
   $("mkDot").onclick = () => { presetGenes("markers", $("mkGrouping").value); showTab("dot"); };
 }
-const MARKERS_KEYS = { hemilineage: 1, neurotransmitter: 1, Stage: 1, soma_neuromere: 1, birthtime: 1, maturation: 1, Sex: 1, "hemilineage x Stage": 1 };
 function setMode(m) {
   S.mode = m;
   [...$("modeSeg").children].forEach((b) => b.classList.toggle("on", b.dataset.m === m));
@@ -410,14 +426,14 @@ async function setGene(g) {
   if (!g) return;
   if (!geneIdx.has(g)) {
     const other = allGeneIdx.has(g);
-    $("geneMsg").innerHTML = other ? `<b>${g}</b> has group-level values only. See the Dot plot or Across stages tabs.` : `Gene <b>${g}</b> not found.`;
+    $("geneMsg").innerHTML = other ? `<b>${g}</b>: group-level values only (Dot plot tab).` : `Gene <b>${g}</b> not found.`;
     return;
   }
   $("geneMsg").textContent = "loading…";
   await loadGene(g);
   S.gene = g; $("geneIn").value = g;
   const pct = M.gene_stats.pct_expr[allGeneIdx.get(g)];
-  $("geneMsg").innerHTML = `${pct}% of all cells express <b>${g}</b>. Max ${M.gene_max[g]} log1p CP10k.`;
+  $("geneMsg").innerHTML = `${pct}% of cells express <b>${g}</b>`;
   if (S.mode !== "gene") setMode("gene"); else render();
 }
 async function loadGene(g) {
@@ -507,7 +523,7 @@ function computeColors() {
       const t = Math.min(255, Math.round(v[i] / clip * 255));
       rgb[i*3] = LUT[t*3]; rgb[i*3+1] = LUT[t*3+1]; rgb[i*3+2] = LUT[t*3+2]; rank[i] = Math.max(1, t);
     }
-    legend = { kind: "seq", title: `${S.gene} · log1p CP10k`, lo: 0, hi: (clip / 255 * M.gene_max[S.gene]).toFixed(2) };
+    legend = { kind: "seq", title: `${S.gene} · ${C.value_label}`, lo: 0, hi: (clip / 255 * M.gene_max[S.gene]).toFixed(2) };
   } else if (S.mode === "coexp" && S.coA && S.coB && geneCache.has(S.coA) && geneCache.has(S.coB)) {
     const a = geneCache.get(S.coA), b = geneCache.get(S.coB), ca = percentileNZ(a, 99), cb = percentileNZ(b, 99);
     for (let i = 0; i < N; i++) {
@@ -597,7 +613,7 @@ function render(styleOnly) {
     const pos = new Float32Array(n * 2), col = new Uint8Array(n * 4);
     for (let k = 0; k < n; k++) {
       const i = all[k]; pos[2*k] = xy[2*i]; pos[2*k+1] = xy[2*i+1];
-      if (k < greyIdx.length) { col[4*k] = 226; col[4*k+1] = 218; col[4*k+2] = 200; col[4*k+3] = 90; }
+      if (k < greyIdx.length) { col[4*k] = 225; col[4*k+1] = 225; col[4*k+2] = 225; col[4*k+3] = 90; }
       else { col[4*k] = rgb[3*i]; col[4*k+1] = rgb[3*i+1]; col[4*k+2] = rgb[3*i+2]; col[4*k+3] = alpha; }
     }
     const lid = p.id + "-pts";
@@ -637,8 +653,8 @@ function onHover(info) {
   const tip = $("tip");
   if (!info.picked || S.lasso || !info.layer || !layerIdx[info.layer.id]) { tip.hidden = true; return; }
   const i = layerIdx[info.layer.id][info.index];
-  const rows = ["hemilineage", "Stage", "neurotransmitter", "soma_neuromere", "birthtime", "maturation", "Sex"].map((k) => `${k}: <b>${M.annotations[k][CELLS["code:" + k][i]]}</b>`);
-  let extra = `nUMI ${fmt(CELLS.nUMI[i])} · nGene ${fmt(CELLS.nGene[i])}`;
+  const rows = C.hover.map((k) => `${k}: <b>${M.annotations[k][CELLS["code:" + k][i]]}</b>`);
+  let extra = C.qc.map((q) => `${q} ${fmt(CELLS[q][i])}`).join(" · ");
   if (S.mode === "gene" && S.gene && geneCache.has(S.gene)) extra = `<b>${S.gene}</b>: ${(geneCache.get(S.gene)[i] / 255 * M.gene_max[S.gene]).toFixed(2)}<br>` + extra;
   if (S.mode === "coexp" && geneCache.has(S.coA) && geneCache.has(S.coB)) extra = `<b>${S.coA}</b>: ${(geneCache.get(S.coA)[i] / 255 * M.gene_max[S.coA]).toFixed(2)} · <b>${S.coB}</b>: ${(geneCache.get(S.coB)[i] / 255 * M.gene_max[S.coB]).toFixed(2)}<br>` + extra;
   tip.innerHTML = rows.join("<br>") + "<br>" + extra;
@@ -650,7 +666,7 @@ function savePng() {
   deckgl.redraw(true);
   const c = $("deckcanvas").querySelector("canvas");
   const a = document.createElement("a");
-  a.download = `pupal_vnc_${S.emb}_${S.mode === "ann" ? S.ann : S.mode === "gene" ? S.gene : S.mode}.png`;
+  a.download = `${C.title.replace(/\W+/g, "_")}_${S.emb}_${S.mode === "ann" ? S.ann : S.mode === "gene" ? S.gene : S.mode}.png`;
   a.href = c.toDataURL("image/png"); a.click();
 }
 
@@ -727,7 +743,7 @@ function drawSelChart() {
 
 // ---------------- plot helpers ----------------
 function plotLayout(extra) {
-  return Object.assign({ paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "#fffdf7", font: { family: "IBM Plex Sans, sans-serif", size: 12, color: "#1d1b16" },
+  return Object.assign({ paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "#ffffff", font: { family: "IBM Plex Sans, sans-serif", size: 12, color: "#1a1a1a" },
     margin: { l: 70, r: 20, t: 40, b: 60 }, hoverlabel: { bgcolor: "#fff", font: { family: "IBM Plex Sans" } } }, extra || {});
 }
 const PCFG = { responsive: true, displaylogo: false, toImageButtonOptions: { format: "svg", scale: 1 } };
@@ -803,7 +819,7 @@ async function drawDot() {
   let ord = ks.map((_, i) => i);
   if ($("dotOrder").value === "cluster") ord = orderBySimilarity(colM);
   const ylab = ord.map((i) => `${A.groups[ks[i]]} (${fmt(A.counts[ks[i]])})`);
-  const ctitle = scale === "gene" ? "mean (0–1 per gene)" : scale === "z" ? "z-score" : "mean log1p CP10k";
+  const ctitle = scale === "gene" ? "mean (0–1 per gene)" : scale === "z" ? "z-score" : "mean " + C.value_label;
   const h = Math.max(440, ord.length * 17 + 160), w = null;
   if (kind === "dot") {
     const x = [], y = [], s = [], c = [], txt = [];
@@ -812,7 +828,7 @@ async function drawDot() {
       marker: { size: s.map((v) => 2 + 16 * Math.sqrt(v)), color: c, colorscale: scale === "z" ? "RdBu" : PLOTLY_VIR, reversescale: scale === "z", colorbar: { title: ctitle }, line: { width: 0 } } } ],
       plotLayout({ title: { text: `${ok.length} genes × ${gname}`, font: { size: 14 } }, height: h, xaxis: { type: "category", tickangle: -50, side: "top" }, yaxis: { type: "category", autorange: "reversed", automargin: true },
         margin: { l: 150, r: 20, t: 110, b: 30 },
-        annotations: [{ xref: "paper", yref: "paper", x: 1, y: -0.02, yanchor: "top", xanchor: "right", showarrow: false, text: "dot size: % expressing (25% / 50% / 100% ≈ 10 / 13 / 18 px)", font: { size: 11, color: "#847d70" } }] }), PCFG);
+        annotations: [{ xref: "paper", yref: "paper", x: 1, y: -0.02, yanchor: "top", xanchor: "right", showarrow: false, text: "dot size: % expressing (25% / 50% / 100% ≈ 10 / 13 / 18 px)", font: { size: 11, color: "#808080" } }] }), PCFG);
   } else {
     const z = ord.map((i) => kind === "heatf" ? fracM[i].map((v) => 100 * v) : colM[i]);
     Plotly.react("dotChart", [{ type: "heatmap", x: ok, y: ylab, z, colorscale: scale === "z" && kind === "heat" ? "RdBu" : PLOTLY_VIR, reversescale: scale === "z" && kind === "heat",
@@ -829,7 +845,7 @@ async function presetGenes(p, grouping) {
   if (p === "ecd") g = ["EcR", "usp", "br", "Eip74EF", "Eip75B", "Hr3", "Hr4", "ftz-f1", "Eip93F", "Hr39", "Blimp-1", "Kr-h1", "Imp", "Syp", "chinmo"];
   if (p === "inter") g = M.gene_sources.interactome_v3;
   if (p === "markers") {
-    const mk = await getMarkers(), key = grouping || ($("dotGroup").value in mk ? $("dotGroup").value : "hemilineage");
+    const mk = await getMarkers(), key = grouping || ($("dotGroup").value in mk ? $("dotGroup").value : C.dot_group);
     for (const [lab, lst] of Object.entries(mk[key])) { if (isNAgroup(lab)) continue; for (const m of lst.slice(0, 3)) if (!g.includes(m.g)) g.push(m.g); }
     $("dotGroup").value = key;
   }
@@ -844,8 +860,9 @@ async function drawDev() {
   if (!ok.length) { $("devErr").textContent = "Gene not found."; return; }
   $("devErr").textContent = "";
   const gene = ok[0], gi = allGeneIdx.get(gene), by = $("devBy").value, metric = $("devMetric").value;
-  const A = await loadAgg(`${by} x Stage`);
-  const stages = M.annotations.Stage;
+  const AX = C.dev.axis, SUF = C.dev.suffix || "";
+  const A = await loadAgg(`${by} x ${AX}`);
+  const stages = M.annotations[AX];
   const groups = M.annotations[by].filter((g) => !NA_LIKE.has(g));
   const val = (k) => metric === "mean" ? aggMean(A, gi, k) : 100 * aggFrac(A, gi, k);
   const lab2k = new Map(A.groups.map((l, k) => [l, k]));
@@ -855,18 +872,18 @@ async function drawDev() {
   series.sort((a, b) => b.peak - a.peak);
   const top = $("devTop").value === "all" ? series.length : +$("devTop").value;
   const cols = colorsFor(by), cidx = new Map(M.annotations[by].map((g, j) => [g, j]));
-  const ylab = metric === "mean" ? "mean log1p CP10k" : "% cells expressing";
+  const ylab = metric === "mean" ? "mean " + C.value_label : "% cells expressing";
   // overall per stage
-  const SA = await loadAgg("Stage");
+  const SA = await loadAgg(AX);
   const overall = stages.map((s) => { const k = SA.groups.indexOf(s); return metric === "mean" ? aggMean(SA, gi, k) : 100 * aggFrac(SA, gi, k); });
-  const traces = series.slice(0, top).map((s) => ({ type: "scatter", mode: "lines+markers", name: s.g, x: stages.map((v) => v + " h"), y: s.y, line: { color: cols[cidx.get(s.g)], width: 2 },
+  const traces = series.slice(0, top).map((s) => ({ type: "scatter", mode: "lines+markers", name: s.g, x: stages.map((v) => v + SUF), y: s.y, line: { color: cols[cidx.get(s.g)], width: 2 },
     customdata: s.n, hovertemplate: `${s.g} · %{x}<br>%{y:.3f} (n=%{customdata})<extra></extra>` }));
-  traces.push({ type: "scatter", mode: "lines", name: "all cells", x: stages.map((v) => v + " h"), y: overall, line: { color: "#1d1b16", width: 3, dash: "dot" }, hovertemplate: "all cells · %{x}<br>%{y:.3f}<extra></extra>" });
-  Plotly.react("devLine", traces, plotLayout({ title: { text: `${gene} across development, by ${by}`, font: { size: 14 } }, height: 400, xaxis: { title: "hours APF", type: "category" }, yaxis: { title: ylab, rangemode: "tozero" } }), PCFG);
+  traces.push({ type: "scatter", mode: "lines", name: "all cells", x: stages.map((v) => v + SUF), y: overall, line: { color: "#1a1a1a", width: 3, dash: "dot" }, hovertemplate: "all cells · %{x}<br>%{y:.3f}<extra></extra>" });
+  Plotly.react("devLine", traces, plotLayout({ title: { text: `${gene} by ${by}`, font: { size: 14 } }, height: 400, xaxis: { title: C.dev.x_title, type: "category" }, yaxis: { title: ylab, rangemode: "tozero" } }), PCFG);
   const hs = series.slice().sort((a, b) => a.g.localeCompare(b.g));
-  Plotly.react("devHeat", [{ type: "heatmap", x: stages.map((v) => v + " h"), y: hs.map((s) => s.g), z: hs.map((s) => s.y), colorscale: PLOTLY_VIR, colorbar: { title: metric === "mean" ? "mean" : "%" },
+  Plotly.react("devHeat", [{ type: "heatmap", x: stages.map((v) => v + SUF), y: hs.map((s) => s.g), z: hs.map((s) => s.y), colorscale: PLOTLY_VIR, colorbar: { title: metric === "mean" ? "mean" : "%" },
     customdata: hs.map((s) => s.n), hovertemplate: "%{y} · %{x}<br>%{z:.3f} (n=%{customdata})<extra></extra>" }],
-    plotLayout({ title: { text: `${gene}: every ${by} × stage (blank = fewer than 20 cells)`, font: { size: 14 } }, height: Math.max(380, hs.length * 18 + 120), yaxis: { type: "category", autorange: "reversed" }, xaxis: { type: "category" } }), PCFG);
+    plotLayout({ title: { text: `${gene}: ${by} × ${AX}`, font: { size: 14 } }, height: Math.max(380, hs.length * 18 + 120), yaxis: { type: "category", autorange: "reversed" }, xaxis: { type: "category" } }), PCFG);
 }
 
 // ---------------- distributions ----------------
@@ -877,7 +894,7 @@ async function drawDist() {
   if (kind === "gene") {
     const g = $("distGene").value.trim();
     if (!geneIdx.has(g)) { $("distErr").textContent = allGeneIdx.has(g) ? `${g} has group-level values only; use the Dot plot tab.` : "Gene not found."; return; }
-    const v = await loadGene(g), mx = M.gene_max[g]; vals = (i) => v[i] / 255 * mx; name = `${g} · log1p CP10k`;
+    const v = await loadGene(g), mx = M.gene_max[g]; vals = (i) => v[i] / 255 * mx; name = `${g} · ${C.value_label}`;
   } else { const v = CELLS[kind]; vals = (i) => v[i]; name = kind; }
   $("distErr").textContent = "";
   const c = CELLS["code:" + gk], cats = M.annotations[gk], cols = colorsFor(gk);
@@ -891,7 +908,9 @@ async function drawDist() {
 
 // ---------------- markers ----------------
 async function drawMarkers() {
-  const mk = await getMarkers(), key = $("mkGrouping").value;
+  const mk = await getMarkers();
+  if (!$("mkGrouping").value) $("mkGrouping").innerHTML = opts(Object.keys(mk), C.primary in mk ? C.primary : Object.keys(mk)[0]);
+  const key = $("mkGrouping").value;
   const groups = Object.keys(mk[key]);
   const cur = $("mkGroup").value;
   $("mkGroup").innerHTML = opts(groups, groups.includes(cur) ? cur : groups.find((g) => !isNAgroup(g)) || groups[0]);
@@ -911,6 +930,7 @@ async function drawMarkersTable() {
 
 // ---------------- about ----------------
 function buildAbout() {
+  if (M.config) { buildAboutGeneric(); return; }
   const c = M.annotation_counts, a = M.annotations;
   const stat = (v, k) => `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`;
   $("aboutStats").innerHTML = stat(fmt(N), "neurons") + stat(fmt(M.n_genes_total), "genes measured") + stat(a.Stage.length, "stages (h APF)") +
@@ -956,6 +976,13 @@ function buildAbout() {
   </ul>`;
 }
 
+function buildAboutGeneric() {
+  const c = M.annotation_counts, a = M.annotations;
+  const stat = (v, k) => `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`;
+  $("aboutStats").innerHTML = stat(fmt(N), C.unit) + stat(fmt(M.n_genes_total), "genes") +
+    Object.keys(a).map((k) => stat(fmt(a[k].filter((x) => !NA_LIKE.has(x)).length), k)).join("") + stat(fmt(M.genes_percell.length), "genes per-cell");
+  $("aboutText").innerHTML = `<p>${C.about || ""}</p><p>Values: ${C.value_label}. Per-cell values for ${fmt(M.genes_percell.length)} genes (UMAP, violins); group means for all genes (dot plot, markers).</p>`;
+}
 init().catch((e) => { $("loading").innerHTML = `<span class="err">Failed to load data: ${e.message}</span>`; console.error(e); });
 </script>
 </body>

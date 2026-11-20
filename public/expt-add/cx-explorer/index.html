@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expression Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://unpkg.com/deck.gl@8.9.35/dist.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ffffff; --panel: #ffffff; --ink: #1a1a1a; --ink-2: #4a4a4a; --ink-3: #808080;
+  --rule: #e3e3e3; --accent: #2a78d6; --accent-ink: #fff; --sel: #eb6834; --zero: #d9d9d9;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; }
+.wrap { padding: 12px 16px 24px; max-width: 1900px; margin: 0 auto; display: grid; gap: 10px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+h1 { font-size: 20px; margin: 0; font-weight: 600; }
+.sub { color: var(--ink-2); font-size: 13px; }
+.mono { font-family: var(--font-mono); }
+nav.tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--rule); }
+nav.tabs button { border: 1px solid transparent; border-bottom: none; background: none; padding: 7px 12px; font: inherit; color: var(--ink-2); cursor: pointer; border-radius: 6px 6px 0 0; }
+nav.tabs button.on { background: var(--panel); border-color: var(--rule); color: var(--ink); font-weight: 600; margin-bottom: -1px; }
+.grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+.card { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 12px; }
+.side { display: grid; gap: 10px; max-height: calc(100vh - 120px); overflow: auto; }
+@media (max-width: 900px) { .side { max-height: none; } }
+.side h3, .card h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); margin: 0 0 6px; font-weight: 600; }
+label.row { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 6px; margin: 4px 0; font-size: 13px; color: var(--ink-2); }
+select, input[type=text], input[type=search], textarea { font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--rule); border-radius: 5px; background: #fff; color: var(--ink); width: 100%; min-width: 0; }
+textarea { font-family: var(--font-mono); font-size: 12px; }
+button.btn { font: inherit; font-size: 13px; padding: 4px 10px; border: 1px solid var(--rule); background: #fff; border-radius: 5px; cursor: pointer; color: var(--ink); }
+button.btn.on, button.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btns { display: flex; flex-wrap: wrap; gap: 4px; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; }
+.seg button { border: none; background: #fff; padding: 4px 9px; font: inherit; font-size: 12px; cursor: pointer; color: var(--ink-2); }
+.seg button.on { background: var(--ink); color: #fff; }
+.legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 2px 6px; font-size: 12px; }
+.legend .it { display: flex; align-items: center; gap: 5px; cursor: pointer; padding: 1px 3px; border-radius: 4px; user-select: none; white-space: nowrap; overflow: hidden; }
+.legend .it:hover { background: #f2f2f2; }
+.legend .it.off { opacity: .35; text-decoration: line-through; }
+.legend .sw { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.legend .n { color: var(--ink-3); font-family: var(--font-mono); font-size: 10px; margin-left: auto; }
+.hint { font-size: 12px; color: var(--ink-3); line-height: 1.4; }
+.filters details { border-top: 1px solid var(--rule); padding: 4px 0; }
+.filters summary { cursor: pointer; font-size: 13px; color: var(--ink-2); }
+.filters summary .cnt { color: var(--sel); font-size: 11px; }
+.plotwrap { user-select: none; -webkit-user-select: none; position: relative; height: calc(100vh - 150px); min-height: 520px; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+#deckcanvas { position: absolute; inset: 0; }
+#overlay { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; touch-action: none; }
+#overlay.lasso { pointer-events: auto; cursor: crosshair; }
+.ptitle { position: absolute; font-size: 12px; font-weight: 600; color: var(--ink-2); background: rgba(255,255,255,.85); padding: 1px 6px; border-radius: 4px; pointer-events: none; }
+.vsep { position: absolute; border: 1px solid var(--rule); pointer-events: none; }
+.tip { position: absolute; pointer-events: none; background: #fff; border: 1px solid var(--rule); border-radius: 6px; padding: 6px 8px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.12); z-index: 5; max-width: 280px; }
+.tip b { font-weight: 600; }
+.cbar { position: absolute; right: 10px; bottom: 10px; background: rgba(255,255,255,.92); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 8px; font-size: 11px; }
+.cbar .bar { width: 160px; height: 10px; border-radius: 3px; }
+.cbar .lab { display: flex; justify-content: space-between; font-family: var(--font-mono); }
+.status { position: absolute; left: 10px; bottom: 10px; font-size: 11px; color: var(--ink-3); background: rgba(255,255,255,.9); padding: 2px 6px; border-radius: 4px; }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; font-size: 14px; color: var(--ink-2); }
+table.t { border-collapse: collapse; width: 100%; font-size: 12px; }
+table.t th, table.t td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--rule); }
+table.t th { color: var(--ink-3); font-weight: 500; position: sticky; top: 0; background: var(--panel); }
+table.t td.num { font-family: var(--font-mono); text-align: right; }
+table.t tr.click { cursor: pointer; }
+table.t tr.click:hover td { background: #f2f2f2; }
+.pill { display: inline-block; font-size: 10px; padding: 0 5px; border-radius: 8px; background: #ececec; color: var(--ink-2); margin-left: 4px; }
+.pill.pc { background: #d6e6f7; color: #1b4f8a; }
+.chart { width: 100%; min-height: 480px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.stat { background: #fff; border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px; }
+.stat .v { font-size: 20px; font-weight: 600; font-family: var(--font-mono); }
+.stat .k { font-size: 12px; color: var(--ink-3); }
+.selbox { border-left: 3px solid var(--sel); }
+.err { color: #b3261e; font-size: 12px; }
+.prose { max-width: 900px; line-height: 1.55; color: var(--ink-2); }
+.prose h2 { font-size: 16px; color: var(--ink); margin: 18px 0 6px; }
+.prose code { font-family: var(--font-mono); font-size: 12px; background: #f2f2f2; padding: 0 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="h1">Explorer</h1>
+    <span class="sub" id="subtitle">loading…</span>
+    <a class="sub" id="paperLink" href="paper.html" style="margin-left:auto;color:var(--accent)" hidden>Paper figures →</a>
+  </header>
+  <nav class="tabs" id="tabs">
+    <button data-tab="umap" class="on">UMAP</button>
+    <button data-tab="comp">Composition</button>
+    <button data-tab="dot">Dot plot / heatmap</button>
+    <button data-tab="dev" id="devTabBtn">Across stages</button>
+    <button data-tab="dist">Distributions</button>
+    <button data-tab="markers">Markers</button>
+    <button data-tab="about">About</button>
+  </nav>
+
+  <!-- ===================== UMAP TAB ===================== -->
+  <section id="tab-umap" class="grid">
+    <div class="side">
+      <div class="card">
+        <h3>Embedding</h3>
+        <div class="seg" id="embSeg"></div>
+        <h3 style="margin-top:12px">Colour by</h3>
+        <div class="seg" id="modeSeg">
+          <button data-m="ann" class="on">Annotation</button><button data-m="gene">Gene</button><button data-m="coexp">2 genes</button><button data-m="qc">QC</button>
+        </div>
+        <div id="modeAnn" style="margin-top:8px"><label class="row">annotation <select id="annSel"></select></label></div>
+        <div id="modeGene" hidden style="margin-top:8px">
+          <label class="row">gene <input type="search" id="geneIn" list="dlPercell" placeholder="gene"></label>
+          <label class="row">clip at <select id="clipSel"><option value="100">max</option><option value="99" selected>99th pct</option><option value="95">95th pct</option><option value="90">90th pct</option></select></label>
+          <div class="hint" id="geneMsg"></div>
+        </div>
+        <div id="modeCo" hidden style="margin-top:8px">
+          <label class="row"><span style="color:#d62728">gene A</span> <input type="search" id="coA" list="dlPercell"></label>
+          <label class="row"><span style="color:#1f9e3a">gene B</span> <input type="search" id="coB" list="dlPercell"></label>
+          <div class="hint">Red = A only, green = B only, yellow = both.</div>
+          <div class="hint" id="coMsg"></div>
+        </div>
+        <div id="modeQc" hidden style="margin-top:8px"><label class="row">metric <select id="qcSel"></select></label></div>
+      </div>
+      <div class="card">
+        <h3>Layout</h3>
+        <label class="row">split by <select id="splitSel"></select></label>
+        <label class="row">point size <input type="range" id="sizeIn" min="0.3" max="6" step="0.1" value="1.4"></label>
+        <label class="row">opacity <input type="range" id="opIn" min="0.1" max="1" step="0.05" value="0.85"></label>
+        <label class="row">filtered cells <select id="hideSel"><option value="grey">show as grey</option><option value="hide">hide</option></select></label>
+        <div class="btns" style="margin-top:6px">
+          <button class="btn" id="lassoBtn" title="Draw a free-hand region to select cells">Lasso select</button>
+          <button class="btn" id="resetViewBtn">Reset zoom</button>
+          <button class="btn" id="pngBtn">PNG</button>
+        </div>
+      </div>
+      <div class="card selbox" id="selCard" hidden>
+        <h3>Selection</h3>
+        <div id="selInfo"></div>
+        <div class="btns" style="margin:6px 0">
+          <button class="btn" id="selKeep">Keep only selection</button>
+          <button class="btn" id="selClear">Clear</button>
+        </div>
+        <label class="row">breakdown <select id="selAnn"></select></label>
+        <div id="selChart" style="height:220px"></div>
+      </div>
+      <div class="card filters">
+        <h3>Legend &amp; filters</h3>
+        <div class="hint" style="margin-bottom:6px">Click: hide/show · double-click: only this</div>
+        <div id="legendMain"></div>
+        <div id="filterList" style="margin-top:8px"></div>
+        <div class="btns" style="margin-top:8px"><button class="btn" id="clearFilters">Clear all filters</button></div>
+      </div>
+    </div>
+    <div class="plotwrap" id="plotwrap">
+      <div id="deckcanvas"></div>
+      <svg id="overlay"></svg>
+      <div id="titles"></div>
+      <div class="tip" id="tip" hidden></div>
+      <div class="cbar" id="cbar" hidden></div>
+      <div class="status" id="status"></div>
+      <div class="loading" id="loading">Loading…</div>
+    </div>
+  </section>
+
+  <!-- ===================== COMPOSITION ===================== -->
+  <section id="tab-comp" class="grid" hidden>
+    <div class="side"><div class="card">
+      <h3>Cross-tabulate</h3>
+      <label class="row">bars (rows) <select id="compRow"></select></label>
+      <label class="row">stack (colour) <select id="compCol"></select></label>
+      <label class="row">show <select id="compNorm"><option value="count">cell counts</option><option value="row" selected>% within bar</option><option value="col">% within colour group</option></select></label>
+      <label class="row">chart <select id="compKind"><option value="bar">stacked bars</option><option value="heat">heatmap</option></select></label>
+      <label class="row">cells <select id="compScope"><option value="vis">current filter</option><option value="sel">lasso selection</option></select></label>
+      
+    </div></div>
+    <div class="card"><div id="compChart" class="chart"></div></div>
+  </section>
+
+  <!-- ===================== DOT PLOT ===================== -->
+  <section id="tab-dot" class="grid" hidden>
+    <div class="side"><div class="card">
+      <h3 id="dotH">Genes</h3>
+      <textarea id="dotGenes" rows="6"></textarea>
+      <div class="btns" style="margin-top:6px">
+        <button class="btn" data-preset="markers">Top markers</button>
+        <button class="btn" data-preset="nt">Transmitter</button>
+        <button class="btn" data-preset="hox">Hox</button>
+        <button class="btn" data-preset="ecd">Ecdysone</button>
+        <button class="btn" data-preset="inter">Interactome</button>
+      </div>
+      <label class="row" style="margin-top:8px">groups <select id="dotGroup"></select></label>
+      <label class="row">chart <select id="dotKind"><option value="dot">dot plot</option><option value="heat">heatmap (mean)</option><option value="heatf">heatmap (% expr.)</option></select></label>
+      <label class="row">scale <select id="dotScale"><option value="gene">0–1 per gene</option><option value="raw">raw mean</option><option value="z">z-score per gene</option></select></label>
+      <label class="row">order groups <select id="dotOrder"><option value="name">by name</option><option value="cluster">by similarity</option></select></label>
+      <label class="row"><input type="checkbox" id="dotDropNA" checked style="width:auto"> <span>drop NA / Unclassified</span></label>
+      <div class="btns"><button class="btn primary" id="dotGo">Plot</button></div>
+      <div class="err" id="dotErr"></div>
+      
+    </div></div>
+    <div class="card"><div id="dotChart" class="chart"></div></div>
+  </section>
+
+  <!-- ===================== ACROSS STAGES ===================== -->
+  <section id="tab-dev" class="grid" hidden>
+    <div class="side"><div class="card">
+      <h3>Gene across <span id="devAxisName">stages</span></h3>
+      <label class="row">gene <input type="search" id="devGene" list="dlAll"></label>
+      <label class="row">metric <select id="devMetric"><option value="mean">mean</option><option value="frac">% cells expressing</option></select></label>
+      <label class="row">split by <select id="devBy"></select></label>
+      <label class="row">lines <select id="devTop"><option value="8">top 8 groups</option><option value="15">top 15</option><option value="all">all</option></select></label>
+      <div class="btns"><button class="btn primary" id="devGo">Plot</button></div>
+      <div class="err" id="devErr"></div>
+      
+    </div></div>
+    <div style="display:grid; gap:12px">
+      <div class="card"><div id="devLine" class="chart" style="min-height:380px"></div></div>
+      <div class="card"><div id="devHeat" class="chart"></div></div>
+    </div>
+  </section>
+
+  <!-- ===================== DISTRIBUTIONS ===================== -->
+  <section id="tab-dist" class="grid" hidden>
+    <div class="side"><div class="card">
+      <h3>Per-cell distribution</h3>
+      <label class="row">value <select id="distKind"></select></label>
+      <label class="row">gene <input type="search" id="distGene" list="dlPercell"></label>
+      <label class="row">groups <select id="distGroup"></select></label>
+      <label class="row">cells <select id="distZero"><option value="nz">expressing only (&gt;0)</option><option value="all">all cells</option></select></label>
+      <div class="btns"><button class="btn primary" id="distGo">Plot</button></div>
+      <div class="err" id="distErr"></div>
+      
+    </div></div>
+    <div class="card"><div id="distChart" class="chart"></div></div>
+  </section>
+
+  <!-- ===================== MARKERS ===================== -->
+  <section id="tab-markers" class="grid" hidden>
+    <div class="side"><div class="card">
+      <h3>Marker genes</h3>
+      <label class="row">grouping <select id="mkGrouping"></select></label>
+      <label class="row">group <select id="mkGroup"></select></label>
+      
+      <div class="btns" style="margin-top:8px"><button class="btn" id="mkDot">Dot plot of top 3 per group</button></div>
+    </div></div>
+    <div class="card" style="max-height:calc(100vh - 150px); overflow:auto"><table class="t" id="mkTable"></table></div>
+  </section>
+
+  <!-- ===================== ABOUT ===================== -->
+  <section id="tab-about" hidden>
+    <div class="card"><div class="stats" id="aboutStats"></div></div>
+    <div class="card" style="margin-top:12px"><div class="prose" id="aboutText"></div></div>
+  </section>
+</div>
+<datalist id="dlPercell"></datalist>
+<datalist id="dlAll"></datalist>
+
+<script>
+"use strict";
+const DATA = "data/";
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => n.toLocaleString("en-US");
+
+// ---------------- palettes ----------------
+const PAL = ["#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd","#8c564b","#e377c2","#bcbd22","#17becf","#393b79",
+  "#637939","#8c6d31","#843c39","#7b4173","#3182bd","#e6550d","#31a354","#756bb1","#6baed6","#fd8d3c",
+  "#74c476","#9e9ac8","#e7ba52","#ad494a","#a55194","#5254a3","#8ca252","#bd9e39","#d6616b","#ce6dbd",
+  "#3b6e8f","#b5cf6b","#ff9896","#c49c94","#f7b6d2","#4a1486","#00a087","#c51b7d","#7f7f7f","#005a32"];
+const FIXED = {
+  Stage: {"6":"#f2b134","24":"#e3693a","36":"#a8326e","48":"#3b2d7c"},
+  neurotransmitter: {"Acetylcholine":"#2a78d6","GABA":"#e34948","Glutamate":"#1baf7a"},
+  Sex: {"F":"#d6589f","M":"#2a78d6"},
+  birthtime: {"primary":"#e3693a","earlysecondary":"#a8326e","secondary":"#2a78d6"},
+  maturation: {"mature":"#2a78d6","precursor":"#eb6834"},
+};
+const NA_LIKE = new Set(["NA","Unclassified","noHemi","unknown"]);
+const GREY = [215, 215, 215];
+const VIR = ["#440154","#482878","#3e4989","#31688e","#26828e","#1f9e89","#35b779","#6ece58","#b5de2b","#fde725"];
+const hex2rgb = (h) => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+const VIR_RGB = VIR.map(hex2rgb);
+const LUT = new Uint8Array(256*3);
+for (let i = 0; i < 256; i++) {
+  const t = i/255*(VIR.length-1), k = Math.min(Math.floor(t), VIR.length-2), f = t-k;
+  for (let c = 0; c < 3; c++) LUT[i*3+c] = Math.round(VIR_RGB[k][c]*(1-f) + VIR_RGB[k+1][c]*f);
+}
+const PLOTLY_VIR = VIR.map((c,i) => [i/(VIR.length-1), c]);
+
+// ---------------- state ----------------
+let M, N, CELLS = {}, perm, C;
+const PUPAL = { title: "Pupal VNC Explorer", unit: "neurons", primary: "hemilineage", paper: "paper.html",
+  split: ["Stage", "neurotransmitter", "birthtime", "Sex", "maturation", "soma_neuromere"],
+  hover: ["hemilineage", "Stage", "neurotransmitter", "soma_neuromere", "birthtime", "maturation", "Sex"],
+  comp: ["hemilineage", "neurotransmitter"], dot_group: "hemilineage", dist_gene: "VGlut",
+  dot_genes: "VGlut ChAT Gad1 unc-4 Lim3 tup exex ems Antp Ubx abd-A Abd-B", qc: ["nUMI", "nGene"], value_label: "log1p CP10k",
+  dev: { tab: "Across stages", axis: "Stage", by: ["hemilineage", "neurotransmitter"], x_title: "hours APF", suffix: " h", default_gene: "Ets65A" },
+  emb_labels: { umap: "UMAP (integrated)", UMAPallages: "UMAP all ages" } };
+const geneIdx = new Map();      // per-cell gene -> file index
+const allGeneIdx = new Map();   // any gene -> row in aggregates
+const geneCache = new Map();
+const aggCache = new Map();
+const S = { emb: null, mode: "ann", ann: null, gene: null, coA: null, coB: null, qc: "nUMI",
+  clip: 99, split: "none", size: 1.4, op: 0.85, hideMode: "grey", hidden: {}, selMask: null, selPoly: null,
+  selView: null, keepSel: false, lasso: false };
+let deckgl, viewState = null, views = [], layerIdx = {}, visible;
+
+async function fetchBin(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(url + " → HTTP " + r.status);
+  const buf = new Uint8Array(await r.arrayBuffer());
+  if (buf[0] === 0x1f && buf[1] === 0x8b) {
+    const s = new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"));
+    return await new Response(s).arrayBuffer();
+  }
+  return buf.buffer;
+}
+function colorsFor(key) {
+  const cats = M.annotations[key], out = [];
+  let j = 0;
+  cats.forEach((c) => {
+    if (FIXED[key] && FIXED[key][c]) out.push(FIXED[key][c]);
+    else if (NA_LIKE.has(c)) out.push("#d0d0d0");
+    else out.push(PAL[j++ % PAL.length]);
+  });
+  return out;
+}
+
+// ---------------- load ----------------
+async function init() {
+  M = await (await fetch(DATA + "manifest.json")).json();
+  N = M.n_cells;
+  C = Object.assign({}, M.config ? { qc: ["nUMI", "nGene"], value_label: "log1p CP10k", split: [], hover: [], emb_labels: {} } : PUPAL, M.config || {});
+  S.emb = Object.keys(M.embeddings)[0]; S.ann = C.primary; S.split = C.default_split || "none"; S.qc = C.qc[0];
+  document.title = C.title; $("h1").textContent = C.title;
+  if (C.paper) { $("paperLink").href = C.paper; $("paperLink").hidden = false; }
+  if (!C.dev) $("devTabBtn").hidden = true; else $("devTabBtn").textContent = C.dev.tab || `Across ${C.dev.axis}s`;
+  $("dotGenes").value = C.dot_genes; $("distGene").value = C.dist_gene;
+  const buf = await fetchBin(DATA + "cells.bin.gz");
+  const TA = { float32: Float32Array, uint16: Uint16Array, uint8: Uint8Array };
+  for (const [name, L] of Object.entries(M.layout)) CELLS[name] = new TA[L.dtype](buf, L.offset, L.length);
+  M.genes_percell.forEach((g, i) => geneIdx.set(g, i));
+  M.genes_all.forEach((g, i) => allGeneIdx.set(g, i));
+  $("dlPercell").innerHTML = M.genes_percell.map((g) => `<option value="${g}">`).join("");
+  $("dlAll").innerHTML = M.genes_all.map((g) => `<option value="${g}">`).join("");
+  perm = new Uint32Array(N); for (let i = 0; i < N; i++) perm[i] = i;
+  let seed = 7; const rnd = () => (seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296;
+  for (let i = N - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = perm[i]; perm[i] = perm[j]; perm[j] = t; }
+  for (const k of Object.keys(M.annotations)) S.hidden[k] = new Set();
+  $("subtitle").textContent = `${fmt(N)} ${C.unit} · ${fmt(M.n_genes_total)} genes`;
+  buildControls();
+  $("loading").hidden = true;
+  setupDeck();
+  computeVisible();
+  render();
+  buildAbout();
+}
+
+// ---------------- controls ----------------
+const ANN_KEYS = () => Object.keys(M.annotations);
+function opts(list, sel) { return list.map((v) => `<option value="${v}"${v === sel ? " selected" : ""}>${v}</option>`).join(""); }
+function buildControls() {
+  $("embSeg").innerHTML = Object.keys(M.embeddings).map((e) => `<button data-e="${e}" class="${e === S.emb ? "on" : ""}">${C.emb_labels[e] || e}</button>`).join("");
+  $("embSeg").onclick = (ev) => { const e = ev.target.dataset.e; if (!e) return; S.emb = e; [...$("embSeg").children].forEach((b) => b.classList.toggle("on", b.dataset.e === e)); clearSel(); viewState = null; render(); };
+  $("modeSeg").onclick = (ev) => { const m = ev.target.dataset.m; if (!m) return; setMode(m); };
+  $("annSel").innerHTML = opts(ANN_KEYS(), S.ann);
+  $("annSel").onchange = () => { S.ann = $("annSel").value; render(); };
+  $("splitSel").innerHTML = opts(["none", ...C.split], S.split);
+  $("qcSel").innerHTML = opts(C.qc, C.qc[0]);
+  $("distKind").innerHTML = `<option value="gene">gene expression</option>` + opts(C.qc);
+  $("splitSel").onchange = () => { S.split = $("splitSel").value; clearSel(); viewState = null; render(); };
+  $("sizeIn").oninput = () => { S.size = +$("sizeIn").value; render(true); };
+  $("opIn").oninput = () => { S.op = +$("opIn").value; render(true); };
+  $("hideSel").onchange = () => { S.hideMode = $("hideSel").value; render(); };
+  $("clipSel").onchange = () => { S.clip = +$("clipSel").value; render(); };
+  $("qcSel").onchange = () => { S.qc = $("qcSel").value; render(); };
+  $("geneIn").onchange = () => setGene($("geneIn").value.trim());
+  $("coA").onchange = $("coB").onchange = async () => {
+    const a = $("coA").value.trim(), b = $("coB").value.trim();
+    const bad = [a, b].filter((g) => g && !geneIdx.has(g));
+    $("coMsg").textContent = bad.length ? `No per-cell values for: ${bad.join(", ")}` : "";
+    if (a && b && !bad.length) { await Promise.all([loadGene(a), loadGene(b)]); S.coA = a; S.coB = b; render(); }
+  };
+  $("lassoBtn").onclick = () => { S.lasso = !S.lasso; $("lassoBtn").classList.toggle("on", S.lasso); $("overlay").classList.toggle("lasso", S.lasso); render(true); };
+  $("resetViewBtn").onclick = () => { viewState = null; render(); };
+  $("pngBtn").onclick = savePng;
+  $("clearFilters").onclick = () => { for (const k in S.hidden) S.hidden[k].clear(); S.keepSel = false; computeVisible(); render(); };
+  $("selClear").onclick = () => { clearSel(); render(); };
+  $("selKeep").onclick = () => { S.keepSel = true; computeVisible(); render(); };
+  $("selAnn").innerHTML = opts(ANN_KEYS(), C.primary);
+  $("selAnn").onchange = drawSelChart;
+  setupLasso();
+  // tabs
+  $("tabs").onclick = (ev) => { const t = ev.target.dataset.tab; if (t) showTab(t); };
+  // composition
+  $("compRow").innerHTML = opts(ANN_KEYS(), C.comp[0]);
+  $("compCol").innerHTML = opts(ANN_KEYS(), C.comp[1]);
+  ["compRow", "compCol", "compNorm", "compKind", "compScope"].forEach((id) => $(id).onchange = drawComp);
+  // dot plot
+  const gk = Object.keys(M.groupings);
+  $("dotGroup").innerHTML = opts(gk, C.dot_group);
+  $("dotH").textContent = `Genes (any of ${fmt(M.n_genes_total)})`;
+  $("dotGo").onclick = drawDot;
+  ["dotGroup", "dotKind", "dotScale", "dotOrder", "dotDropNA"].forEach((id) => $(id).onchange = drawDot);
+  document.querySelectorAll("[data-preset]").forEach((b) => b.onclick = () => presetGenes(b.dataset.preset));
+  // dev
+  if (C.dev) { $("devBy").innerHTML = opts(C.dev.by, C.dev.by[0]); $("devAxisName").textContent = C.dev.axis; $("devGene").value = C.dev.default_gene || C.dist_gene; }
+  $("devGo").onclick = drawDev; ["devMetric", "devBy", "devTop"].forEach((id) => $(id).onchange = drawDev);
+  $("devGene").onchange = drawDev;
+  // dist
+  $("distGroup").innerHTML = opts(ANN_KEYS(), C.primary);
+  $("distGo").onclick = drawDist; ["distKind", "distGroup", "distZero"].forEach((id) => $(id).onchange = drawDist);
+  // markers
+  getMarkers().then((mk) => { $("mkGrouping").innerHTML = opts(Object.keys(mk), C.primary in mk ? C.primary : Object.keys(mk)[0]); });
+  $("mkDot").onclick = () => { presetGenes("markers", $("mkGrouping").value); showTab("dot"); };
+}
+function setMode(m) {
+  S.mode = m;
+  [...$("modeSeg").children].forEach((b) => b.classList.toggle("on", b.dataset.m === m));
+  $("modeAnn").hidden = m !== "ann"; $("modeGene").hidden = m !== "gene"; $("modeCo").hidden = m !== "coexp"; $("modeQc").hidden = m !== "qc";
+  render();
+}
+async function setGene(g) {
+  if (!g) return;
+  if (!geneIdx.has(g)) {
+    const other = allGeneIdx.has(g);
+    $("geneMsg").innerHTML = other ? `<b>${g}</b>: group-level values only (Dot plot tab).` : `Gene <b>${g}</b> not found.`;
+    return;
+  }
+  $("geneMsg").textContent = "loading…";
+  await loadGene(g);
+  S.gene = g; $("geneIn").value = g;
+  const pct = M.gene_stats.pct_expr[allGeneIdx.get(g)];
+  $("geneMsg").innerHTML = `${pct}% of cells express <b>${g}</b>`;
+  if (S.mode !== "gene") setMode("gene"); else render();
+}
+async function loadGene(g) {
+  if (geneCache.has(g)) return geneCache.get(g);
+  const v = new Uint8Array(await fetchBin(`${DATA}genes/${geneIdx.get(g)}.bin.gz`));
+  geneCache.set(g, v);
+  if (geneCache.size > 60) geneCache.delete(geneCache.keys().next().value);
+  return v;
+}
+function showTab(t) {
+  [...$("tabs").children].forEach((b) => b.classList.toggle("on", b.dataset.tab === t));
+  ["umap", "comp", "dot", "dev", "dist", "markers", "about"].forEach((x) => $("tab-" + x).hidden = x !== t);
+  if (t === "umap") { render(); }
+  if (t === "comp") drawComp();
+  if (t === "dot" && !$("dotChart").dataset.done) drawDot();
+  if (t === "dev" && !$("devLine").dataset.done) drawDev();
+  if (t === "dist" && !$("distChart").dataset.done) drawDist();
+  if (t === "markers") drawMarkers();
+}
+
+// ---------------- filters ----------------
+function computeVisible() {
+  visible = new Uint8Array(N).fill(1);
+  for (const [k, set] of Object.entries(S.hidden)) {
+    if (!set.size) continue;
+    const c = CELLS["code:" + k];
+    for (let i = 0; i < N; i++) if (set.has(c[i])) visible[i] = 0;
+  }
+  if (S.keepSel && S.selMask) for (let i = 0; i < N; i++) if (!S.selMask[i]) visible[i] = 0;
+}
+function nVisible() { let n = 0; for (let i = 0; i < N; i++) n += visible[i]; return n; }
+function toggleCat(key, code, only) {
+  const set = S.hidden[key], n = M.annotations[key].length;
+  if (only) {
+    const isOnly = set.size === n - 1 && !set.has(code);
+    set.clear();
+    if (!isOnly) for (let j = 0; j < n; j++) if (j !== code) set.add(j);
+  } else set.has(code) ? set.delete(code) : set.add(code);
+  computeVisible(); render();
+}
+function legendHTML(key, withColors) {
+  const cats = M.annotations[key], cols = colorsFor(key), cnt = M.annotation_counts[key];
+  return `<div class="legend">` + cats.map((c, j) => `<div class="it${S.hidden[key].has(j) ? " off" : ""}" data-k="${key}" data-j="${j}" title="${c}: ${fmt(cnt[j])} cells">` +
+    (withColors ? `<span class="sw" style="background:${cols[j]}"></span>` : `<input type="checkbox" ${S.hidden[key].has(j) ? "" : "checked"} style="margin:0;pointer-events:none">`) +
+    `<span>${c}</span><span class="n">${cnt[j] >= 1000 ? (cnt[j] / 1000).toFixed(cnt[j] >= 1e4 ? 0 : 1) + "k" : cnt[j]}</span></div>`).join("") + `</div>`;
+}
+function bindLegend(el) {
+  let clickT = null;
+  el.querySelectorAll(".it").forEach((it) => {
+    it.onclick = () => { clearTimeout(clickT); clickT = setTimeout(() => toggleCat(it.dataset.k, +it.dataset.j, false), 220); };
+    it.ondblclick = () => { clearTimeout(clickT); toggleCat(it.dataset.k, +it.dataset.j, true); };
+  });
+}
+function drawLegends() {
+  const lm = $("legendMain");
+  if (S.mode === "ann") { lm.innerHTML = `<div class="hint" style="margin-bottom:3px"><b>${S.ann}</b></div>` + legendHTML(S.ann, true); bindLegend(lm); }
+  else lm.innerHTML = "";
+  const fl = $("filterList");
+  fl.innerHTML = ANN_KEYS().filter((k) => !(S.mode === "ann" && k === S.ann)).map((k) => {
+    const h = S.hidden[k].size;
+    return `<details data-k="${k}"${fl.querySelector(`details[data-k="${k}"][open]`) ? " open" : ""}><summary>${k} ${h ? `<span class="cnt">(${h} hidden)</span>` : ""}</summary>${legendHTML(k, false)}</details>`;
+  }).join("");
+  bindLegend(fl);
+}
+
+// ---------------- colour computation ----------------
+function percentileNZ(v, p) {
+  if (p >= 100) return 255;
+  const h = new Uint32Array(256); let n = 0;
+  for (let i = 0; i < N; i++) if (v[i] && visible[i]) { h[v[i]]++; n++; }
+  if (!n) return 255;
+  let acc = 0; const target = n * p / 100;
+  for (let k = 1; k < 256; k++) { acc += h[k]; if (acc >= target) return Math.max(k, 1); }
+  return 255;
+}
+// returns {rgb: Uint8Array(N*3), rank: Uint8Array(N) draw-priority 0..255}
+function computeColors() {
+  const rgb = new Uint8Array(N * 3), rank = new Uint8Array(N);
+  let legend = null;
+  if (S.mode === "ann") {
+    const c = CELLS["code:" + S.ann], cols = colorsFor(S.ann).map(hex2rgb);
+    for (let i = 0; i < N; i++) { const q = cols[c[i]]; rgb[i*3] = q[0]; rgb[i*3+1] = q[1]; rgb[i*3+2] = q[2]; rank[i] = NA_LIKE.has(M.annotations[S.ann][c[i]]) ? 0 : 1; }
+  } else if (S.mode === "gene" && S.gene && geneCache.has(S.gene)) {
+    const v = geneCache.get(S.gene), clip = percentileNZ(v, S.clip);
+    for (let i = 0; i < N; i++) {
+      if (!v[i]) { rgb[i*3] = GREY[0]; rgb[i*3+1] = GREY[1]; rgb[i*3+2] = GREY[2]; rank[i] = 0; continue; }
+      const t = Math.min(255, Math.round(v[i] / clip * 255));
+      rgb[i*3] = LUT[t*3]; rgb[i*3+1] = LUT[t*3+1]; rgb[i*3+2] = LUT[t*3+2]; rank[i] = Math.max(1, t);
+    }
+    legend = { kind: "seq", title: `${S.gene} · ${C.value_label}`, lo: 0, hi: (clip / 255 * M.gene_max[S.gene]).toFixed(2) };
+  } else if (S.mode === "coexp" && S.coA && S.coB && geneCache.has(S.coA) && geneCache.has(S.coB)) {
+    const a = geneCache.get(S.coA), b = geneCache.get(S.coB), ca = percentileNZ(a, 99), cb = percentileNZ(b, 99);
+    for (let i = 0; i < N; i++) {
+      const x = Math.min(1, a[i] / ca), y = Math.min(1, b[i] / cb);
+      if (!a[i] && !b[i]) { rgb[i*3] = GREY[0]; rgb[i*3+1] = GREY[1]; rgb[i*3+2] = GREY[2]; rank[i] = 0; continue; }
+      const xs = a[i] ? 0.35 + 0.65 * x : 0, ys = b[i] ? 0.35 + 0.65 * y : 0;
+      rgb[i*3] = Math.round(30 + 225 * xs); rgb[i*3+1] = Math.round(30 + 200 * ys); rgb[i*3+2] = 30;
+      rank[i] = Math.min(255, 1 + Math.round(127 * (xs + ys)));
+    }
+    legend = { kind: "co" };
+  } else if (S.mode === "qc") {
+    const v = CELLS[S.qc]; let lo = Infinity, hi = -Infinity;
+    const lv = new Float32Array(N);
+    for (let i = 0; i < N; i++) { lv[i] = Math.log10(Math.max(1, v[i])); if (lv[i] < lo) lo = lv[i]; if (lv[i] > hi) hi = lv[i]; }
+    for (let i = 0; i < N; i++) { const t = Math.round((lv[i] - lo) / (hi - lo) * 255); rgb[i*3] = LUT[t*3]; rgb[i*3+1] = LUT[t*3+1]; rgb[i*3+2] = LUT[t*3+2]; rank[i] = t; }
+    legend = { kind: "seq", title: `${S.qc} (log scale)`, lo: fmt(Math.round(10 ** lo)), hi: fmt(Math.round(10 ** hi)) };
+  } else {
+    for (let i = 0; i < N * 3; i++) rgb[i] = GREY[i % 3];
+  }
+  return { rgb, rank, legend };
+}
+
+// ---------------- deck.gl ----------------
+function setupDeck() {
+  deckgl = new deck.Deck({
+    parent: $("deckcanvas"),
+    views: [new deck.OrthographicView({ id: "v0", flipY: false })],
+    initialViewState: { v0: { target: [0, 0, 0], zoom: 3 } },
+    layers: [],
+    getTooltip: null,
+    onHover: onHover,
+    onViewStateChange: ({ viewState: vs }) => {
+      viewState = { target: vs.target, zoom: vs.zoom, minZoom: -2, maxZoom: 14 };
+      const all = {}; views.forEach((v) => all[v.id] = viewState);
+      deckgl.setProps({ viewState: all });
+      drawSelOutline();
+    },
+    glOptions: { preserveDrawingBuffer: true },
+  });
+  window.addEventListener("resize", () => { if (!$("tab-umap").hidden) render(true); });
+}
+let cacheColors = null, cacheKey = "";
+function render(styleOnly) {
+  if (!M || !deckgl) return;
+  const key = [S.mode, S.ann, S.gene, S.coA, S.coB, S.qc, S.clip, S.hideMode, Object.values(S.hidden).map((s) => [...s].join(",")).join("|"), S.keepSel].join("/");
+  if (!cacheColors || key !== cacheKey) { cacheColors = computeColors(); cacheKey = key; }
+  const { rgb, rank, legend } = cacheColors;
+  const xy = CELLS["emb:" + S.emb];
+  const W = $("plotwrap").clientWidth, H = $("plotwrap").clientHeight;
+  // panels
+  let panels = [{ id: "v0", title: null, test: null }];
+  if (S.split !== "none") {
+    const c = CELLS["code:" + S.split], cats = M.annotations[S.split];
+    panels = cats.map((name, j) => ({ name, j })).filter((p) => !S.hidden[S.split].has(p.j) && M.annotation_counts[S.split][p.j] > 0)
+      .map((p, k) => ({ id: "v" + k, title: `${S.split}: ${p.name}`, test: (i) => c[i] === p.j }));
+  }
+  const K = panels.length, cols = Math.min(K, Math.max(1, Math.round(Math.sqrt(K * W / H)))), rows = Math.ceil(K / cols);
+  views = panels.map((p, k) => new deck.OrthographicView({ id: p.id, flipY: false, x: `${(k % cols) / cols * 100}%`, y: `${Math.floor(k / cols) / rows * 100}%`,
+    width: `${100 / cols}%`, height: `${100 / rows}%`, controller: S.lasso ? false : { doubleClickZoom: false } }));
+  // fit
+  if (!viewState) {
+    const e = M.embeddings[S.emb], rx = e.max[0] - e.min[0], ry = e.max[1] - e.min[1];
+    const pw = W / cols, ph = H / rows;
+    viewState = { target: [(e.max[0] + e.min[0]) / 2, (e.max[1] + e.min[1]) / 2, 0], zoom: Math.log2(Math.min(pw / rx, ph / ry) * 0.92), minZoom: -2, maxZoom: 14 };
+  }
+  // layers: per panel, draw order = filtered(grey) first, then by rank (counting sort), random within rank
+  const layers = [];
+  layerIdx = {};
+  const alpha = Math.round(S.op * 255);
+  const buckets = new Uint32Array(257);
+  for (const p of panels) {
+    let idx = [];
+    const greyIdx = [];
+    for (let t = 0; t < 257; t++) buckets[t] = 0;
+    const sel = [];
+    for (let q = 0; q < N; q++) {
+      const i = perm[q];
+      if (p.test && !p.test(i)) continue;
+      if (!visible[i]) { if (S.hideMode === "grey") greyIdx.push(i); continue; }
+      sel.push(i); buckets[rank[i] + 1]++;
+    }
+    for (let t = 1; t < 257; t++) buckets[t] += buckets[t - 1];
+    const sorted = new Uint32Array(sel.length);
+    for (const i of sel) sorted[buckets[rank[i]]++] = i;
+    const n = greyIdx.length + sorted.length;
+    const all = new Uint32Array(n); all.set(greyIdx, 0); all.set(sorted, greyIdx.length);
+    const pos = new Float32Array(n * 2), col = new Uint8Array(n * 4);
+    for (let k = 0; k < n; k++) {
+      const i = all[k]; pos[2*k] = xy[2*i]; pos[2*k+1] = xy[2*i+1];
+      if (k < greyIdx.length) { col[4*k] = 225; col[4*k+1] = 225; col[4*k+2] = 225; col[4*k+3] = 90; }
+      else { col[4*k] = rgb[3*i]; col[4*k+1] = rgb[3*i+1]; col[4*k+2] = rgb[3*i+2]; col[4*k+3] = alpha; }
+    }
+    const lid = p.id + "-pts";
+    layerIdx[lid] = all;
+    layers.push(new deck.ScatterplotLayer({ id: lid, data: { length: n, attributes: { getPosition: { value: pos, size: 2 }, getFillColor: { value: col, size: 4 } } },
+      radiusUnits: "pixels", getRadius: S.size, radiusMinPixels: S.size, stroked: false, pickable: true, autoHighlight: false,
+      updateTriggers: { getFillColor: cacheKey + S.op } }));
+    if (S.selPoly && (S.selView === p.id || !S.split || S.split === "none")) {
+      layers.push(new deck.PathLayer({ id: p.id + "-sel", data: [{ path: [...S.selPoly, S.selPoly[0]] }], getPath: (d) => d.path,
+        getColor: [235, 104, 52], widthUnits: "pixels", getWidth: 2 }));
+    }
+  }
+  const vsAll = {}; views.forEach((v) => vsAll[v.id] = viewState);
+  deckgl.setProps({ views, viewState: vsAll, layers, layerFilter: ({ layer, viewport }) => layer.id.startsWith(viewport.id + "-") });
+  // titles
+  $("titles").innerHTML = panels.map((p, k) => {
+    const x = (k % cols) / cols * W, y = Math.floor(k / cols) / rows * H;
+    return (p.title ? `<div class="ptitle" style="left:${x + 6}px;top:${y + 6}px">${p.title}</div>` : "") +
+      (K > 1 ? `<div class="vsep" style="left:${x}px;top:${y}px;width:${W / cols}px;height:${H / rows}px"></div>` : "");
+  }).join("");
+  drawColorbar(legend);
+  if (!styleOnly) drawLegends();
+  const nv = nVisible();
+  $("status").textContent = `${fmt(nv)} of ${fmt(N)} cells shown · scroll to zoom, drag to pan${S.lasso ? " · lasso: draw a region" : ""}`;
+}
+function drawColorbar(l) {
+  const cb = $("cbar");
+  if (!l) { cb.hidden = true; return; }
+  cb.hidden = false;
+  if (l.kind === "seq") cb.innerHTML = `<div style="margin-bottom:3px">${l.title}</div><div class="bar" style="background:linear-gradient(90deg,${VIR.join(",")})"></div><div class="lab"><span>${l.lo}</span><span>${l.hi}</span></div><div style="margin-top:3px;display:flex;align-items:center;gap:4px"><span class="sw" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:rgb(${GREY})"></span> 0 counts</div>`;
+  else cb.innerHTML = `<div style="margin-bottom:3px">${S.coA} / ${S.coB}</div>
+    <div style="display:grid;grid-template-columns:auto auto;gap:3px 8px">
+    <span><span style="color:rgb(255,30,30)">●</span> ${S.coA} only</span><span><span style="color:rgb(30,230,30)">●</span> ${S.coB} only</span>
+    <span><span style="color:rgb(255,230,30)">●</span> both</span><span><span style="color:rgb(${GREY})">●</span> neither</span></div>`;
+}
+function onHover(info) {
+  const tip = $("tip");
+  if (!info.picked || S.lasso || !info.layer || !layerIdx[info.layer.id]) { tip.hidden = true; return; }
+  const i = layerIdx[info.layer.id][info.index];
+  const rows = C.hover.map((k) => `${k}: <b>${M.annotations[k][CELLS["code:" + k][i]]}</b>`);
+  let extra = C.qc.map((q) => `${q} ${fmt(CELLS[q][i])}`).join(" · ");
+  if (S.mode === "gene" && S.gene && geneCache.has(S.gene)) extra = `<b>${S.gene}</b>: ${(geneCache.get(S.gene)[i] / 255 * M.gene_max[S.gene]).toFixed(2)}<br>` + extra;
+  if (S.mode === "coexp" && geneCache.has(S.coA) && geneCache.has(S.coB)) extra = `<b>${S.coA}</b>: ${(geneCache.get(S.coA)[i] / 255 * M.gene_max[S.coA]).toFixed(2)} · <b>${S.coB}</b>: ${(geneCache.get(S.coB)[i] / 255 * M.gene_max[S.coB]).toFixed(2)}<br>` + extra;
+  tip.innerHTML = rows.join("<br>") + "<br>" + extra;
+  tip.hidden = false;
+  const W = $("plotwrap").clientWidth;
+  tip.style.left = Math.min(info.x + 14, W - 290) + "px"; tip.style.top = (info.y + 14) + "px";
+}
+function savePng() {
+  deckgl.redraw(true);
+  const c = $("deckcanvas").querySelector("canvas");
+  const a = document.createElement("a");
+  a.download = `${C.title.replace(/\W+/g, "_")}_${S.emb}_${S.mode === "ann" ? S.ann : S.mode === "gene" ? S.gene : S.mode}.png`;
+  a.href = c.toDataURL("image/png"); a.click();
+}
+
+// ---------------- lasso ----------------
+function setupLasso() {
+  const svg = $("overlay"); let pts = null, path = null;
+  svg.addEventListener("pointerdown", (e) => {
+    if (!S.lasso) return;
+    const r = svg.getBoundingClientRect(); pts = [[e.clientX - r.left, e.clientY - r.top]];
+    svg.innerHTML = `<path fill="rgba(235,104,52,.12)" stroke="#eb6834" stroke-width="1.5" stroke-dasharray="4 3"></path>`;
+    path = svg.firstChild; svg.setPointerCapture(e.pointerId);
+  });
+  svg.addEventListener("pointermove", (e) => {
+    if (!pts) return; const r = svg.getBoundingClientRect(); pts.push([e.clientX - r.left, e.clientY - r.top]);
+    path.setAttribute("d", "M" + pts.map((p) => p.join(",")).join("L") + "Z");
+  });
+  svg.addEventListener("pointerup", () => {
+    if (!pts) return; const sp = pts; pts = null; svg.innerHTML = "";
+    if (sp.length < 3) return;
+    const vp = deckgl.getViewports().find((v) => sp[0][0] >= v.x && sp[0][0] <= v.x + v.width && sp[0][1] >= v.y && sp[0][1] <= v.y + v.height);
+    if (!vp) return;
+    const poly = sp.map(([x, y]) => vp.unproject([x - vp.x, y - vp.y]).slice(0, 2));
+    finishLasso(poly, vp.id);
+  });
+}
+function finishLasso(poly, viewId) {
+  const xy = CELLS["emb:" + S.emb], mask = new Uint8Array(N);
+  let minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
+  for (const [x, y] of poly) { minx = Math.min(minx, x); maxx = Math.max(maxx, x); miny = Math.min(miny, y); maxy = Math.max(maxy, y); }
+  let panelTest = null;
+  if (S.split !== "none") {
+    const titleIdx = +viewId.slice(1);
+    const cats = M.annotations[S.split].map((n, j) => j).filter((j) => !S.hidden[S.split].has(j) && M.annotation_counts[S.split][j] > 0);
+    const j = cats[titleIdx], c = CELLS["code:" + S.split]; panelTest = (i) => c[i] === j;
+  }
+  let n = 0;
+  for (let i = 0; i < N; i++) {
+    if (!visible[i]) continue;
+    const x = xy[2*i], y = xy[2*i+1];
+    if (x < minx || x > maxx || y < miny || y > maxy) continue;
+    if (panelTest && !panelTest(i)) continue;
+    let inside = false;
+    for (let a = 0, b = poly.length - 1; a < poly.length; b = a++) {
+      const [xa, ya] = poly[a], [xb, yb] = poly[b];
+      if ((ya > y) !== (yb > y) && x < (xb - xa) * (y - ya) / (yb - ya) + xa) inside = !inside;
+    }
+    if (inside) { mask[i] = 1; n++; }
+  }
+  S.selMask = mask; S.selPoly = poly; S.selView = viewId; S.selN = n;
+  S.lasso = false; $("lassoBtn").classList.remove("on"); $("overlay").classList.remove("lasso");
+  $("selCard").hidden = false;
+  render(true); drawSelChart();
+}
+function clearSel() { S.selMask = null; S.selPoly = null; S.keepSel = false; $("selCard").hidden = true; computeVisible(); }
+function drawSelOutline() {}
+function drawSelChart() {
+  if (!S.selMask) return;
+  const k = $("selAnn").value, c = CELLS["code:" + k], cats = M.annotations[k], cnt = new Array(cats.length).fill(0), tot = new Array(cats.length).fill(0);
+  for (let i = 0; i < N; i++) { if (!visible[i] && !S.keepSel) continue; tot[c[i]]++; if (S.selMask[i]) cnt[c[i]]++; }
+  let info = `<b>${fmt(S.selN)}</b> cells selected.`;
+  if (S.mode === "gene" && S.gene && geneCache.has(S.gene)) {
+    const v = geneCache.get(S.gene); let si = 0, sn = 0, so = 0, on = 0, se = 0, oe = 0;
+    for (let i = 0; i < N; i++) { if (!visible[i]) continue; const x = v[i] / 255 * M.gene_max[S.gene]; if (S.selMask[i]) { si += x; sn++; se += v[i] > 0; } else { so += x; on++; oe += v[i] > 0; } }
+    info += `<br><b>${S.gene}</b>: mean ${(si / Math.max(sn, 1)).toFixed(2)} vs ${(so / Math.max(on, 1)).toFixed(2)} in the other shown cells; ${(100 * se / Math.max(sn, 1)).toFixed(0)}% vs ${(100 * oe / Math.max(on, 1)).toFixed(0)}% expressing.`;
+  }
+  $("selInfo").innerHTML = info;
+  const ord = cats.map((n, j) => j).filter((j) => cnt[j] > 0).sort((a, b) => cnt[b] - cnt[a]).slice(0, 12);
+  const cols = colorsFor(k);
+  Plotly.react("selChart", [{ type: "bar", orientation: "h", y: ord.map((j) => cats[j]).reverse(), x: ord.map((j) => cnt[j]).reverse(),
+    marker: { color: ord.map((j) => cols[j]).reverse() }, text: ord.map((j) => `${(100 * cnt[j] / S.selN).toFixed(0)}%`).reverse(), textposition: "auto",
+    hovertemplate: "%{y}: %{x} cells<extra></extra>" }],
+    plotLayout({ margin: { l: 90, r: 10, t: 6, b: 24 }, height: 220, yaxis: { automargin: true } }), { displayModeBar: false, responsive: true });
+}
+
+// ---------------- plot helpers ----------------
+function plotLayout(extra) {
+  return Object.assign({ paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "#ffffff", font: { family: "IBM Plex Sans, sans-serif", size: 12, color: "#1a1a1a" },
+    margin: { l: 70, r: 20, t: 40, b: 60 }, hoverlabel: { bgcolor: "#fff", font: { family: "IBM Plex Sans" } } }, extra || {});
+}
+const PCFG = { responsive: true, displaylogo: false, toImageButtonOptions: { format: "svg", scale: 1 } };
+
+// ---------------- composition ----------------
+function drawComp() {
+  const rk = $("compRow").value, ck = $("compCol").value, norm = $("compNorm").value, kind = $("compKind").value, scope = $("compScope").value;
+  const rc = CELLS["code:" + rk], cc = CELLS["code:" + ck], R = M.annotations[rk], C = M.annotations[ck];
+  const T = R.map(() => new Array(C.length).fill(0));
+  const useSel = scope === "sel" && S.selMask;
+  for (let i = 0; i < N; i++) { if (!visible[i]) continue; if (useSel && !S.selMask[i]) continue; T[rc[i]][cc[i]]++; }
+  const rTot = T.map((r) => r.reduce((a, b) => a + b, 0)), cTot = C.map((_, j) => T.reduce((a, r) => a + r[j], 0));
+  const rows = R.map((n, i) => i).filter((i) => rTot[i] > 0), colsI = C.map((n, j) => j).filter((j) => cTot[j] > 0);
+  const val = (i, j) => norm === "count" ? T[i][j] : norm === "row" ? 100 * T[i][j] / rTot[i] : 100 * T[i][j] / cTot[j];
+  const unit = norm === "count" ? "cells" : "%";
+  const title = `${rk} × ${ck}` + (useSel ? " · lasso selection" : "") + ` · ${fmt(rows.reduce((a, i) => a + rTot[i], 0))} cells`;
+  const colors = colorsFor(ck);
+  if (kind === "bar") {
+    const traces = colsI.map((j) => ({ type: "bar", name: C[j], x: rows.map((i) => R[i]), y: rows.map((i) => val(i, j)), marker: { color: colors[j] },
+      customdata: rows.map((i) => T[i][j]), hovertemplate: `%{x} · ${C[j]}<br>%{customdata} cells` + (norm === "count" ? "" : ` (%{y:.1f}%)`) + "<extra></extra>" }));
+    Plotly.react("compChart", traces, plotLayout({ barmode: "stack", title: { text: title, font: { size: 14 } }, height: 560, yaxis: { title: unit }, xaxis: { type: "category", tickangle: -45 }, legend: { title: { text: ck } } }), PCFG);
+  } else {
+    Plotly.react("compChart", [{ type: "heatmap", x: colsI.map((j) => C[j]), y: rows.map((i) => R[i]), z: rows.map((i) => colsI.map((j) => val(i, j))),
+      colorscale: PLOTLY_VIR, colorbar: { title: unit }, customdata: rows.map((i) => colsI.map((j) => T[i][j])), hovertemplate: "%{y} · %{x}<br>%{customdata} cells (%{z:.1f})<extra></extra>" }],
+      plotLayout({ title: { text: title, font: { size: 14 } }, height: Math.max(420, rows.length * 18 + 140), xaxis: { type: "category", tickangle: -45 }, yaxis: { type: "category", autorange: "reversed" } }), PCFG);
+  }
+}
+
+// ---------------- aggregates ----------------
+async function loadAgg(name) {
+  if (aggCache.has(name)) return aggCache.get(name);
+  const g = M.groupings[name];
+  const [b, gm] = await Promise.all([fetchBin(DATA + g.file), fetch(DATA + g.gmax_file).then((r) => r.arrayBuffer())]);
+  const K = g.groups.length, G = M.genes_all.length, u = new Uint8Array(b);
+  const A = { K, groups: g.groups, counts: g.counts, mean: u.subarray(0, G * K), frac: u.subarray(G * K), gmax: new Float32Array(gm) };
+  aggCache.set(name, A); return A;
+}
+const aggMean = (A, gi, k) => A.mean[gi * A.K + k] / 255 * A.gmax[gi];
+const aggFrac = (A, gi, k) => A.frac[gi * A.K + k] / 255;
+function parseGenes(txt) {
+  const want = txt.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean);
+  const lower = new Map(M.genes_all.map((g) => [g.toLowerCase(), g]));
+  const ok = [], bad = [];
+  for (const w of want) { const g = allGeneIdx.has(w) ? w : lower.get(w.toLowerCase()); if (g && !ok.includes(g)) ok.push(g); else if (!g) bad.push(w); }
+  return { ok, bad };
+}
+const isNAgroup = (lab) => lab.split(" | ").some((x) => NA_LIKE.has(x));
+function orderBySimilarity(mat) {   // greedy nearest-neighbour chain on rows
+  const n = mat.length; if (n < 3) return mat.map((_, i) => i);
+  const d = (a, b) => { let s = 0; for (let k = 0; k < a.length; k++) s += (a[k] - b[k]) ** 2; return s; };
+  const used = new Array(n).fill(false), ord = [0]; used[0] = true;
+  for (let s = 1; s < n; s++) { const last = mat[ord[ord.length - 1]]; let best = -1, bd = Infinity; for (let i = 0; i < n; i++) if (!used[i]) { const v = d(last, mat[i]); if (v < bd) { bd = v; best = i; } } used[best] = true; ord.push(best); }
+  return ord;
+}
+async function drawDot() {
+  $("dotChart").dataset.done = 1;
+  const { ok, bad } = parseGenes($("dotGenes").value);
+  $("dotErr").textContent = bad.length ? `Not found: ${bad.join(", ")}` : "";
+  if (!ok.length) return;
+  const gname = $("dotGroup").value, A = await loadAgg(gname);
+  let ks = A.groups.map((_, k) => k);
+  if ($("dotDropNA").checked) ks = ks.filter((k) => !isNAgroup(A.groups[k]));
+  const scale = $("dotScale").value, kind = $("dotKind").value;
+  const gi = ok.map((g) => allGeneIdx.get(g));
+  const meanM = ks.map((k) => gi.map((g) => aggMean(A, g, k))), fracM = ks.map((k) => gi.map((g) => aggFrac(A, g, k)));
+  // scale per gene
+  const colM = meanM.map((r) => r.slice());
+  gi.forEach((_, j) => {
+    const col = meanM.map((r) => r[j]);
+    if (scale === "gene") { const mx = Math.max(...col) || 1; colM.forEach((r) => r[j] = r[j] / mx); }
+    if (scale === "z") { const mu = col.reduce((a, b) => a + b, 0) / col.length, sd = Math.sqrt(col.reduce((a, b) => a + (b - mu) ** 2, 0) / col.length) || 1; colM.forEach((r) => r[j] = (r[j] - mu) / sd); }
+  });
+  let ord = ks.map((_, i) => i);
+  if ($("dotOrder").value === "cluster") ord = orderBySimilarity(colM);
+  const ylab = ord.map((i) => `${A.groups[ks[i]]} (${fmt(A.counts[ks[i]])})`);
+  const ctitle = scale === "gene" ? "mean (0–1 per gene)" : scale === "z" ? "z-score" : "mean " + C.value_label;
+  const h = Math.max(440, ord.length * 17 + 160), w = null;
+  if (kind === "dot") {
+    const x = [], y = [], s = [], c = [], txt = [];
+    ord.forEach((i, r) => gi.forEach((g, j) => { x.push(ok[j]); y.push(ylab[r]); s.push(fracM[i][j]); c.push(colM[i][j]); txt.push(`${ok[j]} · ${A.groups[ks[i]]}<br>mean ${meanM[i][j].toFixed(3)} · ${(100 * fracM[i][j]).toFixed(1)}% expressing`); }));
+    Plotly.react("dotChart", [{ type: "scatter", mode: "markers", x, y, text: txt, hovertemplate: "%{text}<extra></extra>",
+      marker: { size: s.map((v) => 2 + 16 * Math.sqrt(v)), color: c, colorscale: scale === "z" ? "RdBu" : PLOTLY_VIR, reversescale: scale === "z", colorbar: { title: ctitle }, line: { width: 0 } } } ],
+      plotLayout({ title: { text: `${ok.length} genes × ${gname}`, font: { size: 14 } }, height: h, xaxis: { type: "category", tickangle: -50, side: "top" }, yaxis: { type: "category", autorange: "reversed", automargin: true },
+        margin: { l: 150, r: 20, t: 110, b: 30 },
+        annotations: [{ xref: "paper", yref: "paper", x: 1, y: -0.02, yanchor: "top", xanchor: "right", showarrow: false, text: "dot size: % expressing (25% / 50% / 100% ≈ 10 / 13 / 18 px)", font: { size: 11, color: "#808080" } }] }), PCFG);
+  } else {
+    const z = ord.map((i) => kind === "heatf" ? fracM[i].map((v) => 100 * v) : colM[i]);
+    Plotly.react("dotChart", [{ type: "heatmap", x: ok, y: ylab, z, colorscale: scale === "z" && kind === "heat" ? "RdBu" : PLOTLY_VIR, reversescale: scale === "z" && kind === "heat",
+      colorbar: { title: kind === "heatf" ? "% expressing" : ctitle }, hovertemplate: "%{x} · %{y}<br>%{z:.3f}<extra></extra>" }],
+      plotLayout({ title: { text: `${ok.length} genes × ${gname}`, font: { size: 14 } }, height: h, xaxis: { type: "category", tickangle: -50, side: "top" }, yaxis: { type: "category", autorange: "reversed", automargin: true }, margin: { l: 150, r: 20, t: 110, b: 30 } }), PCFG);
+  }
+}
+let MARKERS = null;
+async function getMarkers() { if (!MARKERS) MARKERS = await (await fetch(DATA + "markers.json")).json(); return MARKERS; }
+async function presetGenes(p, grouping) {
+  let g = [];
+  if (p === "nt") g = ["VGlut", "ChAT", "VAChT", "Gad1", "VGAT", "Vmat", "ple", "Ddc", "Trh", "Tdc2", "Tbh", "SerT", "DAT", "Hdc"];
+  if (p === "hox") g = ["lab", "pb", "Dfd", "Scr", "Antp", "Ubx", "abd-A", "Abd-B"];
+  if (p === "ecd") g = ["EcR", "usp", "br", "Eip74EF", "Eip75B", "Hr3", "Hr4", "ftz-f1", "Eip93F", "Hr39", "Blimp-1", "Kr-h1", "Imp", "Syp", "chinmo"];
+  if (p === "inter") g = M.gene_sources.interactome_v3;
+  if (p === "markers") {
+    const mk = await getMarkers(), key = grouping || ($("dotGroup").value in mk ? $("dotGroup").value : C.dot_group);
+    for (const [lab, lst] of Object.entries(mk[key])) { if (isNAgroup(lab)) continue; for (const m of lst.slice(0, 3)) if (!g.includes(m.g)) g.push(m.g); }
+    $("dotGroup").value = key;
+  }
+  $("dotGenes").value = g.join(" ");
+  drawDot();
+}
+
+// ---------------- across stages ----------------
+async function drawDev() {
+  $("devLine").dataset.done = 1;
+  const { ok } = parseGenes($("devGene").value);
+  if (!ok.length) { $("devErr").textContent = "Gene not found."; return; }
+  $("devErr").textContent = "";
+  const gene = ok[0], gi = allGeneIdx.get(gene), by = $("devBy").value, metric = $("devMetric").value;
+  const AX = C.dev.axis, SUF = C.dev.suffix || "";
+  const A = await loadAgg(`${by} x ${AX}`);
+  const stages = M.annotations[AX];
+  const groups = M.annotations[by].filter((g) => !NA_LIKE.has(g));
+  const val = (k) => metric === "mean" ? aggMean(A, gi, k) : 100 * aggFrac(A, gi, k);
+  const lab2k = new Map(A.groups.map((l, k) => [l, k]));
+  const series = groups.map((g) => ({ g, y: stages.map((s) => { const k = lab2k.get(`${g} | ${s}`); return k === undefined ? null : val(k); }),
+    n: stages.map((s) => { const k = lab2k.get(`${g} | ${s}`); return k === undefined ? 0 : A.counts[k]; }) }));
+  series.forEach((s) => s.peak = Math.max(...s.y.filter((v) => v !== null), 0));
+  series.sort((a, b) => b.peak - a.peak);
+  const top = $("devTop").value === "all" ? series.length : +$("devTop").value;
+  const cols = colorsFor(by), cidx = new Map(M.annotations[by].map((g, j) => [g, j]));
+  const ylab = metric === "mean" ? "mean " + C.value_label : "% cells expressing";
+  // overall per stage
+  const SA = await loadAgg(AX);
+  const overall = stages.map((s) => { const k = SA.groups.indexOf(s); return metric === "mean" ? aggMean(SA, gi, k) : 100 * aggFrac(SA, gi, k); });
+  const traces = series.slice(0, top).map((s) => ({ type: "scatter", mode: "lines+markers", name: s.g, x: stages.map((v) => v + SUF), y: s.y, line: { color: cols[cidx.get(s.g)], width: 2 },
+    customdata: s.n, hovertemplate: `${s.g} · %{x}<br>%{y:.3f} (n=%{customdata})<extra></extra>` }));
+  traces.push({ type: "scatter", mode: "lines", name: "all cells", x: stages.map((v) => v + SUF), y: overall, line: { color: "#1a1a1a", width: 3, dash: "dot" }, hovertemplate: "all cells · %{x}<br>%{y:.3f}<extra></extra>" });
+  Plotly.react("devLine", traces, plotLayout({ title: { text: `${gene} by ${by}`, font: { size: 14 } }, height: 400, xaxis: { title: C.dev.x_title, type: "category" }, yaxis: { title: ylab, rangemode: "tozero" } }), PCFG);
+  const hs = series.slice().sort((a, b) => a.g.localeCompare(b.g));
+  Plotly.react("devHeat", [{ type: "heatmap", x: stages.map((v) => v + SUF), y: hs.map((s) => s.g), z: hs.map((s) => s.y), colorscale: PLOTLY_VIR, colorbar: { title: metric === "mean" ? "mean" : "%" },
+    customdata: hs.map((s) => s.n), hovertemplate: "%{y} · %{x}<br>%{z:.3f} (n=%{customdata})<extra></extra>" }],
+    plotLayout({ title: { text: `${gene}: ${by} × ${AX}`, font: { size: 14 } }, height: Math.max(380, hs.length * 18 + 120), yaxis: { type: "category", autorange: "reversed" }, xaxis: { type: "category" } }), PCFG);
+}
+
+// ---------------- distributions ----------------
+async function drawDist() {
+  $("distChart").dataset.done = 1;
+  const kind = $("distKind").value, gk = $("distGroup").value, onlyNZ = $("distZero").value === "nz";
+  let vals, name;
+  if (kind === "gene") {
+    const g = $("distGene").value.trim();
+    if (!geneIdx.has(g)) { $("distErr").textContent = allGeneIdx.has(g) ? `${g} has group-level values only; use the Dot plot tab.` : "Gene not found."; return; }
+    const v = await loadGene(g), mx = M.gene_max[g]; vals = (i) => v[i] / 255 * mx; name = `${g} · ${C.value_label}`;
+  } else { const v = CELLS[kind]; vals = (i) => v[i]; name = kind; }
+  $("distErr").textContent = "";
+  const c = CELLS["code:" + gk], cats = M.annotations[gk], cols = colorsFor(gk);
+  const per = cats.map(() => []);
+  for (let q = 0; q < N; q++) { const i = perm[q]; if (!visible[i]) continue; const x = vals(i); if (onlyNZ && kind === "gene" && x === 0) continue; if (per[c[i]].length < 3000) per[c[i]].push(x); }
+  const traces = cats.map((cat, j) => ({ type: "violin", name: cat, y: per[j], line: { color: cols[j], width: 1 }, fillcolor: cols[j] + "88", points: false, box: { visible: true }, meanline: { visible: true },
+    spanmode: "hard", scalemode: "width", hoverinfo: "y+name" })).filter((t) => t.y.length > 5);
+  Plotly.react("distChart", traces, plotLayout({ title: { text: `${name} by ${gk}` + (onlyNZ ? " (expressing cells only)" : ""), font: { size: 14 } }, height: 560, showlegend: false,
+    yaxis: { title: name, type: kind === "gene" ? "linear" : "log" }, xaxis: { type: "category", tickangle: -45 } }), PCFG);
+}
+
+// ---------------- markers ----------------
+async function drawMarkers() {
+  const mk = await getMarkers();
+  if (!$("mkGrouping").value) $("mkGrouping").innerHTML = opts(Object.keys(mk), C.primary in mk ? C.primary : Object.keys(mk)[0]);
+  const key = $("mkGrouping").value;
+  const groups = Object.keys(mk[key]);
+  const cur = $("mkGroup").value;
+  $("mkGroup").innerHTML = opts(groups, groups.includes(cur) ? cur : groups.find((g) => !isNAgroup(g)) || groups[0]);
+  $("mkGrouping").onchange = drawMarkers; $("mkGroup").onchange = drawMarkersTable;
+  drawMarkersTable();
+}
+async function drawMarkersTable() {
+  const mk = await getMarkers(), key = $("mkGrouping").value, grp = $("mkGroup").value, lst = mk[key][grp] || [];
+  $("mkTable").innerHTML = `<tr><th>#</th><th>gene</th><th class="num">Δ mean</th><th class="num">% in group</th><th class="num">% in rest</th></tr>` +
+    lst.map((m, r) => `<tr class="click" data-g="${m.g}"><td>${r + 1}</td><td>${m.g}${geneIdx.has(m.g) ? '<span class="pill pc">UMAP</span>' : ""}</td><td class="num">${m.lfc.toFixed(2)}</td><td class="num">${(100 * m.pin).toFixed(0)}</td><td class="num">${(100 * m.pout).toFixed(0)}</td></tr>`).join("");
+  $("mkTable").querySelectorAll("tr.click").forEach((tr) => tr.onclick = () => {
+    const g = tr.dataset.g;
+    const cur = $("dotGenes").value.split(/\s+/).filter(Boolean); if (!cur.includes(g)) $("dotGenes").value = (cur.concat(g)).join(" ");
+    if (geneIdx.has(g)) { showTab("umap"); setGene(g); }
+  });
+}
+
+// ---------------- about ----------------
+function buildAbout() {
+  if (M.config) { buildAboutGeneric(); return; }
+  const c = M.annotation_counts, a = M.annotations;
+  const stat = (v, k) => `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`;
+  $("aboutStats").innerHTML = stat(fmt(N), "neurons") + stat(fmt(M.n_genes_total), "genes measured") + stat(a.Stage.length, "stages (h APF)") +
+    stat(a.hemilineage.filter((x) => !NA_LIKE.has(x)).length, "hemilineages") + stat(a.sample.length, "samples") + stat(fmt(M.genes_percell.length), "genes with per-cell values");
+  const lst = (k) => a[k].map((x, j) => `${x} (${fmt(c[k][j])})`).join(", ");
+  $("aboutText").innerHTML = `
+  <h2>What is in this dataset</h2>
+  <p>Single-cell RNA-seq of <b>${fmt(N)} neurons</b> from the <i>Drosophila</i> pupal ventral nerve cord (VNC), loom file <code>VNC.neurons.loom</code> (title “VNCneurons”).
+  Each cell carries the authors' annotations: developmental <b>Stage</b> (hours after puparium formation), <b>hemilineage</b> (the neuroblast lineage and Notch-on/off branch the neuron comes from),
+  fast <b>neurotransmitter</b>, <b>soma_neuromere</b> (segment of the cell body: T1–T3 thoracic, A abdominal, plus GNG, LB, MX, MD), <b>birthtime</b> (primary = embryonic-born, secondary = larval-born),
+  <b>maturation</b>, <b>Sex</b>, fruitless/doublesex clone labels, and the sample it came from.</p>
+  <ul>
+    <li>Stage: ${lst("Stage")}</li>
+    <li>Neurotransmitter: ${lst("neurotransmitter")}</li>
+    <li>Birthtime: ${lst("birthtime")}</li>
+    <li>Sex: ${lst("Sex")}</li>
+    <li>Samples: ${lst("sample")}</li>
+  </ul>
+  <h2>The two UMAPs</h2>
+  <p>Both embeddings were computed by the data's authors and stored in the loom file; nothing was re-embedded here.
+  <b>UMAP (integrated)</b> is the loom's default embedding: cells from the four stages overlap, so the same neuron type at different ages lands in the same place.
+  <b>UMAP all ages</b> (<code>UMAPallages</code>) keeps age differences: within each hemilineage island the stages lie in parallel bands, so you can see neurons mature.
+  Use <i>split by → Stage</i> on the UMAP tab to compare stages side by side with a shared zoom.</p>
+  <h2>Expression values</h2>
+  <p>Counts are normalised per cell as <code>${M.normalization}</code>. Per-cell values are stored at 8-bit precision (256 levels per gene), which is plenty for colouring and violins.
+  Per-cell values are included for ${fmt(M.genes_percell.length)} genes: the preMN/MN HVG list (${M.gene_sources.user_HVG_preMNs_MNs.length} genes found in this dataset), the Interactome v3 genes (${M.gene_sources.interactome_v3.length}),
+  known neuronal identity genes, the top 10 markers of every hemilineage, transmitter, stage, neuromere, birthtime and maturation group, and the 1,000 most variable genes.
+  For <b>all ${fmt(M.n_genes_total)} genes</b> the Dot plot, Across stages and Markers tabs use group summaries: mean log1p(CP10k) and the fraction of cells with a count above zero, per group (groups with fewer than 20 cells are dropped).</p>
+  <h2>Ways to look at it</h2>
+  <ul>
+    <li><b>UMAP</b>: colour by any annotation, gene, a pair of genes (co-expression) or QC metric; click legend items to filter; split into small multiples; lasso a region to see what it contains.</li>
+    <li><b>Composition</b>: how annotations relate, e.g. which transmitter each hemilineage uses, or how many cells of each hemilineage were sampled at each stage.</li>
+    <li><b>Dot plot / heatmap</b>: any list of genes across hemilineages, transmitters, stages, or hemilineage × stage.</li>
+    <li><b>Across stages</b>: how one gene changes from 6 to 48 h APF within each hemilineage.</li>
+    <li><b>Distributions</b>: per-cell violins of a gene or of library size per group (useful for QC: compare nUMI across stages or samples).</li>
+    <li><b>Markers</b>: the genes that best separate each group from the rest.</li>
+  </ul>
+  <h2>Caveats</h2>
+  <ul>
+    <li>Markers are a quick mean-difference ranking, not a statistical test; treat them as leads.</li>
+    <li>${fmt(c.hemilineage[a.hemilineage.indexOf("Unclassified")] || 0)} cells have no hemilineage (“Unclassified”), and many primary neurons have no neuromere (“noHemi”).</li>
+    <li>Group-level summaries ignore the UMAP filters; the Composition and Distributions tabs respect them.</li>
+  </ul>`;
+}
+
+function buildAboutGeneric() {
+  const c = M.annotation_counts, a = M.annotations;
+  const stat = (v, k) => `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`;
+  $("aboutStats").innerHTML = stat(fmt(N), C.unit) + stat(fmt(M.n_genes_total), "genes") +
+    Object.keys(a).map((k) => stat(fmt(a[k].filter((x) => !NA_LIKE.has(x)).length), k)).join("") + stat(fmt(M.genes_percell.length), "genes per-cell");
+  $("aboutText").innerHTML = `<p>${C.about || ""}</p><p>Values: ${C.value_label}. Per-cell values for ${fmt(M.genes_percell.length)} genes (UMAP, violins); group means for all genes (dot plot, markers).</p>`;
+}
+init().catch((e) => { $("loading").innerHTML = `<span class="err">Failed to load data: ${e.message}</span>`; console.error(e); });
+</script>
+</body>
+</html>
